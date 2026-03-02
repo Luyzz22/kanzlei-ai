@@ -4,7 +4,7 @@ import NextAuth, { type NextAuthConfig } from "next-auth"
 import type { Adapter } from "next-auth/adapters"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
-import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
+// import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
 import { z } from "zod"
 
 import { prisma } from "@/lib/prisma"
@@ -28,7 +28,7 @@ export const authConfig: NextAuthConfig = {
   },
   providers: [
     Google,
-    MicrosoftEntraID,
+    // MicrosoftEntraID,
     Credentials({
       credentials: {
         email: { label: "E-Mail", type: "email" },
