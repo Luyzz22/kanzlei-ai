@@ -3,9 +3,21 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 const preise = [
-  { name: "Starter", preis: "49€", details: "Für kleine Kanzleien mit bis zu 3 Nutzern." },
-  { name: "Professional", preis: "149€", details: "Für wachsende Teams mit erweiterten Automationen." },
-  { name: "Enterprise", preis: "Auf Anfrage", details: "Individuelle Integrationen inkl. AVV und SLA." }
+  {
+    name: "Starter",
+    preis: "149€/Monat",
+    details: "Bis 3 Nutzer, 50 Dokumente/Monat, E-Mail-Support."
+  },
+  {
+    name: "Professional",
+    preis: "299€/Monat",
+    details: "Bis 10 Nutzer, unbegrenzte Dokumente, API-Zugang, Priority-Support."
+  },
+  {
+    name: "Enterprise",
+    preis: "699€/Monat",
+    details: "Unbegrenzte Nutzer, DATEV-Integration, Dedicated Onboarding, SLA."
+  }
 ]
 
 export default function LandingPage() {
