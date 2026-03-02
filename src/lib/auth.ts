@@ -4,7 +4,6 @@ import NextAuth, { type NextAuthConfig } from "next-auth"
 import type { Adapter } from "next-auth/adapters"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
-// import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
 import { z } from "zod"
 
 import { prisma } from "@/lib/prisma"
@@ -18,6 +17,8 @@ const adapter = PrismaAdapter(prisma) as Adapter
 
 export const authConfig: NextAuthConfig = {
   adapter,
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: true,
   session: {
     strategy: "database",
     maxAge: 60 * 30,
@@ -31,7 +32,6 @@ export const authConfig: NextAuthConfig = {
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!
     }),
-    // MicrosoftEntraID,
     Credentials({
       credentials: {
         email: { label: "E-Mail", type: "email" },
@@ -75,3 +75,4 @@ export const authConfig: NextAuthConfig = {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)
+
