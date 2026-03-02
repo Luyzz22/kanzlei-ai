@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { signIn } from "@/lib/auth"
 
 export default function LoginPage() {
   return (
@@ -10,10 +11,29 @@ export default function LoginPage() {
       <div className="rounded-lg border p-4 text-sm">
         Unterstützte Provider: E-Mail/Passwort, Google OAuth2 und Microsoft OAuth2.
       </div>
-      <Button className="w-full">Mit Google fortfahren</Button>
-      <Button variant="secondary" className="w-full">
-        Mit Microsoft fortfahren
-      </Button>
+
+      <form
+        action={async () => {
+          "use server"
+          await signIn("google")
+        }}
+      >
+        <Button type="submit" className="w-full">
+          Mit Google fortfahren
+        </Button>
+      </form>
+
+      <form
+        action={async () => {
+          "use server"
+          await signIn("microsoft-entra-id") // oder dein Provider-Name
+        }}
+      >
+        <Button type="submit" variant="secondary" className="w-full">
+          Mit Microsoft fortfahren
+        </Button>
+      </form>
     </main>
   )
 }
+
