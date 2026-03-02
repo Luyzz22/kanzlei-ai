@@ -1,10 +1,11 @@
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { Role } from "@prisma/client"
-import NextAuth from "next-auth"
+import { compare } from "bcryptjs"
+import NextAuth, { type NextAuthConfig } from "next-auth"
+import type { Adapter } from "next-auth/adapters"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
-import { compare } from "bcryptjs"
 import { z } from "zod"
 
 import { prisma } from "@/lib/prisma"
@@ -14,8 +15,10 @@ const credentialsSchema = z.object({
   password: z.string().min(8)
 })
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+const adapter = PrismaAdapter(prisma) as Adapter
+
+export const authConfig: NextAuthConfig = {
+  adapter,
   session: {
     strategy: "database",
     maxAge: 60 * 30,
@@ -67,4 +70,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session
     }
   }
-})
+}
+
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)
