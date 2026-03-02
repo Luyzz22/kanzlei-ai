@@ -30,6 +30,22 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </nav>
           </header>
           {children}
+          <footer className="border-t">
+            <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 p-4 text-sm text-muted-foreground">
+              <Link href="/datenschutz" className="hover:text-foreground">
+                Datenschutz
+              </Link>
+              <Link href="/impressum" className="hover:text-foreground">
+                Impressum
+              </Link>
+              <Link href="/avv" className="hover:text-foreground">
+                AVV
+              </Link>
+              <Link href="/ki-transparenz" className="hover:text-foreground">
+                KI-Transparenz
+              </Link>
+            </div>
+          </footer>
           <ConsentBanner />
         </ThemeProvider>
       </body>

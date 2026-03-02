@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 
@@ -26,6 +27,16 @@ export function ConsentBanner() {
       <p className="text-sm">
         Wir verwenden technisch notwendige Cookies für Sicherheit und Login sowie optionale Analyse-Cookies.
         Bitte treffen Sie eine Auswahl gemäß DSGVO.
+      </p>
+      <p className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-3 text-sm">
+        KanzleiAI setzt KI-gestützte Funktionen zur Vertragsanalyse und Dokumentenerstellung ein. Die erzeugten
+        Inhalte sind ausschließlich Vorschläge und ersetzen keine Rechtsberatung. Eine fachliche Prüfung und
+        Freigabe durch Ihre Kanzlei bleibt in jedem Fall erforderlich.
+      </p>
+      <p className="mt-2 text-sm">
+        <Link href="/ki-transparenz" className="font-medium text-primary underline underline-offset-4">
+          Mehr über unsere KI-Nutzung
+        </Link>
       </p>
       <div className="mt-3 flex gap-2">
         <Button onClick={() => saveConsent("accepted")}>Alle akzeptieren</Button>
