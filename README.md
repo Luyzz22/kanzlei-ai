@@ -1,24 +1,43 @@
-# 🔍 Contract Analyzer API
+# KanzleiAI – Next.js 14 Starter
 
-**Production-Ready Backend für KI-gestützte Vertragsanalyse**
+Dieses Repository enthält ein initiales **Next.js 14 App-Router Setup** für KanzleiAI inklusive DSGVO-Bausteinen, Auth-Grundlage und Dashboard-UI.
 
-## 🚀 Features
-- ✅ KI-Vertragsanalyse (Employment & SaaS)
-- ✅ API-Key-Authentifizierung  
-- ✅ Export (JSON & CSV)
+## Enthalten
 
-## 📋 Quick Start
-git clone https://github.com/Luyzz22/contract-analyzer-backend.git
-cd contract-analyzer-backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+- Next.js 14 + TypeScript + TailwindCSS
+- shadcn/ui Grundkonfiguration (`components.json`, `Button`, Utility-Funktionen)
+- Prisma Schema für PostgreSQL inkl. RBAC-Rollen (`ADMIN`, `ANWALT`, `ASSISTENT`)
+- NextAuth.js v5 Basis mit:
+  - Credentials (E-Mail/Passwort)
+  - Google OAuth2
+  - Microsoft OAuth2
+  - Session-Timeout: 30 Minuten
+- DSGVO-Seiten:
+  - `/datenschutz`
+  - `/impressum`
+  - `/avv`
+  - Cookie-Consent-Banner
+- Basis-UI:
+  - Landing Page (Hero + Pricing)
+  - Dashboard-Layout mit Sidebar
+  - Dark Mode Support
 
-text
+## Projektstart
 
-## 📖 API Docs
-http://127.0.0.1:8000/docs
+```bash
+pnpm install
+cp .env.example .env
+pnpm prisma generate
+pnpm dev
+```
 
-## 📄 License
-MIT License - Luis Schenk 2025
+## Prisma
+
+```bash
+pnpm prisma migrate dev --name init
+```
+
+## Hinweise
+
+- Für produktiven Einsatz müssen Rechts- und AVV-Texte rechtlich geprüft werden.
+- OAuth-Credentials in `.env` ergänzen (`AUTH_GOOGLE_*`, `AUTH_MICROSOFT_*`).
