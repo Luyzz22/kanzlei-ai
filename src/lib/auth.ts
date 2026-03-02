@@ -27,7 +27,10 @@ export const authConfig: NextAuthConfig = {
     signIn: "/login"
   },
   providers: [
-    Google,
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID!,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET!
+    }),
     // MicrosoftEntraID,
     Credentials({
       credentials: {
