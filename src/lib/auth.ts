@@ -1,4 +1,5 @@
 import { PrismaAdapter } from "@auth/prisma-adapter"
+import { Role } from "@prisma/client"
 import { compare } from "bcryptjs"
 import NextAuth, { type NextAuthConfig } from "next-auth"
 import type { Adapter } from "next-auth/adapters"
@@ -61,13 +62,13 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     jwt: async ({ token, user }) => {
-      if (user) token.role = (user as { role?: string }).role ?? "ASSISTENT"
+      if (user) token.role = (user as { role?: Role }).role ?? Role.ASSISTENT
       return token
     },
     session: async ({ session, user }) => {
       if (session.user) {
         session.user.id = user.id
-        session.user.role = user.role
+        session.user.role = (user as { role: Role }).role ?? Role.ASSISTENT
       }
       return session
     }
@@ -75,4 +76,3 @@ export const authConfig: NextAuthConfig = {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)
-
