@@ -10,3 +10,4 @@ dist
 .env.backup
 src/app/api/analyze/route.local-backup.ts
 package-lock.json
+tsconfig.tsbuildinfo
