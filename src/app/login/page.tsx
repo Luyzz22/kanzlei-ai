@@ -35,7 +35,7 @@ export default function LoginPage() {
       } else {
         router.push("/dashboard")
       }
-    } catch (err) {
+    } catch {
       setError("Es ist ein technischer Fehler aufgetreten. Bitte versuchen Sie es erneut.")
     } finally {
       setLoading(false)
