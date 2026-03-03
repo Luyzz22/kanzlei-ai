@@ -15,6 +15,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { AnalysisType, type AnalysisResult, type DocumentMetadata } from "@/types/ai"
 import { withTenant } from "@/lib/tenant-context"
+import { writeAuditEventTx } from "@/lib/audit-write"
 
 const requestSchema = z.object({
   documentId: z.string().min(1),
@@ -125,9 +126,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
 
       // Audit requested
-      await tx.auditEvent.create({
-        data: {
-          tenantId,
+      await writeAuditEventTx(tx, {
+tenantId,
           actorId,
           action: "analysis.requested",
           resourceType: "document",
@@ -141,10 +141,8 @@ export async function POST(request: Request): Promise<NextResponse> {
             documentLength: parsed.data.documentLength,
             hasVisualElements: parsed.data.hasVisualElements ?? false
           }
-        }
       })
-
-      const analysisLog = await tx.analysisLog.create({
+const analysisLog = await tx.analysisLog.create({
         data: {
           tenantId,
           userId: actorId,
@@ -157,9 +155,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       })
 
       // Audit completed
-      await tx.auditEvent.create({
-        data: {
-          tenantId,
+      await writeAuditEventTx(tx, {
+tenantId,
           actorId,
           action: "analysis.completed",
           resourceType: "analysisLog",
@@ -175,18 +172,16 @@ export async function POST(request: Request): Promise<NextResponse> {
             cost: result.costEstimate,
             duration: result.processingTime
           }
-        }
       })
-    })
+})
 
     return NextResponse.json(result, { headers: { "x-request-id": requestId } })
   } catch (error) {
     // best-effort failed audit (try, but don't override original failure)
     try {
       await withTenant(tenantId, async (tx) => {
-        await tx.auditEvent.create({
-          data: {
-            tenantId,
+        await writeAuditEventTx(tx, {
+tenantId,
             actorId,
             action: "analysis.failed",
             resourceType: "document",
@@ -198,9 +193,8 @@ export async function POST(request: Request): Promise<NextResponse> {
             metadata: {
               message: error instanceof Error ? error.message : "unknown_error"
             }
-          }
-        })
       })
+})
     } catch (auditError) {
       console.error("[AUDIT] analysis.failed failed", auditError)
     }
