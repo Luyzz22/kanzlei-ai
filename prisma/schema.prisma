@@ -25,6 +25,12 @@ model User {
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
+
+  // Enterprise relations
+  memberships       TenantMember[]
+  uploadedDocuments Document[]
+  analysisLogs      AnalysisLog[]
+  auditEvents       AuditEvent[]
 }
 
 model Account {
@@ -61,4 +67,104 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model AnalysisLog {
+  id         String   @id @default(cuid())
+  tenantId   String?
+  userId     String
+  documentId String?
+  modelUsed  String
+  tokensUsed Int
+  cost       Float
+  duration   Int
+  createdAt  DateTime @default(now())
+
+  tenant      Tenant?      @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document    Document?    @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  auditEvents AuditEvent[]
+
+  @@index([tenantId, createdAt])
+  @@index([userId, createdAt])
+  @@index([documentId, createdAt])
+}
+
+// --- Enterprise multi-tenancy & audit logging ---
+
+enum TenantRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members      TenantMember[]
+  documents    Document[]
+  auditEvents  AuditEvent[]
+  analysisLogs AnalysisLog[]
+}
+
+model TenantMember {
+  id        String     @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      TenantRole @default(MEMBER)
+  createdAt DateTime   @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  tenantId     String
+  uploadedById String?
+  filename     String
+  mimeType     String?
+  sizeBytes    Int?
+  sha256       String?  @db.VarChar(64)
+  storageKey   String?
+  createdAt    DateTime @default(now())
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  uploadedBy   User?         @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  analysisLogs AnalysisLog[]
+  auditEvents  AuditEvent[]
+
+  @@index([tenantId, createdAt])
+}
+
+model AuditEvent {
+  id            String   @id @default(cuid())
+  tenantId      String
+  actorId       String?
+  action        String
+  resourceType  String
+  resourceId    String?
+  documentId    String?
+  analysisLogId String?
+  ip            String?
+  userAgent     String?
+  requestId     String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor       User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  document    Document?    @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  analysisLog AnalysisLog? @relation(fields: [analysisLogId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([resourceType, resourceId])
 }
