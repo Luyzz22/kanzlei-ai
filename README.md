@@ -41,3 +41,10 @@ pnpm prisma migrate dev --name init
 
 - Für produktiven Einsatz müssen Rechts- und AVV-Texte rechtlich geprüft werden.
 - OAuth-Credentials in `.env` ergänzen (`AUTH_GOOGLE_*`, `AUTH_MICROSOFT_*`).
+
+## Tenant RLS (Enterprise)
+Nach `prisma migrate deploy` muss Row-Level Security angewendet werden:
+
+```bash
+psql "$DATABASE_URL" -f db/rls.sql
+```
