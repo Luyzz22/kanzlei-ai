@@ -12,9 +12,9 @@ import {
   riskAssessmentPrompt
 } from "@/lib/ai/prompts"
 import { auth } from "@/lib/auth"
-import { writeAuditEvent } from "@/lib/audit"
 import { prisma } from "@/lib/prisma"
 import { AnalysisType, type AnalysisResult, type DocumentMetadata } from "@/types/ai"
+import { withTenant } from "@/lib/tenant-context"
 
 const requestSchema = z.object({
   documentId: z.string().min(1),
@@ -78,61 +78,20 @@ export async function POST(request: Request): Promise<NextResponse> {
   const ip = getClientIp(request)
   const userAgent = request.headers.get("user-agent")
 
+  // tenant lookup happens before RLS tx, because the lookup itself is tenant-bound
+  // In production you'll typically resolve tenant from subdomain / org context.
   const tenantId = await resolveTenantIdForUser(actorId)
   if (!tenantId) {
     return NextResponse.json({ error: "Kein Mandant gefunden" }, { status: 403 })
   }
 
-  // Ensure Document exists (minimal stub, no sensitive content stored here)
   const docId = parsed.data.documentId
-  const existingDoc = await prisma.document.findUnique({
-    where: { id: docId },
-    select: { id: true, tenantId: true }
-  })
-
-  if (existingDoc && existingDoc.tenantId !== tenantId) {
-    return NextResponse.json({ error: "Dokument gehört zu anderem Mandanten" }, { status: 403 })
-  }
-
-  if (!existingDoc) {
-    await prisma.document.create({
-      data: {
-        id: docId,
-        tenantId,
-        uploadedById: actorId,
-        filename: `document-${docId}`
-      }
-    })
-  }
-
   const analysisType = toAnalysisType(parsed.data.analysisType)
   const metadata: DocumentMetadata = {
     documentId: docId,
     analysisType,
     documentLength: parsed.data.documentLength,
     hasVisualElements: parsed.data.hasVisualElements
-  }
-
-  // Audit: requested
-  try {
-    await writeAuditEvent({
-      tenantId,
-      actorId,
-      action: "analysis.requested",
-      resourceType: "document",
-      resourceId: docId,
-      documentId: docId,
-      requestId,
-      ip,
-      userAgent,
-      metadata: {
-        analysisType: parsed.data.analysisType,
-        documentLength: parsed.data.documentLength,
-        hasVisualElements: parsed.data.hasVisualElements ?? false
-      }
-    })
-  } catch (error) {
-    console.error("[AUDIT] analysis.requested failed", error)
   }
 
   const prompt = buildPrompt(analysisType, parsed.data.documentText)
@@ -142,59 +101,105 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     trackUsage({ userId: actorId, model: result.modelUsed, tokensUsed: result.tokensUsed })
 
-    const analysisLog = await prisma.analysisLog.create({
-      data: {
-        tenantId,
-        userId: actorId,
-        documentId: docId,
-        modelUsed: result.modelUsed,
-        tokensUsed: result.tokensUsed,
-        cost: result.costEstimate,
-        duration: result.processingTime
-      }
-    })
+    // All tenant-bound DB writes under RLS context
+    await withTenant(tenantId, async (tx) => {
+      // Ensure document exists (stub only)
+      const existingDoc = await tx.document.findUnique({
+        where: { id: docId },
+        select: { id: true, tenantId: true }
+      })
 
-    // Audit: completed
-    try {
-      await writeAuditEvent({
-        tenantId,
-        actorId,
-        action: "analysis.completed",
-        resourceType: "analysisLog",
-        resourceId: analysisLog.id,
-        documentId: docId,
-        analysisLogId: analysisLog.id,
-        requestId,
-        ip,
-        userAgent,
-        metadata: {
+      if (existingDoc && existingDoc.tenantId !== tenantId) {
+        throw new Error("Dokument gehört zu anderem Mandanten")
+      }
+
+      if (!existingDoc) {
+        await tx.document.create({
+          data: {
+            id: docId,
+            tenantId,
+            uploadedById: actorId,
+            filename: `document-${docId}`
+          }
+        })
+      }
+
+      // Audit requested
+      await tx.auditEvent.create({
+        data: {
+          tenantId,
+          actorId,
+          action: "analysis.requested",
+          resourceType: "document",
+          resourceId: docId,
+          documentId: docId,
+          requestId,
+          ip,
+          userAgent,
+          metadata: {
+            analysisType: parsed.data.analysisType,
+            documentLength: parsed.data.documentLength,
+            hasVisualElements: parsed.data.hasVisualElements ?? false
+          }
+        }
+      })
+
+      const analysisLog = await tx.analysisLog.create({
+        data: {
+          tenantId,
+          userId: actorId,
+          documentId: docId,
           modelUsed: result.modelUsed,
           tokensUsed: result.tokensUsed,
           cost: result.costEstimate,
           duration: result.processingTime
         }
       })
-    } catch (error) {
-      console.error("[AUDIT] analysis.completed failed", error)
-    }
+
+      // Audit completed
+      await tx.auditEvent.create({
+        data: {
+          tenantId,
+          actorId,
+          action: "analysis.completed",
+          resourceType: "analysisLog",
+          resourceId: analysisLog.id,
+          documentId: docId,
+          analysisLogId: analysisLog.id,
+          requestId,
+          ip,
+          userAgent,
+          metadata: {
+            modelUsed: result.modelUsed,
+            tokensUsed: result.tokensUsed,
+            cost: result.costEstimate,
+            duration: result.processingTime
+          }
+        }
+      })
+    })
 
     return NextResponse.json(result, { headers: { "x-request-id": requestId } })
   } catch (error) {
-    // Audit: failed (best-effort)
+    // best-effort failed audit (try, but don't override original failure)
     try {
-      await writeAuditEvent({
-        tenantId,
-        actorId,
-        action: "analysis.failed",
-        resourceType: "document",
-        resourceId: docId,
-        documentId: docId,
-        requestId,
-        ip,
-        userAgent,
-        metadata: {
-          message: error instanceof Error ? error.message : "unknown_error"
-        }
+      await withTenant(tenantId, async (tx) => {
+        await tx.auditEvent.create({
+          data: {
+            tenantId,
+            actorId,
+            action: "analysis.failed",
+            resourceType: "document",
+            resourceId: docId,
+            documentId: docId,
+            requestId,
+            ip,
+            userAgent,
+            metadata: {
+              message: error instanceof Error ? error.message : "unknown_error"
+            }
+          }
+        })
       })
     } catch (auditError) {
       console.error("[AUDIT] analysis.failed failed", auditError)
