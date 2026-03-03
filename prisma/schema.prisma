@@ -156,6 +156,8 @@ model AuditEvent {
   ip            String?
   userAgent     String?
   requestId     String?
+  prevHash      String?  @db.VarChar(64)
+  eventHash     String?  @db.VarChar(64)
   metadata      Json?
   createdAt     DateTime @default(now())
 
