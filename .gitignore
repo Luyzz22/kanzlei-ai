@@ -3,7 +3,6 @@ node_modules
 out
 .env
 .env.local
-pnpm-lock.yaml
 coverage
 dist
 .env.backup
