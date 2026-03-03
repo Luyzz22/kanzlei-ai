@@ -7,3 +7,7 @@ pnpm-lock.yaml
 coverage
 dist
 .env.backup
+.local/
+src/app/api/analyze/route.local-backup.ts
+package-lock.json
+tsconfig.tsbuildinfo
