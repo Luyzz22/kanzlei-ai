@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+
 import { auth } from "@/lib/auth"
 
 const publicRoutes = ["/login", "/register", "/password-reset"]
@@ -8,14 +9,14 @@ export default auth((req) => {
   const { pathname } = nextUrl
 
   const isApiAuthRoute = pathname.startsWith("/api/auth")
-  const isApiRoute = pathname.startsWith("/api")
+  const isApiScimRoute = pathname.startsWith("/api/scim")
   const isNextRoute = pathname.startsWith("/_next")
   const isFavicon = pathname === "/favicon.ico"
   const isPublicRoute = publicRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   )
 
-  if (isApiAuthRoute || isApiRoute || isNextRoute || isFavicon || isPublicRoute) {
+  if (isApiAuthRoute || isApiScimRoute || isNextRoute || isFavicon || isPublicRoute) {
     return NextResponse.next()
   }
 
@@ -29,6 +30,5 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ["/dashboard/:path*"]
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"]
 }
-
