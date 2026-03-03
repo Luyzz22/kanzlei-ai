@@ -41,3 +41,39 @@ pnpm prisma migrate dev --name init
 
 - Für produktiven Einsatz müssen Rechts- und AVV-Texte rechtlich geprüft werden.
 - OAuth-Credentials in `.env` ergänzen (`AUTH_GOOGLE_*`, `AUTH_MICROSOFT_*`).
+
+## Tenant RLS (Enterprise)
+Nach `prisma migrate deploy` muss Row-Level Security angewendet werden:
+
+```bash
+psql "$DATABASE_URL" -f db/rls.sql
+```
+
+## Compliance Index
+
+### Security Controls (Tech)
+- **Tenant Isolation (Postgres RLS):** `db/rls.sql`
+- **Audit Logging:** `AuditEvent` (siehe DB Schema), Admin API: `/api/admin/audit`, UI: `/dashboard/audit`
+- **Tamper-Evident Audit Trail:** `AuditEvent.prevHash` / `AuditEvent.eventHash`
+- **Retention (Audit):** `db/retention.sql`
+
+### Identity & Access (Enterprise)
+- **SSO (Microsoft Entra OIDC):** `docs/sso-microsoft-entra.md`
+- **SCIM v2 (Users/Groups):** `docs/scim.md`
+  - Endpoints: `/api/scim/v2/*`
+  - Auth: Bearer Token (`SCIM_BEARER_TOKEN` / `SCIM_BEARER_TOKENS`) + optional `SCIM_ALLOWED_IPS`
+
+### ISMS / ISO 27001 Preparation
+- ISMS Overview: `docs/isms/README.md`
+- Risk Register: `docs/isms/risk-register.md`
+- Asset Inventory: `docs/isms/asset-inventory.md`
+- Access Control Policy: `docs/isms/access-control-policy.md`
+- Logging & Monitoring Policy: `docs/isms/logging-monitoring-policy.md`
+- Incident Response: `docs/isms/incident-response.md`
+- Vendor Management: `docs/isms/vendor-management.md`
+- Change Management: `docs/isms/change-management.md`
+
+### Privacy (DSGVO)
+- DSFA/DPIA Template: `docs/privacy/dsfa-template.md`
+- AVV Template: `docs/privacy/avv-template.md`
+
