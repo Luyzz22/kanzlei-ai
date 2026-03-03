@@ -17,6 +17,8 @@ model User {
   id            String    @id @default(cuid())
   name          String?
   email         String    @unique
+  externalId    String?   @unique
+  isActive      Boolean   @default(true)
   password      String?
   emailVerified DateTime?
   image         String?

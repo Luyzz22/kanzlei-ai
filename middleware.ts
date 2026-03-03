@@ -9,13 +9,14 @@ export default auth((req) => {
   const { pathname } = nextUrl
 
   const isApiAuthRoute = pathname.startsWith("/api/auth")
+  const isApiScimRoute = pathname.startsWith("/api/scim")
   const isNextRoute = pathname.startsWith("/_next")
   const isFavicon = pathname === "/favicon.ico"
   const isPublicRoute = publicRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   )
 
-  if (isApiAuthRoute || isNextRoute || isFavicon || isPublicRoute) {
+  if (isApiAuthRoute || isApiScimRoute || isNextRoute || isFavicon || isPublicRoute) {
     return NextResponse.next()
   }
 
