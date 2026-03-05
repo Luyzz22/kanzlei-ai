@@ -12,3 +12,4 @@ package-lock.json
 tsconfig.tsbuildinfo
 .vercel
 .env*.local
+.env.prod
