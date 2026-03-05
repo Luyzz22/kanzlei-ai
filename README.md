@@ -49,6 +49,25 @@ Nach `prisma migrate deploy` muss Row-Level Security angewendet werden:
 psql "$DATABASE_URL" -f db/rls.sql
 ```
 
+## PROD Deployment (Kurzablauf)
+
+Für produktive Deployments (z. B. CI/CD) sollte der Ablauf in dieser Reihenfolge erfolgen:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm prisma migrate deploy
+psql "$DATABASE_URL" -f db/rls.sql
+```
+
+Optional: Audit-Retention ausführen (z. B. als geplanter Job):
+
+```bash
+psql "$DATABASE_URL" -f db/retention.sql
+```
+
 ## Compliance Index
 
 ### Security Controls (Tech)
@@ -76,4 +95,3 @@ psql "$DATABASE_URL" -f db/rls.sql
 ### Privacy (DSGVO)
 - DSFA/DPIA Template: `docs/privacy/dsfa-template.md`
 - AVV Template: `docs/privacy/avv-template.md`
-
