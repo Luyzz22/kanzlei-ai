@@ -71,14 +71,10 @@ export function requireScimAuth(request: Request) {
   const provided = m?.[1]?.trim() ?? null
 
   if (!tokenAllowed(provided)) {
-    const configured =
-      (process.env.SCIM_BEARER_TOKENS && process.env.SCIM_BEARER_TOKENS.trim().length > 0) ||
-      (process.env.SCIM_BEARER_TOKEN && process.env.SCIM_BEARER_TOKEN.trim().length > 0)
-
     return {
       ok: false as const,
-      status: configured ? 401 : 500,
-      error: configured ? "Unauthorized" : "SCIM token not configured"
+      status: 401,
+      error: "Unauthorized"
     }
   }
 
