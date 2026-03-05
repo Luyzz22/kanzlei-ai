@@ -1,6 +1,10 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('ADMIN', 'ANWALT', 'ASSISTENT');
-
+DO $$
+BEGIN
+  CREATE TYPE "Role" AS ENUM ('ADMIN', 'ANWALT', 'ASSISTENT');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
