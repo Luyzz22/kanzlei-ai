@@ -65,3 +65,28 @@ Prisma stoppt `migrate deploy`, wenn eine Migration in der Ziel-DB fehlgeschlage
 ### Verifikation nach Recovery
 - `pnpm prisma migrate status` zeigt **keine** fehlgeschlagene Migration mehr.
 - App Smoke-Checks (Health, Auth, SCIM, Audit Verify).
+
+---
+
+## Fresh DB / Neon Branch Setup: Baseline-Migration verwenden
+
+### Problem
+Unsere historische Migration-Historie enthält DDL, das bei **frischen Datenbanken** kollidieren kann (z. B. doppelte Enum-Erstellung in alten Pfaden). Für neue Neon-Branches oder neue Installationen verwenden wir daher eine **Baseline-Migration**, die den aktuellen Schema-Stand in einem konsistenten Schritt aufsetzt.
+
+### Vorgehen: neue DB (leer)
+1) Neue Neon-Branch / leere DB erstellen.
+2) `pnpm prisma migrate deploy`
+   - Erwartung: Baseline-Migration läuft als erste „vollständige“ Schema-Definition durch.
+3) Danach: App Smoke-Checks (Health, Auth, SCIM, Audit Verify).
+
+### Vorgehen: bestehende DB (bereits produktiv)
+**Wichtig:** Auf bestehenden DBs dürfen wir die Baseline nicht „nochmal anwenden“.
+Stattdessen wird die Baseline in der Migrations-Historie als bereits angewendet markiert:
+
+1) Baseline-Migrationsnamen bestimmen (Ordnername unter `prisma/migrations/*_baseline_schema`).
+2) `pnpm prisma migrate resolve --applied "<baseline_migration_name>"`
+3) Danach wie gewohnt: `pnpm prisma migrate deploy`
+
+### Verifikation
+- `pnpm prisma migrate status` zeigt keine failed Migrationen.
+- `_prisma_migrations` enthält einen Eintrag für die Baseline mit `finished_at` gesetzt.
