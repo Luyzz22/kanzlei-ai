@@ -10,7 +10,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
-    # Dummy-ENV (keine Secrets), damit Build/Typecheck nicht an fehlenden envs stirbt
+    # Dummy-ENV (keine Secrets), damit Prisma/Next nicht an fehlenden envs stirbt
     env:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: dummy_dummy_dummy_dummy_dummy_dummy_dummy_dummy
@@ -35,6 +35,9 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate
+        run: pnpm prisma:generate
 
       - name: Lint
         run: pnpm lint
