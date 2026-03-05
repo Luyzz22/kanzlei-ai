@@ -1,19 +1,22 @@
+import { Role, TenantRole } from "@prisma/client"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { Role, TenantRole } from "@prisma/client"
 
-import { requireScimAuth } from "@/lib/scim/auth-core"
-import { requireScimTenant } from "@/lib/scim/tenant-core"
-import { prisma } from "@/lib/prisma"
-import { withTenant } from "@/lib/tenant-context-core"
 import { writeAuditEventTx } from "@/lib/audit-write"
+import { logEvent } from "@/lib/observability"
+import { prisma } from "@/lib/prisma"
+import { requireScimAuth } from "@/lib/scim/auth-core"
+import { checkScimRateLimit } from "@/lib/scim/rate-limit"
+import { scimError } from "@/lib/scim/response"
+import { requireScimTenant } from "@/lib/scim/tenant-core"
+import { withTenant } from "@/lib/tenant-context-core"
 
 const patchSchema = z.object({
   Operations: z.array(
     z.object({
       op: z.string(),
       path: z.string().optional(),
-      value: z.any().optional() // SCIM patch payload is flexible
+      value: z.any().optional()
     })
   )
 })
@@ -48,32 +51,41 @@ async function resolveUserId(value: string): Promise<string | null> {
   return u?.id ?? null
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+function enforce(request: Request) {
   const auth = requireScimAuth(request)
-  if (!auth.ok) return NextResponse.json({ detail: auth.error }, { status: auth.status })
+  if (!auth.ok) return { error: scimError(auth.status, auth.error) }
+
+  const rate = checkScimRateLimit(auth.ip)
+  if (!rate.ok) return { error: scimError(429, "Too Many Requests") }
+
+  return { ip: auth.ip }
+}
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const gate = enforce(request)
+  if ("error" in gate) return gate.error
 
   const cfg = groupConfig(params.id)
-  if (!cfg) return NextResponse.json({ detail: "Not found" }, { status: 404 })
+  if (!cfg) return scimError(404, "Not found")
 
   return NextResponse.json(scimGroup(cfg.id, cfg.displayName))
 }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-  const auth = requireScimAuth(request)
-  if (!auth.ok) return NextResponse.json({ detail: auth.error }, { status: auth.status })
+  const gate = enforce(request)
+  if ("error" in gate) return gate.error
 
   const cfg = groupConfig(params.id)
-  if (!cfg) return NextResponse.json({ detail: "Not found" }, { status: 404 })
+  if (!cfg) return scimError(404, "Not found")
 
   const tenantRes = await requireScimTenant()
-  if (!tenantRes.ok) return NextResponse.json({ detail: tenantRes.error }, { status: tenantRes.status })
-  const tenantId = tenantRes.tenant.id
+  if (!tenantRes.ok) return scimError(tenantRes.status, tenantRes.error)
 
+  const tenantId = tenantRes.tenant.id
   const raw = await request.json().catch(() => null)
   const parsed = patchSchema.safeParse(raw)
-  if (!parsed.success) return NextResponse.json({ detail: parsed.error.flatten() }, { status: 400 })
+  if (!parsed.success) return scimError(400, "Invalid SCIM patch payload")
 
-  // Extract members from PATCH operations (additive)
   const members: string[] = []
   for (const op of parsed.data.Operations) {
     const opName = op.op.toLowerCase()
@@ -121,6 +133,15 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       requestId: `scim-${cfg.id}-${Date.now()}`,
       metadata: { membersReceived: unique.length, membersResolved: resolved.length }
     })
+  })
+
+  logEvent({
+    event: "scim.group.patch",
+    source: "scim",
+    outcome: "success",
+    tenantId,
+    ip: gate.ip,
+    meta: { groupId: cfg.id, resolved: resolved.length }
   })
 
   return NextResponse.json(scimGroup(cfg.id, cfg.displayName))

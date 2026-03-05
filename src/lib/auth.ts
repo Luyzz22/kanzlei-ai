@@ -8,6 +8,7 @@ import Google from "next-auth/providers/google"
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
 import { z } from "zod"
 
+import { logEvent } from "@/lib/observability"
 import { prisma } from "@/lib/prisma"
 
 const credentialsSchema = z.object({
@@ -81,10 +82,18 @@ export const authConfig: NextAuthConfig = {
           where: { email: parsed.data.email }
         })
 
-        if (!user?.password) return null
+        if (!user?.password) {
+          logEvent({ event: "auth.credentials", source: "auth", outcome: "deny", email: parsed.data.email, detail: "user_missing_or_password_not_set" }, "warn")
+          return null
+        }
 
         const isValid = await compare(parsed.data.password, user.password)
-        if (!isValid) return null
+        if (!isValid) {
+          logEvent({ event: "auth.credentials", source: "auth", outcome: "deny", email: parsed.data.email, detail: "invalid_password" }, "warn")
+          return null
+        }
+
+        logEvent({ event: "auth.credentials", source: "auth", outcome: "success", actorId: user.id, email: user.email })
 
         return {
           id: user.id,
@@ -104,7 +113,10 @@ export const authConfig: NextAuthConfig = {
       const tid = (profile as { tid?: string } | null)?.tid
 
       if (allowedTenants.length) {
-        if (!tid || !allowedTenants.includes(tid)) return false
+        if (!tid || !allowedTenants.includes(tid)) {
+          logEvent({ event: "auth.entra.signin", source: "auth", outcome: "deny", actorId: user?.id ?? null, detail: "tenant_not_allowed" }, "warn")
+          return false
+        }
       }
 
       if (!user?.id) return true
@@ -134,6 +146,7 @@ export const authConfig: NextAuthConfig = {
         .update({ where: { id: user.id }, data: { role: newUserRole } })
         .catch(() => null)
 
+      logEvent({ event: "auth.entra.signin", source: "auth", outcome: "success", actorId: user.id, meta: { admin: isAdmin } })
       return true
     },
 

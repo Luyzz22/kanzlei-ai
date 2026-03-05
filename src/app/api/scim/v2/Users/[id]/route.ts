@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
-import { requireScimAuth } from "@/lib/scim/auth-core"
 import { prisma } from "@/lib/prisma"
+import { requireScimAuth } from "@/lib/scim/auth-core"
+import { checkScimRateLimit } from "@/lib/scim/rate-limit"
+import { scimError } from "@/lib/scim/response"
+import { logEvent } from "@/lib/observability"
 
 const patchSchema = z.object({
   Operations: z.array(
     z.object({
       op: z.string(),
       path: z.string().optional(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       value: z.any().optional()
     })
   )
@@ -27,26 +29,36 @@ function scimUser(u: { id: string; email: string; name: string | null; externalI
   }
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+function enforce(request: Request) {
   const auth = requireScimAuth(request)
-  if (!auth.ok) return NextResponse.json({ detail: auth.error }, { status: auth.status })
+  if (!auth.ok) return { error: scimError(auth.status, auth.error) }
+
+  const rate = checkScimRateLimit(auth.ip)
+  if (!rate.ok) return { error: scimError(429, "Too Many Requests") }
+
+  return { ip: auth.ip }
+}
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const gate = enforce(request)
+  if ("error" in gate) return gate.error
 
   const user = await prisma.user.findUnique({
     where: { id: params.id },
     select: { id: true, email: true, name: true, externalId: true, isActive: true }
   })
-  if (!user) return NextResponse.json({ detail: "Not found" }, { status: 404 })
+  if (!user) return scimError(404, "Not found")
 
   return NextResponse.json(scimUser(user))
 }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-  const auth = requireScimAuth(request)
-  if (!auth.ok) return NextResponse.json({ detail: auth.error }, { status: auth.status })
+  const gate = enforce(request)
+  if ("error" in gate) return gate.error
 
   const raw = await request.json().catch(() => null)
   const parsed = patchSchema.safeParse(raw)
-  if (!parsed.success) return NextResponse.json({ detail: parsed.error.flatten() }, { status: 400 })
+  if (!parsed.success) return scimError(400, "Invalid SCIM patch payload")
 
   let active: boolean | undefined
   let externalId: string | undefined
@@ -68,12 +80,13 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     select: { id: true, email: true, name: true, externalId: true, isActive: true }
   })
 
+  logEvent({ event: "scim.user.patch", source: "scim", outcome: "success", ip: gate.ip, meta: { userId: user.id } })
   return NextResponse.json(scimUser(user))
 }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  const auth = requireScimAuth(request)
-  if (!auth.ok) return NextResponse.json({ detail: auth.error }, { status: auth.status })
+  const gate = enforce(request)
+  if ("error" in gate) return gate.error
 
   const user = await prisma.user.update({
     where: { id: params.id },
@@ -81,5 +94,6 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     select: { id: true, email: true, name: true, externalId: true, isActive: true }
   })
 
+  logEvent({ event: "scim.user.deactivate", source: "scim", outcome: "success", ip: gate.ip, meta: { userId: user.id } })
   return NextResponse.json(scimUser(user))
 }

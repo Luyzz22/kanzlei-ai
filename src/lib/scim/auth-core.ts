@@ -1,3 +1,5 @@
+import { logEvent } from "@/lib/observability"
+
 function parseCsv(raw: string | undefined): string[] {
   if (!raw) return []
   return raw
@@ -16,8 +18,6 @@ function getClientIp(request: Request): string | null {
   return null
 }
 
-// Minimal CIDR matcher (IPv4 only) for MVP.
-// If you need IPv6 CIDR, extend later or use a dedicated lib.
 function ipv4ToInt(ip: string): number | null {
   const parts = ip.split(".")
   if (parts.length !== 4) return null
@@ -40,21 +40,23 @@ function matchCidr(ip: string, cidr: string): boolean {
 function ipAllowed(ip: string | null, allow: string[]): boolean {
   if (!allow.length) return true
   if (!ip) return false
-  // exact match first
   if (allow.includes(ip)) return true
-  // CIDR match (ipv4 only)
+
   for (const entry of allow) {
     if (entry.includes("/") && matchCidr(ip, entry)) return true
   }
   return false
 }
 
-function tokenAllowed(provided: string | null): boolean {
+function configuredTokens(): string[] {
   const multi = parseCsv(process.env.SCIM_BEARER_TOKENS)
   const single = process.env.SCIM_BEARER_TOKEN ? [process.env.SCIM_BEARER_TOKEN] : []
-  const tokens = multi.length ? multi : single
-  if (!tokens.length) return false
-  if (!provided) return false
+  return multi.length ? multi : single
+}
+
+function tokenAllowed(provided: string | null): boolean {
+  const tokens = configuredTokens()
+  if (!tokens.length || !provided) return false
   return tokens.includes(provided)
 }
 
@@ -63,7 +65,8 @@ export function requireScimAuth(request: Request) {
   const ip = getClientIp(request)
 
   if (!ipAllowed(ip, allowIps)) {
-    return { ok: false as const, status: 403, error: "Forbidden" }
+    logEvent({ event: "scim.auth", source: "scim", outcome: "deny", ip, detail: "ip_forbidden" }, "warn")
+    return { ok: false as const, status: 403, error: "Forbidden", ip }
   }
 
   const header = request.headers.get("authorization") ?? ""
@@ -71,15 +74,18 @@ export function requireScimAuth(request: Request) {
   const provided = m?.[1]?.trim() ?? null
 
   if (!tokenAllowed(provided)) {
-    const configured =
-      (process.env.SCIM_BEARER_TOKENS && process.env.SCIM_BEARER_TOKENS.trim().length > 0) ||
-      (process.env.SCIM_BEARER_TOKEN && process.env.SCIM_BEARER_TOKEN.trim().length > 0)
-
-    return {
-      ok: false as const,
-      status: configured ? 401 : 500,
-      error: configured ? "Unauthorized" : "SCIM token not configured"
-    }
+    const configured = configuredTokens().length > 0
+    logEvent(
+      {
+        event: "scim.auth",
+        source: "scim",
+        outcome: "deny",
+        ip,
+        detail: configured ? "token_invalid" : "token_not_configured"
+      },
+      "warn"
+    )
+    return { ok: false as const, status: 401, error: "Unauthorized", ip }
   }
 
   return { ok: true as const, ip }
