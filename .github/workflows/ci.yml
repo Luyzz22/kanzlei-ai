@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
@@ -8,6 +9,15 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+
+    # Dummy-ENV (keine Secrets), damit Build/Typecheck nicht an fehlenden envs stirbt
+    env:
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: dummy_dummy_dummy_dummy_dummy_dummy_dummy_dummy
+      DATABASE_URL: postgresql://user:pass@localhost:5432/db?schema=public
+      DIRECT_URL: postgresql://user:pass@localhost:5432/db?schema=public
+      SCIM_BEARER_TOKENS: dummy
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -16,11 +26,25 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Enable corepack
-        run: corepack enable
+      - name: Enable corepack + activate pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+          pnpm -v
+
+      # Optional: pnpm-store Cache (empfohlen)
+      - name: Get pnpm store path
+        shell: bash
+        run: echo "PNPM_STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PNPM_STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install
         run: pnpm install --frozen-lockfile
