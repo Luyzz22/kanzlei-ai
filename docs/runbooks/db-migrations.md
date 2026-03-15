@@ -110,3 +110,13 @@ pnpm prisma migrate deploy
 ### Verifikation
 - pnpm prisma migrate status zeigt keine failed Migrationen.
 - _prisma_migrations enthaelt einen Eintrag fuer die Baseline mit finished_at gesetzt.
+
+### Automatisierter Fresh-DB-Flow (lokal/CI)
+
+Fuer den Baseline-Flow auf einer leeren DB gibt es ein Script:
+
+```bash
+./scripts/migrate-empty-db-baseline.sh
+```
+
+Das Script erkennt `*_baseline_schema` dynamisch, markiert alle vorherigen Migrationen als `applied`, fuehrt danach `prisma migrate deploy` aus und validiert mit `prisma migrate status`.
