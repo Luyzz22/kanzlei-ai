@@ -26,6 +26,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <Link href="/loesungen/kanzleien" className="hover:text-slate-950">Lösungen Kanzleien</Link>
                 <Link href="/loesungen/rechtsabteilungen" className="hover:text-slate-950">Lösungen Rechtsabteilungen</Link>
                 <Link href="/preise" className="hover:text-slate-950">Preise</Link>
+                <Link href="/integrationen" className="hover:text-slate-950">Integrationen</Link>
                 <Link href="/enterprise-kontakt" className="hover:text-slate-950">Enterprise-Kontakt</Link>
                 <Link href="/workspace/dokumente" className="hover:text-slate-950">Workspace</Link>
                 <Link href="/hilfe" className="hover:text-slate-950">Hilfe</Link>
