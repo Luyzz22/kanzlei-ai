@@ -9,7 +9,7 @@ Diese Seite stellt eine belastbare, mandantenbezogene Übersicht aller Mitglieds
 
 ## Sicherheits- und Compliance-Entscheidungen
 - Zugriff nur für Benutzer mit Plattformrolle `ADMIN`.
-- Tenant-Bindung über Mitgliedschaft des angemeldeten Benutzers.
+- Tenant-Bindung nur bei eindeutigem Mandantenkontext des angemeldeten Benutzers.
 - Datenzugriff im Tenant-Kontext über `withTenant`.
 - Keine Schreiboperationen in dieser Ausbaustufe.
 

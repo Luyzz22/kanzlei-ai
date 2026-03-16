@@ -2,8 +2,8 @@ import { Role, type TenantRole } from "@prisma/client"
 import Link from "next/link"
 
 import { listTenantMembers } from "@/lib/admin/members-core"
+import { resolveSingleTenantIdForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
 
 const tenantRoleLabel: Record<TenantRole, string> = {
   OWNER: "Inhaber",
@@ -15,15 +15,6 @@ const platformRoleLabel: Record<Role, string> = {
   ADMIN: "Administrator",
   ANWALT: "Anwalt",
   ASSISTENT: "Assistenz"
-}
-
-async function resolveTenantIdForUser(userId: string): Promise<string | null> {
-  const membership = await prisma.tenantMember.findFirst({
-    where: { userId },
-    select: { tenantId: true }
-  })
-
-  return membership?.tenantId ?? null
 }
 
 export default async function AdminMembersPage() {
@@ -49,12 +40,14 @@ export default async function AdminMembersPage() {
     )
   }
 
-  const tenantId = await resolveTenantIdForUser(session.user.id)
+  const tenantId = await resolveSingleTenantIdForUser(session.user.id)
   if (!tenantId) {
     return (
       <div className="space-y-3">
         <h1 className="text-2xl font-semibold">Mitglieder & Rollen</h1>
-        <p className="text-sm text-muted-foreground">Für Ihr Konto konnte kein Mandant zugeordnet werden.</p>
+        <p className="text-sm text-muted-foreground">
+          Für Ihr Konto konnte kein eindeutiger Mandantenkontext ermittelt werden.
+        </p>
       </div>
     )
   }
