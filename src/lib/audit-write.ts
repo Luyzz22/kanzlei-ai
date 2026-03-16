@@ -16,7 +16,9 @@ export type AuditEventTxInput = {
   metadata?: Prisma.InputJsonValue
 }
 
-export async function writeAuditEventTx(tx: PrismaClient, input: AuditEventTxInput) {
+type AuditTx = PrismaClient | Prisma.TransactionClient
+
+export async function writeAuditEventTx(tx: AuditTx, input: AuditEventTxInput) {
   const now = new Date()
 
   const last = await tx.auditEvent.findFirst({

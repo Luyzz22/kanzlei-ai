@@ -131,6 +131,11 @@ model Document {
   id           String   @id @default(cuid())
   tenantId     String
   uploadedById String?
+  title        String   @default("Unbenanntes Dokument")
+  documentType String   @default("Sonstiges")
+  organizationName String @default("Nicht zugeordnet")
+  description  String?
+  status       DocumentIntakeStatus @default(EINGEGANGEN)
   filename     String
   mimeType     String?
   sizeBytes    Int?
@@ -144,6 +149,13 @@ model Document {
   auditEvents  AuditEvent[]
 
   @@index([tenantId, createdAt])
+}
+
+enum DocumentIntakeStatus {
+  EINGEGANGEN
+  IN_PRUEFUNG
+  FREIGEGEBEN
+  ARCHIVIERT
 }
 
 model AuditEvent {
