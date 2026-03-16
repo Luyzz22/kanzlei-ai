@@ -29,6 +29,11 @@ function SubmitActionButton({ label }: { label: string }) {
   )
 }
 
+function ActionMessage({ state }: { state: ReviewActionState }) {
+  if (!state.message) return null
+  return <p className={`text-xs ${state.status === "success" ? "text-emerald-700" : "text-rose-700"}`}>{state.message}</p>
+}
+
 export function ReviewRowActions({ documentId, currentStatus, userRole }: ReviewRowActionsProps) {
   const [stateStart, actionStart] = useFormState(reviewTransitionAction, initialState)
   const [stateApprove, actionApprove] = useFormState(reviewTransitionAction, initialState)
@@ -42,13 +47,11 @@ export function ReviewRowActions({ documentId, currentStatus, userRole }: Review
         <input
           name="reason"
           maxLength={500}
-          placeholder="Begründung (optional)"
+          placeholder="Review-Kontext (optional)"
           className="h-8 w-full rounded-md border border-slate-300 px-2 text-xs text-slate-700"
         />
-        <SubmitActionButton label="In Prüfung setzen" />
-        {stateStart.message ? (
-          <p className={`text-xs ${stateStart.status === "success" ? "text-emerald-700" : "text-rose-700"}`}>{stateStart.message}</p>
-        ) : null}
+        <SubmitActionButton label="Prüfung starten" />
+        <ActionMessage state={stateStart} />
       </form>
     )
   }
@@ -56,37 +59,35 @@ export function ReviewRowActions({ documentId, currentStatus, userRole }: Review
   if (currentStatus === DocumentIntakeStatus.IN_PRUEFUNG) {
     return (
       <div className="space-y-3">
-        <form action={actionApprove} className="space-y-2">
+        <form action={actionApprove} className="space-y-2 rounded-md border border-slate-200 p-2">
           <input type="hidden" name="documentId" value={documentId} />
           <input type="hidden" name="nextStatus" value={DocumentIntakeStatus.FREIGEGEBEN} />
+          <p className="text-xs font-medium text-slate-700">Privilegierter Schritt: Freigabe</p>
           <input
             name="reason"
             maxLength={500}
-            placeholder="Begründung (optional)"
+            required
+            placeholder="Begründung für die Freigabe"
             className="h-8 w-full rounded-md border border-slate-300 px-2 text-xs text-slate-700"
           />
-          <SubmitActionButton label="Freigeben" />
-          {stateApprove.message ? (
-            <p className={`text-xs ${stateApprove.status === "success" ? "text-emerald-700" : "text-rose-700"}`}>{stateApprove.message}</p>
-          ) : null}
-          {userRole !== Role.ADMIN ? (
-            <p className="text-xs text-slate-500">Hinweis: Freigabe ist nur für Administratoren zulässig.</p>
-          ) : null}
+          <SubmitActionButton label="Freigabe erteilen" />
+          <ActionMessage state={stateApprove} />
+          {userRole !== Role.ADMIN ? <p className="text-xs text-slate-500">Nur privilegierte Rollen können freigeben.</p> : null}
         </form>
 
-        <form action={actionArchive} className="space-y-2">
+        <form action={actionArchive} className="space-y-2 rounded-md border border-slate-200 p-2">
           <input type="hidden" name="documentId" value={documentId} />
           <input type="hidden" name="nextStatus" value={DocumentIntakeStatus.ARCHIVIERT} />
+          <p className="text-xs font-medium text-slate-700">Privilegierter Schritt: Archivierung</p>
           <input
             name="reason"
             maxLength={500}
-            placeholder="Begründung (optional)"
+            required
+            placeholder="Begründung für die Archivierung"
             className="h-8 w-full rounded-md border border-slate-300 px-2 text-xs text-slate-700"
           />
           <SubmitActionButton label="Archivieren" />
-          {stateArchive.message ? (
-            <p className={`text-xs ${stateArchive.status === "success" ? "text-emerald-700" : "text-rose-700"}`}>{stateArchive.message}</p>
-          ) : null}
+          <ActionMessage state={stateArchive} />
         </form>
       </div>
     )
