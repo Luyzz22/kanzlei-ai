@@ -5,6 +5,8 @@ import { FeatureCard } from "@/components/marketing/feature-card"
 import { HomeHero } from "@/components/marketing/home-hero"
 import { ProcessFlow } from "@/components/marketing/process-flow"
 import { SectionIntro } from "@/components/marketing/section-intro"
+import { TrustStrip } from "@/components/marketing/trust-strip"
+import { PageShell } from "@/components/marketing/page-shell"
 
 const trustHighlights = [
   {
@@ -62,8 +64,9 @@ const processSteps = [
 
 export default function LandingPage() {
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-col gap-16 px-4 py-10 sm:px-6 lg:px-8">
+    <PageShell className="flex flex-col gap-16">
       <HomeHero />
+      <TrustStrip />
 
       <section className="space-y-5">
         <SectionIntro
@@ -164,6 +167,6 @@ export default function LandingPage() {
         secondaryLabel="Produkt ansehen"
         secondaryHref="/produkt"
       />
-    </main>
+    </PageShell>
   )
 }

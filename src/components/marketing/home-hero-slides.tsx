@@ -32,7 +32,7 @@ export function HomeHeroSlides() {
   const activeItem = slides[activeSlide]
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+    <section className="rounded-2xl border border-slate-700 bg-slate-900/70 p-4 sm:p-5">
       <div className="mb-4 grid gap-2 sm:grid-cols-2">
         {slides.map((slide, index) => (
           <button
@@ -41,8 +41,8 @@ export function HomeHeroSlides() {
             onClick={() => setActiveSlide(index)}
             className={`rounded-lg border px-3 py-2 text-left text-sm transition ${
               activeSlide === index
-                ? "border-slate-900 bg-white text-slate-900"
-                : "border-slate-200 bg-white/70 text-slate-600 hover:bg-white"
+                ? "border-slate-300 bg-white text-slate-900"
+                : "border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-500 hover:bg-slate-800"
             }`}
             aria-pressed={activeSlide === index}
           >
@@ -50,8 +50,8 @@ export function HomeHeroSlides() {
           </button>
         ))}
       </div>
-      <h2 className="text-lg font-semibold text-slate-950">{activeItem.title}</h2>
-      <p className="mt-1 text-sm text-slate-600">{activeItem.description}</p>
+      <h2 className="text-lg font-semibold text-white">{activeItem.title}</h2>
+      <p className="mt-1 text-sm text-slate-300">{activeItem.description}</p>
       <div className="mt-4">
         <HeroVisualSlide variant={activeItem.key} />
       </div>

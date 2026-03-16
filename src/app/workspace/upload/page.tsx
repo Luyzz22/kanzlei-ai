@@ -1,11 +1,12 @@
 import { InfoPanel } from "@/components/marketing/info-panel"
+import { PageShell } from "@/components/marketing/page-shell"
 import { SectionIntro } from "@/components/marketing/section-intro"
 
 import { UploadIntakeForm } from "@/app/workspace/upload/upload-intake-form"
 
 export default function WorkspaceUploadPage() {
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+    <PageShell width="default" className="space-y-6">
       <SectionIntro
         eyebrow="Workspace · Intake"
         title="Dokumenteingang für den Arbeitskontext erfassen"
@@ -21,6 +22,6 @@ export default function WorkspaceUploadPage() {
           <li>Dateiinhalt wird in diesem Schritt noch nicht persistiert; optionale Dateimetadaten werden erfasst.</li>
         </ul>
       </InfoPanel>
-    </main>
+    </PageShell>
   )
 }

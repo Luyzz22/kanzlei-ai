@@ -9,7 +9,7 @@ type ProcessFlowProps = {
 
 export function ProcessFlow({ steps }: ProcessFlowProps) {
   return (
-    <ol className="grid gap-3 sm:grid-cols-2">
+    <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {steps.map((step, index) => (
         <li key={step.title} className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-blue-700">Schritt {index + 1}</p>

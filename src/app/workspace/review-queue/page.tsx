@@ -1,7 +1,9 @@
 import Link from "next/link"
 import { DocumentIntakeStatus } from "@prisma/client"
 
+import { PageShell } from "@/components/marketing/page-shell"
 import { SectionIntro } from "@/components/marketing/section-intro"
+import { TableShell } from "@/components/marketing/table-shell"
 import { StatusBadge } from "@/components/marketing/status-badge"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
@@ -28,7 +30,7 @@ export default async function WorkspaceReviewQueuePage() {
 
   if (!session?.user?.id || !session.user.role) {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="default" className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Review Queue"
           title="Review-Queue nicht verfügbar"
@@ -37,7 +39,7 @@ export default async function WorkspaceReviewQueuePage() {
         <Link href="/login" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
           Zur Anmeldung
         </Link>
-      </main>
+      </PageShell>
     )
   }
 
@@ -45,40 +47,39 @@ export default async function WorkspaceReviewQueuePage() {
 
   if (tenantContext.status === "none") {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="default" className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Review Queue"
           title="Kein Mandantenkontext verfügbar"
           description="Für dieses Konto ist aktuell kein eindeutiger Mandantenkontext hinterlegt."
         />
-      </main>
+      </PageShell>
     )
   }
 
   if (tenantContext.status === "multiple") {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="default" className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Review Queue"
           title="Mandantenkontext nicht eindeutig"
           description="Diese Ansicht erfordert einen eindeutigen Mandantenkontext. Die gesteuerte Auswahl folgt in einem späteren Ausbau."
         />
-      </main>
+      </PageShell>
     )
   }
 
   const documents = await listReviewQueueDocuments(tenantContext.tenantId)
 
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+    <PageShell className="space-y-6">
       <SectionIntro
         eyebrow="Workspace · Review Queue"
         title="Prüf- und Freigabequeue"
         description="Die Queue zeigt review-fähige Dokumente für den aktiven Mandanten. Privilegierte Schritte (Freigabe/Archivierung) erfordern eine Begründung, folgen dem Vier-Augen-Grundsatz und werden tenant-gebunden auditierbar protokolliert."
       />
 
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="overflow-x-auto">
+      <TableShell title="Review-Queue" description="Prüf- und Freigabefähige Dokumente für den aktiven Mandantenkontext.">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -120,8 +121,7 @@ export default async function WorkspaceReviewQueuePage() {
               )}
             </tbody>
           </table>
-        </div>
-      </section>
-    </main>
+        </TableShell>
+    </PageShell>
   )
 }
