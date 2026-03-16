@@ -31,6 +31,16 @@ export const ADMIN_CENTER_SECTIONS: AdminCenterSection[] = [
     nextMilestone: "Rollenänderung mit Vier-Augen-Freigabe und Audit-Pflichtfeldern"
   },
   {
+    id: "policy-registry",
+    title: "Richtlinien & Einstellungen",
+    summary:
+      "Tenantbezogene Richtlinienübersicht für Zugriff, Aufbewahrung, KI-Governance und Integrationskontext im read-only Ausbaustand.",
+    availability: "verfügbar",
+    owner: "Compliance",
+    href: "/dashboard/admin/policies",
+    nextMilestone: "Versionierte Richtlinienkonfiguration mit Freigabe- und Durchsetzungspfaden"
+  },
+  {
     id: "security-access",
     title: "Sicherheit & Zugriff",
     summary:
