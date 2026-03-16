@@ -2,7 +2,10 @@ import Link from "next/link"
 
 import { CtaPanel } from "@/components/marketing/cta-panel"
 import { InfoPanel } from "@/components/marketing/info-panel"
+import { EmptyState } from "@/components/marketing/empty-state"
+import { PageShell } from "@/components/marketing/page-shell"
 import { SectionIntro } from "@/components/marketing/section-intro"
+import { TableShell } from "@/components/marketing/table-shell"
 import { StatusBadge } from "@/components/marketing/status-badge"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
@@ -17,7 +20,7 @@ export default async function WorkspaceDokumentePage() {
 
   if (!session?.user?.id) {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="default" className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Dokumente"
           title="Dokumentenliste nicht verfügbar"
@@ -26,7 +29,7 @@ export default async function WorkspaceDokumentePage() {
         <Link href="/login" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
           Zur Anmeldung
         </Link>
-      </main>
+      </PageShell>
     )
   }
 
@@ -34,25 +37,25 @@ export default async function WorkspaceDokumentePage() {
 
   if (tenantContext.status === "none") {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="default" className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Dokumente"
           title="Kein Mandantenkontext verfügbar"
           description="Für dieses Konto ist aktuell kein eindeutiger Mandantenkontext hinterlegt."
         />
-      </main>
+      </PageShell>
     )
   }
 
   if (tenantContext.status === "multiple") {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="default" className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Dokumente"
           title="Mandantenkontext nicht eindeutig"
           description="Diese Ansicht erfordert einen eindeutigen Mandantenkontext. Die gesteuerte Auswahl folgt in einem späteren Ausbau."
         />
-      </main>
+      </PageShell>
     )
   }
 
@@ -60,15 +63,14 @@ export default async function WorkspaceDokumentePage() {
     const documents = await listWorkspaceDocuments(tenantContext.tenantId)
 
     return (
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Dokumente"
           title="Dokumenten-Workspace"
           description="Die Übersicht zeigt den tenant-gebundenen Dokumentenbestand mit Status, Erfassungszeitpunkt und Prüfkontext."
         />
 
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <div className="overflow-x-auto">
+        <TableShell title="Dokumentenbestand" description="Tenant-gebundene Übersicht mit Status, Verantwortlichkeit und Prüfkontext.">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
@@ -105,16 +107,11 @@ export default async function WorkspaceDokumentePage() {
                     </tr>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-6 text-sm text-slate-600">
-                      Für diesen Mandanten liegen derzeit keine Dokumente vor.
-                    </td>
-                  </tr>
+                  <tr><td colSpan={7} className="px-4 py-6"><EmptyState title="Keine Dokumente vorhanden" description="Für diesen Mandanten liegen derzeit keine Dokumente vor." actionLabel="Zum Upload" actionHref="/workspace/upload" /></td></tr>
                 )}
               </tbody>
             </table>
-          </div>
-        </section>
+          </TableShell>
 
         <InfoPanel title="Orientierung" tone="muted">
           <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
@@ -139,17 +136,17 @@ export default async function WorkspaceDokumentePage() {
           secondaryLabel="Review-Queue"
           secondaryHref="/workspace/review-queue"
         />
-      </main>
+      </PageShell>
     )
   } catch {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="default" className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Dokumente"
           title="Dokumente derzeit nicht verfügbar"
           description="Die Dokumentenliste konnte aktuell nicht geladen werden. Bitte versuchen Sie es erneut."
         />
-      </main>
+      </PageShell>
     )
   }
 }

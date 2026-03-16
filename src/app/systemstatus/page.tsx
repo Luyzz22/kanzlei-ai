@@ -1,7 +1,8 @@
 import Link from "next/link"
 
 import { InfoPanel } from "@/components/marketing/info-panel"
-import { SectionIntro } from "@/components/marketing/section-intro"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
 import { StatusBadge } from "@/components/marketing/status-badge"
 import { betriebsprinzipien, systemstatusModule } from "@/config/system-status"
 
@@ -13,8 +14,8 @@ const statusTone = {
 
 export default function SystemstatusPage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-      <SectionIntro
+    <PageShell>
+      <PageHero
         eyebrow="Systemstatus"
         title="Transparenz zur Betriebslage von KanzleiAI"
         description="Diese Seite bietet eine konservative, strukturierte Einordnung zentraler Produktbereiche. Sie ist aktuell keine vollwertige Live-Statusplattform, sondern eine betriebsnahe Statusdarstellung im Aufbau."
@@ -50,6 +51,6 @@ export default function SystemstatusPage() {
           </Link>
         </div>
       </InfoPanel>
-    </main>
+    </PageShell>
   )
 }

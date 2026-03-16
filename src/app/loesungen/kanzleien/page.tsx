@@ -1,7 +1,8 @@
 import { CtaPanel } from "@/components/marketing/cta-panel"
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
-import { SectionIntro } from "@/components/marketing/section-intro"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
 
 const kanzleiUseCases = [
   "Mandatsvereinbarungen",
@@ -32,8 +33,8 @@ const rollenbilder = [
 
 export default function LoesungKanzleienPage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
-      <SectionIntro
+    <PageShell>
+      <PageHero
         eyebrow="Lösungen für Kanzleien"
         title="Strukturierte Dokumentenarbeit für den Kanzleialltag"
         description="KanzleiAI unterstützt Kanzleien dabei, vertrags- und dokumentennahe Arbeit in nachvollziehbaren Prüf- und Freigabekontexten zu organisieren."
@@ -77,6 +78,6 @@ export default function LoesungKanzleienPage() {
         secondaryLabel="Trust Center"
         secondaryHref="/trust-center"
       />
-    </main>
+    </PageShell>
   )
 }

@@ -2,13 +2,14 @@ import Link from "next/link"
 
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
-import { SectionIntro } from "@/components/marketing/section-intro"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
 import { hilfeThemen } from "@/config/help-center"
 
 export default function HilfePage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-      <SectionIntro
+    <PageShell>
+      <PageHero
         eyebrow="Hilfe"
         title="Zentrale Orientierung für Fachbereiche, Administration und Compliance"
         description="Diese Seite bündelt den strukturierten Einstieg in zentrale Produktbereiche. Sie unterstützt Fachnutzer, Admin-Teams sowie Datenschutz- und IT-Verantwortliche bei der schnellen Einordnung typischer Arbeits- und Prüfkontexte."
@@ -52,6 +53,6 @@ export default function HilfePage() {
           belastbarer Einstieg in bestehende Bereiche.
         </p>
       </InfoPanel>
-    </main>
+    </PageShell>
   )
 }

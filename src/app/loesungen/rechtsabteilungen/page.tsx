@@ -1,7 +1,8 @@
 import { CtaPanel } from "@/components/marketing/cta-panel"
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
-import { SectionIntro } from "@/components/marketing/section-intro"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
 
 const inhouseUseCases = [
   "Vertragsprüfung in standardisierten Prüfschritten",
@@ -31,8 +32,8 @@ const stakeholder = [
 
 export default function LoesungRechtsabteilungenPage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
-      <SectionIntro
+    <PageShell>
+      <PageHero
         eyebrow="Lösungen für Rechtsabteilungen"
         title="Enterprise-taugliche Struktur für Inhouse Legal und Governance"
         description="KanzleiAI unterstützt Rechtsabteilungen bei der kontrollierten Zusammenarbeit zwischen Legal, Einkauf, Datenschutz und IT in dokumentenbasierten Prozessen."
@@ -85,6 +86,6 @@ export default function LoesungRechtsabteilungenPage() {
         secondaryLabel="Sicherheit & Compliance"
         secondaryHref="/sicherheit-compliance"
       />
-    </main>
+    </PageShell>
   )
 }

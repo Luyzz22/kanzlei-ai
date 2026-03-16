@@ -2,7 +2,8 @@ import Link from "next/link"
 
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
-import { SectionIntro } from "@/components/marketing/section-intro"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
 import { StatusBadge } from "@/components/marketing/status-badge"
 import { supportKategorien } from "@/config/support"
 
@@ -14,8 +15,8 @@ const einordnungTone = {
 
 export default function SupportPage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-      <SectionIntro
+    <PageShell>
+      <PageHero
         eyebrow="Support"
         title="Support-Einstieg für operative und organisatorische Anliegen"
         description="Support ist sinnvoll bei konkreten Betriebsproblemen, Zugriffsfragen oder nachweisrelevanten Rückfragen. Für allgemeine Produktorientierung und Selbsthilfe ist primär der Hilfebereich vorgesehen."
@@ -61,6 +62,6 @@ export default function SupportPage() {
           <li>Es werden keine Supportdaten verarbeitet oder gespeichert.</li>
         </ul>
       </InfoPanel>
-    </main>
+    </PageShell>
   )
 }

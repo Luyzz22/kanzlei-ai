@@ -1,17 +1,27 @@
+import { FeatureCard } from "@/components/marketing/feature-card"
+import { InfoPanel } from "@/components/marketing/info-panel"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
+
 export default function DatenschutzPage() {
   return (
-    <main className="mx-auto max-w-4xl space-y-4 p-6">
-      <h1 className="text-3xl font-semibold">Datenschutzerklärung</h1>
-      <p>
-        Diese Plattform verarbeitet personenbezogene Daten ausschließlich auf Grundlage von Art. 6 DSGVO. Alle
-        Daten werden verschlüsselt übertragen und in europäischen Rechenzentren gespeichert.
-      </p>
-      <h2 className="text-xl font-medium">Zwecke der Verarbeitung</h2>
-      <ul className="list-disc space-y-1 pl-6">
-        <li>Bereitstellung der Plattformfunktionen für Kanzlei-Mitarbeitende</li>
-        <li>Sicherheits- und Audit-Logging zur Nachvollziehbarkeit</li>
-        <li>Vertragsabwicklung und Support</li>
-      </ul>
-    </main>
+    <PageShell width="narrow">
+      <PageHero
+        eyebrow="Trust · Datenschutz"
+        title="Datenschutzerklärung"
+        description="Übersicht zur Verarbeitung personenbezogener Daten im Plattformbetrieb, zur Protokollierung und zur organisatorischen Absicherung im Mandantenkontext."
+      />
+
+      <InfoPanel title="Grundlage der Verarbeitung" tone="default">
+        Diese Plattform verarbeitet personenbezogene Daten ausschließlich auf Grundlage von Art. 6 DSGVO. Alle Daten
+        werden verschlüsselt übertragen und in europäischen Rechenzentren gespeichert.
+      </InfoPanel>
+
+      <section className="grid gap-4">
+        <FeatureCard title="Bereitstellung der Plattformfunktionen" description="Verarbeitung von Nutzungs- und Organisationsdaten für Arbeitsoberflächen, Rollenmodelle und Mandantenkontext." />
+        <FeatureCard title="Sicherheits- und Audit-Logging" description="Erfassung sicherheitsrelevanter Aktionen zur Nachvollziehbarkeit, Fehlersuche und Governance-Dokumentation." />
+        <FeatureCard title="Vertragsabwicklung und Support" description="Verarbeitung notwendiger Kontakt- und Vertragsdaten für Betrieb, Betreuung und Abstimmung mit Ansprechpartnern." />
+      </section>
+    </PageShell>
   )
 }

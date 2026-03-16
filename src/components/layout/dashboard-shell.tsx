@@ -9,9 +9,9 @@ const navItems = [
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid min-h-[calc(100vh-65px)] md:grid-cols-[240px_1fr]">
-      <aside className="border-r border-slate-200 bg-slate-50/70 p-4">
-        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">KanzleiAI Dashboard</p>
+    <div className="mx-auto grid min-h-[calc(100vh-65px)] w-full max-w-7xl gap-0 px-4 py-6 sm:px-6 lg:grid-cols-[250px_1fr] lg:px-8">
+      <aside className="rounded-l-2xl border border-slate-200 bg-slate-50/80 p-4">
+        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Governance Control Plane</p>
         <nav className="space-y-2 text-sm">
           {navItems.map((item) => (
             <Link
@@ -24,7 +24,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       </aside>
-      <section className="bg-white p-6">{children}</section>
+      <section className="rounded-r-2xl border-y border-r border-slate-200 bg-white p-6">{children}</section>
     </div>
   )
 }
