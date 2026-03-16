@@ -9,10 +9,15 @@ Diese Seite stellt eine belastbare, mandantenbezogene Übersicht aller Mitglieds
 
 ## Sicherheits- und Compliance-Entscheidungen
 - Zugriff nur für Benutzer mit Plattformrolle `ADMIN`.
+<<<<<<< codex/review-and-improve-admin-center-foundation-ar4sby
 - Tenant-Kontext wird mit drei Zuständen behandelt: `none`, `single`, `multiple`.
 - Nur bei `single` wird die Mitgliederliste geladen.
 - Bei `multiple` wird kein impliziter Tenant gewählt; der Request wird kontrolliert abgelehnt.
 - Datenzugriff erfolgt tenant-gebunden im RLS-Kontext über `withTenant`.
+=======
+- Tenant-Bindung nur bei eindeutigem Mandantenkontext des angemeldeten Benutzers.
+- Datenzugriff im Tenant-Kontext über `withTenant`.
+>>>>>>> main
 - Keine Schreiboperationen in dieser Ausbaustufe.
 
 ## Aktuelles Verhalten bei Tenant-Kontext
