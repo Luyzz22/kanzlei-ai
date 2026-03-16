@@ -1,40 +1,40 @@
-import { Role } from "@prisma/client"
 import { NextResponse } from "next/server"
 
-import { auth } from "@/lib/auth"
+import { requireAdminAccess } from "@/lib/admin/guards"
 import { listTenantMembers } from "@/lib/admin/members-core"
-import { prisma } from "@/lib/prisma"
-
-async function resolveTenantIdForUser(userId: string): Promise<string | null> {
-  const membership = await prisma.tenantMember.findFirst({
-    where: { userId },
-    select: { tenantId: true }
-  })
-
-  return membership?.tenantId ?? null
-}
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 
 export async function GET(): Promise<NextResponse> {
-  const session = await auth()
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
+  const guard = await requireAdminAccess()
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.message }, { status: guard.status })
   }
 
-  if (session.user.role !== Role.ADMIN) {
-    return NextResponse.json({ error: "Zugriff nur für Administratoren" }, { status: 403 })
+  const tenantContext = await resolveTenantContextForUser(guard.user.id)
+
+  if (tenantContext.status === "none") {
+    return NextResponse.json(
+      { error: "Kein Mandantenkontext für dieses Konto vorhanden" },
+      { status: 403 }
+    )
   }
 
-  const tenantId = await resolveTenantIdForUser(session.user.id)
-  if (!tenantId) {
-    return NextResponse.json({ error: "Kein Mandant gefunden" }, { status: 403 })
+  if (tenantContext.status === "multiple") {
+    return NextResponse.json(
+      { error: "Mehrdeutiger Mandantenkontext. Tenant-Auswahl erforderlich" },
+      { status: 409 }
+    )
   }
 
-  const members = await listTenantMembers(tenantId)
+  try {
+    const members = await listTenantMembers(tenantContext.tenantId)
 
-  return NextResponse.json({
-    tenantId,
-    total: members.length,
-    members
-  })
+    return NextResponse.json({
+      tenantId: tenantContext.tenantId,
+      total: members.length,
+      members
+    })
+  } catch {
+    return NextResponse.json({ error: "Mitglieder konnten nicht geladen werden" }, { status: 500 })
+  }
 }

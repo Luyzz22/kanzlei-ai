@@ -1,9 +1,9 @@
 import { Role, type TenantRole } from "@prisma/client"
 import Link from "next/link"
 
+import { requireAdminAccess } from "@/lib/admin/guards"
 import { listTenantMembers } from "@/lib/admin/members-core"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 
 const tenantRoleLabel: Record<TenantRole, string> = {
   OWNER: "Inhaber",
@@ -17,56 +17,55 @@ const platformRoleLabel: Record<Role, string> = {
   ASSISTENT: "Assistenz"
 }
 
-async function resolveTenantIdForUser(userId: string): Promise<string | null> {
-  const membership = await prisma.tenantMember.findFirst({
-    where: { userId },
-    select: { tenantId: true }
-  })
-
-  return membership?.tenantId ?? null
-}
-
 export default async function AdminMembersPage() {
-  const session = await auth()
+  const guard = await requireAdminAccess()
 
-  if (!session?.user?.id) {
-    return (
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Mitglieder & Rollen</h1>
-        <p className="text-sm text-muted-foreground">Bitte melden Sie sich an, um diesen Bereich zu öffnen.</p>
-      </div>
-    )
-  }
-
-  if (session.user.role !== Role.ADMIN) {
+  if (!guard.ok) {
     return (
       <div className="space-y-3">
         <h1 className="text-2xl font-semibold">Mitglieder & Rollen</h1>
         <p className="text-sm text-muted-foreground">
-          Zugriff nur für Administratoren. Dieser Bereich enthält sicherheitsrelevante Tenant-Einstellungen.
+          {guard.status === 401
+            ? "Bitte melden Sie sich an, um diesen Bereich zu öffnen."
+            : "Zugriff nur für Administratoren. Dieser Bereich enthält sicherheitsrelevante Tenant-Einstellungen."}
         </p>
       </div>
     )
   }
 
-  const tenantId = await resolveTenantIdForUser(session.user.id)
-  if (!tenantId) {
+  const tenantContext = await resolveTenantContextForUser(guard.user.id)
+
+  if (tenantContext.status === "none") {
     return (
       <div className="space-y-3">
         <h1 className="text-2xl font-semibold">Mitglieder & Rollen</h1>
-        <p className="text-sm text-muted-foreground">Für Ihr Konto konnte kein Mandant zugeordnet werden.</p>
+        <p className="text-sm text-muted-foreground">
+          Für dieses Konto ist aktuell kein Mandantenkontext hinterlegt.
+        </p>
       </div>
     )
   }
 
-  const members = await listTenantMembers(tenantId)
+  if (tenantContext.status === "multiple") {
+    return (
+      <div className="space-y-3">
+        <h1 className="text-2xl font-semibold">Mitglieder & Rollen</h1>
+        <p className="text-sm text-muted-foreground">
+          Für diesen Bereich ist ein eindeutiger Mandantenkontext erforderlich. Die Tenant-Auswahl folgt im
+          nächsten Ausbauschritt.
+        </p>
+      </div>
+    )
+  }
+
+  const members = await listTenantMembers(tenantContext.tenantId)
 
   return (
     <div className="space-y-6">
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold tracking-tight">Mitglieder & Rollen</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          Read-only Übersicht der aktuellen Tenant-Mitgliedschaften als Grundlage für nachfolgende
+          Schreibgeschützte Übersicht der aktuellen Tenant-Mitgliedschaften als Grundlage für nachfolgende
           Rollen- und Berechtigungsfreigaben.
         </p>
       </header>

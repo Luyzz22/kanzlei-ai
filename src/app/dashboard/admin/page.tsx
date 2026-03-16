@@ -5,6 +5,7 @@ import {
   ADMIN_CENTER_SECTIONS,
   type AdminCenterAvailability
 } from "@/config/admin-center"
+import { requireAdminAccess } from "@/lib/admin/guards"
 
 const availabilityStyles: Record<AdminCenterAvailability, string> = {
   verfügbar: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -12,7 +13,30 @@ const availabilityStyles: Record<AdminCenterAvailability, string> = {
   enterprise_plan: "border-slate-200 bg-slate-100 text-slate-700"
 }
 
-export default function AdminCenterPage() {
+export default async function AdminCenterPage() {
+  const guard = await requireAdminAccess()
+
+  if (!guard.ok && guard.status === 401) {
+    return (
+      <div className="space-y-3">
+        <h1 className="text-2xl font-semibold">Administrationszentrum</h1>
+        <p className="text-sm text-muted-foreground">Bitte melden Sie sich an, um diesen Bereich zu öffnen.</p>
+      </div>
+    )
+  }
+
+  if (!guard.ok && guard.status === 403) {
+    return (
+      <div className="space-y-3">
+        <h1 className="text-2xl font-semibold">Administrationszentrum</h1>
+        <p className="text-sm text-muted-foreground">
+          Zugriff nur für Administratoren. Dieser Bereich bündelt sicherheits- und compliance-relevante
+          Steuerungsfunktionen.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <header className="space-y-2">

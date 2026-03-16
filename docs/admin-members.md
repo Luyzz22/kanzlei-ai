@@ -1,7 +1,7 @@
-# Mitglieder & Rollen (PR 2 Basis)
+# Mitglieder & Rollen (Hardening-Basis)
 
 ## Zweck
-Diese Seite stellt eine belastbare, mandantenbezogene Übersicht aller Mitgliedschaften bereit. Sie ist bewusst read-only und dient als sicherer Einstieg in den späteren Ausbau zu freigabepflichtigen Rollenänderungen.
+Diese Seite stellt eine belastbare, mandantenbezogene Übersicht aller Mitgliedschaften bereit. Sie bleibt bewusst schreibgeschützt und dient als sichere Grundlage für den späteren Ausbau zu freigabepflichtigen Rollenänderungen.
 
 ## Route
 - UI: `/dashboard/admin/members`
@@ -9,11 +9,19 @@ Diese Seite stellt eine belastbare, mandantenbezogene Übersicht aller Mitglieds
 
 ## Sicherheits- und Compliance-Entscheidungen
 - Zugriff nur für Benutzer mit Plattformrolle `ADMIN`.
-- Tenant-Bindung über Mitgliedschaft des angemeldeten Benutzers.
-- Datenzugriff im Tenant-Kontext über `withTenant`.
+- Tenant-Kontext wird mit drei Zuständen behandelt: `none`, `single`, `multiple`.
+- Nur bei `single` wird die Mitgliederliste geladen.
+- Bei `multiple` wird kein impliziter Tenant gewählt; der Request wird kontrolliert abgelehnt.
+- Datenzugriff erfolgt tenant-gebunden im RLS-Kontext über `withTenant`.
 - Keine Schreiboperationen in dieser Ausbaustufe.
 
+## Aktuelles Verhalten bei Tenant-Kontext
+- **none:** Zugriff auf die Mitgliederliste nicht möglich, da kein Mandantenkontext vorliegt.
+- **single:** Mitgliederliste wird read-only geladen.
+- **multiple:** Zugriff auf die Mitgliederliste wird blockiert, bis eine explizite Tenant-Auswahl verfügbar ist.
+
 ## Nächster Ausbau
-- Rollenänderung mit Vier-Augen-Freigabe
-- Pflichtbegründung je Rollenänderung
-- Audit-Event für jede Berechtigungsanpassung
+- Tenant-Auswahl für Konten mit Mehrfachmitgliedschaften.
+- Rollenänderung mit Vier-Augen-Freigabe.
+- Pflichtbegründung je Rollenänderung.
+- Audit-Event für jede Berechtigungsanpassung.
