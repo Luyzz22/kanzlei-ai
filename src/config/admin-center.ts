@@ -45,9 +45,10 @@ export const ADMIN_CENTER_SECTIONS: AdminCenterSection[] = [
     title: "Sicherheit & Zugriff",
     summary:
       "Steuerung von Zugriffsrichtlinien, Authentifizierungsniveau und administrativen Sicherheitsvorgaben.",
-    availability: "in_vorbereitung",
+    availability: "verfügbar",
     owner: "Sicherheit",
-    nextMilestone: "MFA-/Session-Policy, Admin-Zugriffskontrollen und Sicherheits-Baselines pro Tenant"
+    href: "/dashboard/admin/policies",
+    nextMilestone: "Erweiterung um Admin-Zugriffskontrollen und differenzierte Sicherheits-Baselines pro Tenant"
   },
   {
     id: "audit-evidence",
@@ -64,9 +65,10 @@ export const ADMIN_CENTER_SECTIONS: AdminCenterSection[] = [
     title: "Datenschutz & Aufbewahrung",
     summary:
       "Lebenszyklusregeln für Daten, Auskunfts- und Löschprozesse sowie dokumentierte Retention-Standards.",
-    availability: "in_vorbereitung",
+    availability: "verfügbar",
     owner: "Compliance",
-    nextMilestone: "Tenant-Retention-Registry und operationalisierte DSGVO-Betroffenenprozesse"
+    href: "/dashboard/admin/policies",
+    nextMilestone: "Retention-Profile nach Dokumententyp und operationalisierte DSGVO-Betroffenenprozesse"
   },
   {
     id: "integrations",

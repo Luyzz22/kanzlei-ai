@@ -33,6 +33,7 @@ model User {
   uploadedDocuments Document[]
   analysisLogs      AnalysisLog[]
   auditEvents       AuditEvent[]
+  updatedGovernanceSettings TenantGovernanceSettings[] @relation("TenantGovernanceSettingsUpdatedBy")
 }
 
 model Account {
@@ -111,6 +112,7 @@ model Tenant {
   documents    Document[]
   auditEvents  AuditEvent[]
   analysisLogs AnalysisLog[]
+  governanceSettings TenantGovernanceSettings?
 }
 
 model TenantMember {
@@ -125,6 +127,23 @@ model TenantMember {
 
   @@unique([tenantId, userId])
   @@index([userId])
+}
+
+
+model TenantGovernanceSettings {
+  id                            String   @id @default(cuid())
+  tenantId                      String   @unique
+  sessionTimeoutMinutes         Int      @default(30)
+  requireMfaForPrivilegedRoles  Boolean  @default(true)
+  documentRetentionDays         Int      @default(365)
+  autoArchiveApprovedDocuments  Boolean  @default(false)
+  updatedByUserId               String?
+  updatedAt                     DateTime @updatedAt
+
+  tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedByUser User?  @relation("TenantGovernanceSettingsUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([updatedByUserId])
 }
 
 model Document {
