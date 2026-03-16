@@ -16,7 +16,7 @@ Das Administrationszentrum ist der zentrale Einstiegspunkt für administrative A
 ## Aktueller Umfang
 Route: `/dashboard/admin`
 
-Neu in PR 2: read-only Detailseite `/dashboard/admin/members` für Mitglieder & Rollen.
+Neu vorhanden: read-only Detailseite `/dashboard/admin/members` für Mitglieder & Rollen.
 
 Enthaltene Module:
 1. Tenant / Organisation
@@ -29,6 +29,6 @@ Enthaltene Module:
 8. KI-Governance
 
 ## Geplante Ausbaustufen
-1. **PR 2 – Membership & Role Management UI (Basis):** read-only Mitgliederübersicht als Grundlage für spätere freigabepflichtige Rollenänderungen.
-2. **PR 3 – Audit UI Ausbau:** gespeicherte Filterprofile, strukturierter Export und Nachweis-Paketierung.
-3. **PR 4 – Tenant Policy Registry:** zentrale Richtlinien- und Einstellungenverwaltung pro Tenant.
+1. **Membership & Role Management Hardening:** freigabepflichtige Rollenänderungen mit Pflichtbegründung, Vier-Augen-Freigabe und Audit-Nachweis.
+2. **Audit UI + Nachweis-Export:** gespeicherte Filterprofile, strukturierter Export und Nachweis-Paketierung.
+3. **Tenant Policy Registry / Security & Retention Settings:** zentrale Richtlinien- und Einstellungenverwaltung pro Tenant.
