@@ -3,8 +3,8 @@ import Link from "next/link"
 const navItems = [
   { href: "/dashboard", label: "Übersicht" },
   { href: "/dashboard/mandate", label: "Mandate" },
-  { href: "/dashboard/audit", label: "Audit Log" },
-  { href: "/dashboard/admin", label: "Admin Center" }
+  { href: "/dashboard/audit", label: "Audit-Protokoll" },
+  { href: "/dashboard/admin", label: "Administration" }
 ]
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {

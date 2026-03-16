@@ -1,7 +1,7 @@
-# Admin Center (Grundlage)
+# Administrationszentrum (Grundlage)
 
 ## Zweck
-Das Admin Center ist der zentrale Einstiegspunkt für administrative Aufgaben auf Tenant-Ebene. Es bündelt den aktuellen Ausbaustand wichtiger Enterprise-Bereiche und schafft eine klare Informationsarchitektur für Betrieb, Compliance und Governance.
+Das Administrationszentrum ist der zentrale Einstiegspunkt für administrative Aufgaben auf Tenant-Ebene. Es bündelt den aktuellen Ausbaustand wichtiger Enterprise-Bereiche und schafft eine klare Informationsarchitektur für Betrieb, Compliance und Governance.
 
 ## Zielgruppe
 - Tenant-Administratoren
@@ -16,6 +16,8 @@ Das Admin Center ist der zentrale Einstiegspunkt für administrative Aufgaben au
 ## Aktueller Umfang
 Route: `/dashboard/admin`
 
+Neu in PR 2: read-only Detailseite `/dashboard/admin/members` für Mitglieder & Rollen.
+
 Enthaltene Module:
 1. Tenant / Organisation
 2. Mitglieder & Rollen
@@ -27,6 +29,6 @@ Enthaltene Module:
 8. KI-Governance
 
 ## Geplante Ausbaustufen
-1. **PR 2 – Membership & Role Management UI:** Rollenänderung und Mitgliedsverwaltung mit Audit-Pflichtfeldern.
+1. **PR 2 – Membership & Role Management UI (Basis):** read-only Mitgliederübersicht als Grundlage für spätere freigabepflichtige Rollenänderungen.
 2. **PR 3 – Audit UI Ausbau:** gespeicherte Filterprofile, strukturierter Export und Nachweis-Paketierung.
 3. **PR 4 – Tenant Policy Registry:** zentrale Richtlinien- und Einstellungenverwaltung pro Tenant.

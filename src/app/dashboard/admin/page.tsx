@@ -16,7 +16,7 @@ export default function AdminCenterPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Admin Center</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Administrationszentrum</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
           Zentrale Steuerung für administrative Kernprozesse Ihres Tenants. Die Bereiche sind nach
           Betriebsreife gekennzeichnet, damit Verantwortliche Roadmap, Verfügbarkeit und Freigabestatus

@@ -27,7 +27,8 @@ export const ADMIN_CENTER_SECTIONS: AdminCenterSection[] = [
       "Verwaltung von Benutzerzuordnungen und rollenbasierten Berechtigungen inklusive späterer Vier-Augen-Freigaben.",
     availability: "in_vorbereitung",
     owner: "Tenant-Administration",
-    nextMilestone: "Mitgliederliste mit Rollenänderung, Aktivierung/Deaktivierung und Audit-Pflichtfeldern"
+    href: "/dashboard/admin/members",
+    nextMilestone: "Rollenänderung mit Vier-Augen-Freigabe und Audit-Pflichtfeldern"
   },
   {
     id: "security-access",
