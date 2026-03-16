@@ -1,6 +1,9 @@
 import { Role, type TenantRole } from "@prisma/client"
-import Link from "next/link"
-
+import { AdminEmptyState } from "@/components/admin/admin-empty-state"
+import { CtaPanel } from "@/components/marketing/cta-panel"
+import { InfoPanel } from "@/components/marketing/info-panel"
+import { SectionIntro } from "@/components/marketing/section-intro"
+import { StatusBadge } from "@/components/marketing/status-badge"
 import { requireAdminAccess } from "@/lib/admin/guards"
 import { listTenantMembers } from "@/lib/admin/members-core"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
@@ -22,14 +25,16 @@ export default async function AdminMembersPage() {
 
   if (!guard.ok) {
     return (
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Mitglieder & Rollen</h1>
-        <p className="text-sm text-muted-foreground">
-          {guard.status === 401
-            ? "Bitte melden Sie sich an, um diesen Bereich zu öffnen."
-            : "Zugriff nur für Administratoren. Dieser Bereich enthält sicherheitsrelevante Tenant-Einstellungen."}
-        </p>
-      </div>
+      <AdminEmptyState
+        title="Mitglieder & Rollen"
+        description={
+          guard.status === 401
+            ? "Bitte melden Sie sich an, um diese Governance-Ansicht zu öffnen."
+            : "Zugriff nur für Administratoren. Dieser Bereich enthält mandantenbezogene Rollen- und Berechtigungsinformationen."
+        }
+        backHref={guard.status === 401 ? "/login" : "/dashboard/admin"}
+        backLabel={guard.status === 401 ? "Zur Anmeldung" : "Zurück zum Admin Center"}
+      />
     )
   }
 
@@ -37,86 +42,91 @@ export default async function AdminMembersPage() {
 
   if (tenantContext.status === "none") {
     return (
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Mitglieder & Rollen</h1>
-        <p className="text-sm text-muted-foreground">
-          Für dieses Konto ist aktuell kein Mandantenkontext hinterlegt.
-        </p>
-      </div>
+      <AdminEmptyState
+        title="Mitglieder & Rollen"
+        description="Für dieses Konto ist aktuell kein Mandantenkontext hinterlegt. Bitte prüfen Sie die Tenant-Zuordnung in der Administration."
+      />
     )
   }
 
   if (tenantContext.status === "multiple") {
     return (
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Mitglieder & Rollen</h1>
-        <p className="text-sm text-muted-foreground">
-          Für diesen Bereich ist ein eindeutiger Mandantenkontext erforderlich. Die Tenant-Auswahl folgt im
-          nächsten Ausbauschritt.
-        </p>
-      </div>
+      <AdminEmptyState
+        title="Mitglieder & Rollen"
+        description="Für diese Ansicht ist ein eindeutiger Mandantenkontext erforderlich. Die gesteuerte Tenant-Auswahl wird in einem folgenden Ausbaupaket bereitgestellt."
+      />
     )
   }
 
   const members = await listTenantMembers(tenantContext.tenantId)
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Mitglieder & Rollen</h1>
-        <p className="max-w-3xl text-sm text-muted-foreground">
-          Schreibgeschützte Übersicht der aktuellen Tenant-Mitgliedschaften als Grundlage für nachfolgende
-          Rollen- und Berechtigungsfreigaben.
+    <main className="space-y-6">
+      <SectionIntro
+        eyebrow="Administration · Rollen & Berechtigungen"
+        title="Mitglieder & Rollen"
+        description="Read-only Übersicht aller Tenant-Mitgliedschaften als Grundlage für spätere Rollenänderungen, Freigaben und revisionsnahe Nachvollziehbarkeit."
+      />
+
+      <InfoPanel title="Ausbaustand" tone="muted">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge label="Read-only aktiv" tone="info" />
+          <StatusBadge label="Rollenänderung in Vorbereitung" tone="warning" />
+        </div>
+        <p className="mt-3">
+          Schreibende Änderungen sind in diesem Schritt bewusst deaktiviert. In Folge-PRs werden Freigabepfade,
+          Pflichtbegründungen und Audit-Felder für Rollenänderungen ergänzt.
         </p>
-      </header>
+      </InfoPanel>
 
-      <section className="rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
-        Änderungen an Rollen sind in diesem Schritt bewusst deaktiviert. Der nächste Ausbau führt
-        freigabepflichtige Rollenänderungen mit Audit-Pflichtfeldern ein.
-      </section>
-
-      <section className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-muted/40 text-left">
-            <tr>
-              <th className="p-3">Name</th>
-              <th className="p-3">E-Mail</th>
-              <th className="p-3">Tenant-Rolle</th>
-              <th className="p-3">Plattform-Rolle</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Mitglied seit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.length ? (
-              members.map((member) => (
-                <tr key={member.membershipId} className="border-b last:border-0">
-                  <td className="p-3">{member.name ?? "-"}</td>
-                  <td className="p-3 text-muted-foreground">{member.email}</td>
-                  <td className="p-3">{tenantRoleLabel[member.tenantRole]}</td>
-                  <td className="p-3">{platformRoleLabel[member.platformRole]}</td>
-                  <td className="p-3">{member.isActive ? "Aktiv" : "Deaktiviert"}</td>
-                  <td className="p-3 text-muted-foreground">
-                    {new Date(member.joinedAt).toLocaleDateString("de-DE")}
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="p-3 font-semibold">Name</th>
+                <th className="p-3 font-semibold">E-Mail</th>
+                <th className="p-3 font-semibold">Tenant-Rolle</th>
+                <th className="p-3 font-semibold">Plattform-Rolle</th>
+                <th className="p-3 font-semibold">Status</th>
+                <th className="p-3 font-semibold">Mitglied seit</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {members.length ? (
+                members.map((member) => (
+                  <tr key={member.membershipId} className="hover:bg-slate-50/70">
+                    <td className="p-3 text-slate-900">{member.name ?? "-"}</td>
+                    <td className="p-3 text-slate-600">{member.email}</td>
+                    <td className="p-3 text-slate-700">{tenantRoleLabel[member.tenantRole]}</td>
+                    <td className="p-3 text-slate-700">{platformRoleLabel[member.platformRole]}</td>
+                    <td className="p-3">
+                      <StatusBadge label={member.isActive ? "Aktiv" : "Deaktiviert"} tone={member.isActive ? "success" : "neutral"} />
+                    </td>
+                    <td className="p-3 text-slate-600">{new Date(member.joinedAt).toLocaleDateString("de-DE")}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td className="p-3 text-slate-600" colSpan={6}>
+                    Keine Mitgliedschaften vorhanden.
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td className="p-3 text-muted-foreground" colSpan={6}>
-                  Keine Mitgliedschaften vorhanden.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
-      <div>
-        <Link href="/dashboard/admin" className="inline-flex rounded-md border px-3 py-2 text-sm hover:bg-accent">
-          Zurück zum Admin Center
-        </Link>
-      </div>
-    </div>
+      <CtaPanel
+        title="Nächster Governance-Schritt"
+        description="Als nächstes folgen freigabepflichtige Rollenänderungen mit Vier-Augen-Prinzip, Begründungspflicht und nachvollziehbarer Änderungsdokumentation."
+        primaryLabel="Zurück zum Admin Center"
+        primaryHref="/dashboard/admin"
+        secondaryLabel="Audit-Protokoll öffnen"
+        secondaryHref="/dashboard/audit"
+        variant="default"
+      />
+    </main>
   )
 }
