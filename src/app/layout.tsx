@@ -22,6 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 KanzleiAI
               </Link>
               <div className="flex items-center gap-3 text-sm">
+                <Link href="/workspace/dokumente">Workspace</Link>
                 <Link href="/datenschutz">Datenschutz</Link>
                 <Link href="/impressum">Impressum</Link>
                 <Link href="/avv">AVV</Link>
