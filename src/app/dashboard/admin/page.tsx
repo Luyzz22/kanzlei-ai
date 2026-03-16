@@ -1,4 +1,3 @@
-import { Role } from "@prisma/client"
 import Link from "next/link"
 
 import {
@@ -6,7 +5,7 @@ import {
   ADMIN_CENTER_SECTIONS,
   type AdminCenterAvailability
 } from "@/config/admin-center"
-import { auth } from "@/lib/auth"
+import { requireAdminAccess } from "@/lib/admin/guards"
 
 const availabilityStyles: Record<AdminCenterAvailability, string> = {
   verfügbar: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -15,9 +14,9 @@ const availabilityStyles: Record<AdminCenterAvailability, string> = {
 }
 
 export default async function AdminCenterPage() {
-  const session = await auth()
+  const guard = await requireAdminAccess()
 
-  if (!session?.user?.id) {
+  if (!guard.ok && guard.status === 401) {
     return (
       <div className="space-y-3">
         <h1 className="text-2xl font-semibold">Administrationszentrum</h1>
@@ -26,7 +25,7 @@ export default async function AdminCenterPage() {
     )
   }
 
-  if (session.user.role !== Role.ADMIN) {
+  if (!guard.ok && guard.status === 403) {
     return (
       <div className="space-y-3">
         <h1 className="text-2xl font-semibold">Administrationszentrum</h1>

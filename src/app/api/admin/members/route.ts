@@ -1,38 +1,43 @@
-import { Role } from "@prisma/client"
 import { NextResponse } from "next/server"
 
+import { requireAdminAccess } from "@/lib/admin/guards"
 import { listTenantMembers } from "@/lib/admin/members-core"
-import { resolveSingleTenantIdForUser } from "@/lib/admin/tenant-access"
-import { auth } from "@/lib/auth"
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 
 export async function GET(): Promise<NextResponse> {
-  const session = await auth()
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
+  const guard = await requireAdminAccess()
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.message }, { status: guard.status })
   }
 
-  if (session.user.role !== Role.ADMIN) {
-    return NextResponse.json({ error: "Zugriff nur für Administratoren" }, { status: 403 })
-  }
+  const tenantContext = await resolveTenantContextForUser(guard.user.id)
 
-  const tenantId = await resolveSingleTenantIdForUser(session.user.id)
-  if (!tenantId) {
+  if (tenantContext.status === "none") {
     return NextResponse.json(
-      { error: "Kein eindeutiger Mandantenkontext gefunden" },
+      { error: "Kein Mandantenkontext für dieses Konto vorhanden" },
       { status: 403 }
     )
   }
 
+  if (tenantContext.status === "multiple") {
+    return NextResponse.json(
+      { error: "Kein eindeutiger Mandantenkontext gefunden" },
+      { status: 409 }
+    )
+  }
+
   try {
-    const members = await listTenantMembers(tenantId)
+    const members = await listTenantMembers(tenantContext.tenantId)
 
     return NextResponse.json({
-      tenantId,
+      tenantId: tenantContext.tenantId,
       total: members.length,
       members
     })
   } catch {
-    return NextResponse.json({ error: "Mitglieder konnten nicht geladen werden" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Mitglieder konnten nicht geladen werden" },
+      { status: 500 }
+    )
   }
 }
