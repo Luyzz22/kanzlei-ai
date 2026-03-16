@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { DocumentActivityTimeline } from "@/components/documents/document-activity-timeline"
 import { CtaPanel } from "@/components/marketing/cta-panel"
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
@@ -12,6 +13,7 @@ import {
   getWorkspaceDocumentStatusLabel,
   getWorkspaceDocumentStatusTone
 } from "@/lib/documents/workspace-core"
+import { listDocumentActivities } from "@/lib/documents/document-activity-core"
 
 type DokumentDetailPageProps = {
   params: {
@@ -87,6 +89,13 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
       )
     }
 
+    const activities = await listDocumentActivities({
+      tenantId: tenantContext.tenantId,
+      documentId: document.id,
+      documentCreatedAt: document.createdAt,
+      uploadedByLabel: document.uploadedByLabel
+    })
+
     return (
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -144,6 +153,8 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
             meta="Read-only Ansicht"
           />
         </section>
+
+        <DocumentActivityTimeline activities={activities} />
 
         <InfoPanel title="Nächste Schritte" tone="muted">
           <div className="flex flex-wrap gap-3">
