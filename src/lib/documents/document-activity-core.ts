@@ -25,6 +25,11 @@ type ListDocumentActivitiesInput = {
 
 const intakeActions = new Set(["document.intake.created"])
 
+function readPrivilegedStep(metadata: Prisma.JsonValue | null): boolean {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return false
+  return (metadata as Record<string, unknown>).privilegedStep === true
+}
+
 function readReviewReason(metadata: Prisma.JsonValue | null): string | null {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null
   const value = (metadata as Record<string, unknown>).reason
@@ -41,6 +46,7 @@ export function mapAuditEventToDocumentActivity(event: {
 }): DocumentActivityItem {
   const actorLabel = event.actor?.name ?? event.actor?.email ?? event.actorId ?? "System"
   const reason = readReviewReason(event.metadata)
+  const privilegedStep = readPrivilegedStep(event.metadata)
 
   if (event.action === "document.intake.created") {
     return {
@@ -74,8 +80,8 @@ export function mapAuditEventToDocumentActivity(event: {
       timestamp: event.createdAt,
       title: "Dokument freigegeben",
       context: reason
-        ? `Das Dokument wurde nach abgeschlossener Prüfung freigegeben. Begründung: ${reason}`
-        : "Das Dokument wurde nach abgeschlossener Prüfung zur Nutzung freigegeben.",
+        ? `${privilegedStep ? "Privilegierter Schritt. " : ""}Das Dokument wurde nach abgeschlossener Prüfung freigegeben. Begründung: ${reason}`
+        : `${privilegedStep ? "Privilegierter Schritt. " : ""}Das Dokument wurde nach abgeschlossener Prüfung zur Nutzung freigegeben.`,
       actorLabel,
       category: "Freigabe",
       action: event.action
@@ -88,8 +94,8 @@ export function mapAuditEventToDocumentActivity(event: {
       timestamp: event.createdAt,
       title: "Dokument archiviert",
       context: reason
-        ? `Das Dokument wurde aus dem aktiven Review-Prozess in die Archivierung überführt. Begründung: ${reason}`
-        : "Das Dokument wurde aus dem aktiven Review-Prozess in die Archivierung überführt.",
+        ? `${privilegedStep ? "Privilegierter Schritt. " : ""}Das Dokument wurde aus dem aktiven Review-Prozess in die Archivierung überführt. Begründung: ${reason}`
+        : `${privilegedStep ? "Privilegierter Schritt. " : ""}Das Dokument wurde aus dem aktiven Review-Prozess in die Archivierung überführt.`,
       actorLabel,
       category: "Archivierung",
       action: event.action

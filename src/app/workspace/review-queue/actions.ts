@@ -84,17 +84,37 @@ export async function reviewTransitionAction(_: ReviewActionState, formData: For
   const result = await transitionDocumentReviewStatus({
     tenantId: tenantContext.tenantId,
     actorId: session.user.id,
-    actorRole: session.user.role,
     documentId: parsed.data.documentId,
     nextStatus: parsed.data.nextStatus,
     reason
   })
 
   if (!result.ok) {
-    if (result.code === "FORBIDDEN_APPROVAL") {
+    if (result.code === "FORBIDDEN_START_REVIEW") {
       return {
         status: "error",
-        message: "Freigaben sind in dieser Ausbaustufe nur für Administratoren zulässig."
+        message: "Sie sind für den Start der Prüfung nicht berechtigt."
+      }
+    }
+
+    if (result.code === "FORBIDDEN_PRIVILEGED") {
+      return {
+        status: "error",
+        message: "Freigabe und Archivierung sind nur für privilegierte Rollen zulässig."
+      }
+    }
+
+    if (result.code === "FOUR_EYES_REQUIRED") {
+      return {
+        status: "error",
+        message: "Freigabe im Vier-Augen-Prinzip: Die hochladende Person kann dieses Dokument nicht selbst freigeben."
+      }
+    }
+
+    if (result.code === "MISSING_REASON") {
+      return {
+        status: "error",
+        message: "Für diesen privilegierten Schritt ist eine Begründung erforderlich."
       }
     }
 
@@ -120,6 +140,7 @@ export async function reviewTransitionAction(_: ReviewActionState, formData: For
 
   revalidatePath("/workspace/review-queue")
   revalidatePath("/workspace/dokumente")
+  revalidatePath(`/workspace/dokumente/${parsed.data.documentId}`)
 
   return {
     status: "success",

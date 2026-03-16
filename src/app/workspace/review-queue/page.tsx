@@ -74,7 +74,7 @@ export default async function WorkspaceReviewQueuePage() {
       <SectionIntro
         eyebrow="Workspace · Review Queue"
         title="Prüf- und Freigabequeue"
-        description="Die Queue zeigt review-fähige Dokumente für den aktiven Mandanten. Statusänderungen werden tenant-gebunden gespeichert und im Audit-Protokoll nachvollziehbar dokumentiert."
+        description="Die Queue zeigt review-fähige Dokumente für den aktiven Mandanten. Privilegierte Schritte (Freigabe/Archivierung) erfordern eine Begründung, folgen dem Vier-Augen-Grundsatz und werden tenant-gebunden auditierbar protokolliert."
       />
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
