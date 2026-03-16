@@ -10,6 +10,13 @@ import {
   type TenantPolicyMaturity
 } from "@/config/tenant-policies"
 import { requireAdminAccess } from "@/lib/admin/guards"
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
+import {
+  TENANT_GOVERNANCE_DEFAULTS,
+  getTenantGovernanceSettings
+} from "@/lib/tenant-settings/governance-settings-core"
+
+import { GovernanceSettingsForm } from "./governance-settings-form"
 
 const maturityTone: Record<TenantPolicyMaturity, "neutral" | "info" | "warning" | "success"> = {
   read_only_grundlage: "neutral",
@@ -36,26 +43,72 @@ export default async function AdminPoliciesPage() {
     )
   }
 
+  const tenantContext = await resolveTenantContextForUser(guard.user.id)
+
+  if (tenantContext.status === "none") {
+    return (
+      <AdminEmptyState
+        title="Tenant Policy Registry"
+        description="Für Ihr Konto ist kein Mandantenkontext hinterlegt. Die editierbaren Security- und Retention-Settings benötigen eine eindeutige Tenant-Zuordnung."
+        backHref="/dashboard/admin"
+        backLabel="Zurück zum Admin Center"
+      />
+    )
+  }
+
+  if (tenantContext.status === "multiple") {
+    return (
+      <AdminEmptyState
+        title="Tenant Policy Registry"
+        description="Für diese Ansicht ist ein eindeutiger Mandantenkontext erforderlich. Die gesteuerte Tenant-Auswahl folgt in einem separaten Ausbaupaket."
+        backHref="/dashboard/admin"
+        backLabel="Zurück zum Admin Center"
+      />
+    )
+  }
+
+  const governanceSettings = await getTenantGovernanceSettings(tenantContext.tenantId)
+
   return (
     <main className="space-y-6">
       <SectionIntro
         eyebrow="Administration · Governance"
         title="Tenant Policy Registry"
-        description="Read-only Richtlinienübersicht für Tenant-Administration, Datenschutz, Compliance und IT. Diese Seite dient der strukturierten Einordnung; aktive Konfiguration und technische Durchsetzung folgen in späteren Ausbaupaketen."
+        description="Richtlinienübersicht für Tenant-Administration, Datenschutz, Compliance und IT. Ein kleiner Governance-Bereich ist bereits produktiv editierbar; alle weiteren Kategorien bleiben bewusst read-only."
       />
 
       <InfoPanel title="Ausbaustand" tone="muted">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge label="Read-only Registry" tone="info" />
-          <StatusBadge label="Keine aktive Mutation" tone="neutral" />
-          <StatusBadge label="Technische Durchsetzung folgt" tone="warning" />
+          <StatusBadge label="Editierbare Security-/Retention-Settings" tone="success" />
+          <StatusBadge label="Schrittweiser Ausbau" tone="warning" />
         </div>
         <p className="mt-3">
-          Die aktuelle Darstellung zeigt Richtlinienbereiche, Reifegrad, Verantwortungsbereiche und geplante
-          Ausbaupfade pro Tenant. Konfigurierbarkeit, Versionierung und Freigabeworkflows werden bewusst getrennt in
-          Folge-PRs ergänzt.
+          Zugriff & Session sowie Datenschutz & Aufbewahrung sind jetzt für privilegierte Rollen tenant-gebunden
+          editierbar. Alle anderen Richtlinienbereiche bleiben im aktuellen Schritt bewusst read-only.
         </p>
       </InfoPanel>
+
+      <section className="space-y-4">
+        <InfoPanel title="Editierbarer Governance-Bereich" tone="muted">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge
+              label={governanceSettings.hasPersistedSettings ? "Konfiguration gespeichert" : "Default-Konfiguration aktiv"}
+              tone={governanceSettings.hasPersistedSettings ? "success" : "warning"}
+            />
+            <StatusBadge label="Audit-nahe Speicherung" tone="info" />
+            <StatusBadge label="Nur privilegierte Rollen" tone="neutral" />
+          </div>
+          <p className="mt-3 text-sm text-slate-700">
+            Aktuelle Default-Werte: Session-Timeout {TENANT_GOVERNANCE_DEFAULTS.sessionTimeoutMinutes} Minuten, MFA für
+            privilegierte Rollen {TENANT_GOVERNANCE_DEFAULTS.requireMfaForPrivilegedRoles ? "aktiv" : "inaktiv"},
+            Aufbewahrung {TENANT_GOVERNANCE_DEFAULTS.documentRetentionDays} Tage, Auto-Archivierung{" "}
+            {TENANT_GOVERNANCE_DEFAULTS.autoArchiveApprovedDocuments ? "aktiv" : "inaktiv"}.
+          </p>
+        </InfoPanel>
+
+        <GovernanceSettingsForm initialValues={governanceSettings} />
+      </section>
 
       <section className="grid gap-4 md:grid-cols-2">
         {TENANT_POLICY_CATEGORIES.map((category) => (

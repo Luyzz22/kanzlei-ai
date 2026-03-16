@@ -24,15 +24,15 @@ export const TENANT_POLICY_CATEGORIES: TenantPolicyCategory[] = [
     title: "Zugriff & Session",
     description:
       "Grundsätze für Sitzungsdauer, erneute Authentifizierung und administrativen Zugang im Tenant-Kontext.",
-    maturity: "definiert",
+    maturity: "verfuegbar",
     owner: "IT-Sicherheit",
     policies: [
-      "Session-Limits für Standard- und Admin-Sitzungen als Richtlinienrahmen dokumentiert",
-      "Erhöhte Anforderungen für administrative Zugriffe im Organisationskontext vorgesehen",
-      "MFA-Pflicht für privilegierte Rollen im Ausbaupfad beschrieben"
+      "Session-Timeout pro Tenant ist als editierbare Einstellung verfügbar",
+      "MFA-Pflicht für privilegierte Rollen ist tenant-gebunden konfigurierbar",
+      "Weitere Zugriffspolicies bleiben im aktuellen Schritt read-only"
     ],
-    reviewHint: "Review-Hinweis: Abgleich mit SSO-/MFA-Konzept je Tenant erforderlich.",
-    nextMilestone: "Technische Policy-Parameter mit Tenant-spezifischer Konfiguration"
+    reviewHint: "Review-Hinweis: Session- und MFA-Konfiguration regelmäßig mit SSO-Konzept abstimmen.",
+    nextMilestone: "Erweiterung um differenzierte Admin-Access-Policies und Durchsetzungsregeln"
   },
   {
     id: "rollen-freigaben",
@@ -54,15 +54,15 @@ export const TENANT_POLICY_CATEGORIES: TenantPolicyCategory[] = [
     title: "Datenschutz & Aufbewahrung",
     description:
       "Einordnung von Retention-Grundsätzen, Löschanlässen und organisatorischen Prüfpfaden für Datenschutzthemen.",
-    maturity: "in_vorbereitung",
+    maturity: "verfuegbar",
     owner: "Datenschutz",
     policies: [
-      "Aufbewahrungsfristen nach Dokumentenart als Registry-Struktur vorbereitet",
-      "Lösch- und Sperrlogik für tenantbezogene Daten im Review",
-      "Hinweiswege für Betroffenenanfragen in der Governance-Dokumentation vorgesehen"
+      "Standard-Aufbewahrungstage sind als tenant-gebundene Einstellung verfügbar",
+      "Auto-Archivierung nach Freigabe ist pro Tenant konfigurierbar",
+      "Erweiterte Lösch- und Betroffenenprozesse bleiben im aktuellen Schritt read-only"
     ],
-    reviewHint: "Review-Hinweis: Abgleich mit AVV- und internen Löschkonzepten.",
-    nextMilestone: "Retention-Matrix mit tenantbezogenen Fristprofilen"
+    reviewHint: "Review-Hinweis: Aufbewahrungswerte mit AVV und internem Löschkonzept abstimmen.",
+    nextMilestone: "Retention-Matrix nach Dokumententypen mit operationalisierten Löschläufen"
   },
   {
     id: "ki-oversight",
