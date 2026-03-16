@@ -4,7 +4,8 @@ import { CtaPanel } from "@/components/marketing/cta-panel"
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
 import { ProcessFlow } from "@/components/marketing/process-flow"
-import { SectionIntro } from "@/components/marketing/section-intro"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
 
 const anfragekategorien = [
   "Produktdemo und fachlicher Einsatzkontext",
@@ -16,8 +17,8 @@ const anfragekategorien = [
 
 export default function EnterpriseKontaktPage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
-      <SectionIntro
+    <PageShell>
+      <PageHero
         eyebrow="Enterprise-Kontakt"
         title="Einstieg für Enterprise-Anfragen und Beschaffung"
         description="Dieser Bereich ist für strukturierte Anfragen aus Kanzleien, Rechtsabteilungen und Beschaffungsfunktionen ausgelegt. Ziel ist eine saubere Klärung von Scope, Governance und Anforderungen."
@@ -100,6 +101,6 @@ export default function EnterpriseKontaktPage() {
         secondaryLabel="Lösungen für Kanzleien"
         secondaryHref="/loesungen/kanzleien"
       />
-    </main>
+    </PageShell>
   )
 }

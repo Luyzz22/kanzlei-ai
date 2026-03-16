@@ -2,7 +2,8 @@ import { CtaPanel } from "@/components/marketing/cta-panel"
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
 import { ProcessFlow } from "@/components/marketing/process-flow"
-import { SectionIntro } from "@/components/marketing/section-intro"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
 import { StatusBadge } from "@/components/marketing/status-badge"
 
 const integrationskategorien = [
@@ -63,8 +64,8 @@ const workflowBeispiele = [
 
 export default function IntegrationenPage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
-      <SectionIntro
+    <PageShell>
+      <PageHero
         eyebrow="Integrationen"
         title="Integrationsfähigkeit für kontrollierte Einbindung in bestehende Systemlandschaften"
         description="KanzleiAI ist auf die strukturierte Einbindung in Dokumenten-, Governance- und Administrationsprozesse ausgelegt. Die Seite richtet sich an IT, Legal, Compliance und Beschaffung, die Integrationsrahmen belastbar einordnen möchten."
@@ -150,6 +151,6 @@ export default function IntegrationenPage() {
         secondaryLabel="Trust Center"
         secondaryHref="/trust-center"
       />
-    </main>
+    </PageShell>
   )
 }

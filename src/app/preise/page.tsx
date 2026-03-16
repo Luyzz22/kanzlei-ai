@@ -1,7 +1,8 @@
 import { CtaPanel } from "@/components/marketing/cta-panel"
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
-import { SectionIntro } from "@/components/marketing/section-intro"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
 
 const paketlogik = [
   {
@@ -45,8 +46,8 @@ const vergleich = [
 
 export default function PreisePage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
-      <SectionIntro
+    <PageShell>
+      <PageHero
         eyebrow="Preise"
         title="Paketlogik für B2B- und Enterprise-Beschaffung"
         description="KanzleiAI wird entlang von Umfang, Rollenmodell und Governance-Anforderungen angeboten. Statt fixer Pauschalen erfolgt die Einordnung auf Basis des tatsächlichen Einsatzkontexts."
@@ -81,6 +82,6 @@ export default function PreisePage() {
         secondaryLabel="Trust Center"
         secondaryHref="/trust-center"
       />
-    </main>
+    </PageShell>
   )
 }

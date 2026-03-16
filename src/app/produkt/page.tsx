@@ -2,7 +2,8 @@ import { CtaPanel } from "@/components/marketing/cta-panel"
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
 import { ProcessFlow } from "@/components/marketing/process-flow"
-import { SectionIntro } from "@/components/marketing/section-intro"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
 
 const kernmodule = [
   {
@@ -39,8 +40,8 @@ const kernmodule = [
 
 export default function ProduktPage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
-      <SectionIntro
+    <PageShell>
+      <PageHero
         eyebrow="Produkt"
         title="KanzleiAI als strukturierte Plattform für Vertrags-, Dokumenten- und Governance-Prozesse"
         description="KanzleiAI bündelt operative Dokumentenarbeit, juristische Prüfung und Governance-Anforderungen in einer konsistenten Arbeitsumgebung für Kanzleien und Unternehmensbereiche."
@@ -87,6 +88,6 @@ export default function ProduktPage() {
         secondaryLabel="Trust Center"
         secondaryHref="/trust-center"
       />
-    </main>
+    </PageShell>
   )
 }

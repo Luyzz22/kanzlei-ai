@@ -2,7 +2,8 @@ import { CtaPanel } from "@/components/marketing/cta-panel"
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
 import { ProcessFlow } from "@/components/marketing/process-flow"
-import { SectionIntro } from "@/components/marketing/section-intro"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
 import { StatusBadge } from "@/components/marketing/status-badge"
 
 const trustDomaenen = [
@@ -25,8 +26,8 @@ const trustDomaenen = [
 
 export default function TrustCenterPage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
-      <SectionIntro
+    <PageShell>
+      <PageHero
         eyebrow="Trust Center"
         title="Vertrauens- und Nachweisbereich für KanzleiAI"
         description="Dieser Bereich bündelt Sicherheits-, Datenschutz- und Governance-Informationen in einer strukturierten, prüfbaren Darstellung für Kanzleien, Fachbereiche und Compliance-Verantwortliche."
@@ -77,6 +78,6 @@ export default function TrustCenterPage() {
         secondaryLabel="Zum Dokumenten-Workspace"
         secondaryHref="/workspace/dokumente"
       />
-    </main>
+    </PageShell>
   )
 }

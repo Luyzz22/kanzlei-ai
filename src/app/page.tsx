@@ -7,6 +7,7 @@ import { ProcessFlow } from "@/components/marketing/process-flow"
 import { SectionIntro } from "@/components/marketing/section-intro"
 import { TrustStrip } from "@/components/marketing/trust-strip"
 import { PageShell } from "@/components/marketing/page-shell"
+import { AiGuidanceWidget } from "@/components/marketing/ai-guidance-widget"
 
 const trustHighlights = [
   {
@@ -66,7 +67,10 @@ export default function LandingPage() {
   return (
     <PageShell className="flex flex-col gap-16">
       <HomeHero />
-      <TrustStrip />
+      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <TrustStrip />
+        <AiGuidanceWidget />
+      </div>
 
       <section className="space-y-5">
         <SectionIntro

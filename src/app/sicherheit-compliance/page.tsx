@@ -1,7 +1,8 @@
 import { CtaPanel } from "@/components/marketing/cta-panel"
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
-import { SectionIntro } from "@/components/marketing/section-intro"
+import { PageHero } from "@/components/marketing/page-hero"
+import { PageShell } from "@/components/marketing/page-shell"
 import { StatusBadge } from "@/components/marketing/status-badge"
 
 const kontrollbereiche = [
@@ -29,8 +30,8 @@ const kontrollbereiche = [
 
 export default function SicherheitCompliancePage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
-      <SectionIntro
+    <PageShell>
+      <PageHero
         eyebrow="Sicherheit & Compliance"
         title="Kontrollrahmen für einen verlässlichen Kanzleibetrieb"
         description="Diese Seite strukturiert zentrale Sicherheits- und Compliance-Bausteine für den produktiven Betrieb von KanzleiAI und schafft eine nachvollziehbare Grundlage für interne und externe Prüfkontexte."
@@ -72,6 +73,6 @@ export default function SicherheitCompliancePage() {
         secondaryLabel="Datenschutz ansehen"
         secondaryHref="/datenschutz"
       />
-    </main>
+    </PageShell>
   )
 }
