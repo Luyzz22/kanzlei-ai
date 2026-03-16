@@ -1,55 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MIGRATIONS_DIR="prisma/migrations"
+# Runs the "empty DB baseline" flow:
+# - mark all migrations before *_baseline_schema as applied
+# - run prisma migrate deploy (should apply baseline only)
+# No destructive operations (no reset / no drops).
 
-if [[ ! -d "$MIGRATIONS_DIR" ]]; then
-  echo "Fehler: Migrations-Verzeichnis '$MIGRATIONS_DIR' nicht gefunden." >&2
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+MIG_DIR="prisma/migrations"
+if [ ! -d "$MIG_DIR" ]; then
+  echo "ERROR: $MIG_DIR not found"
   exit 1
 fi
 
-if [[ -z "${DATABASE_URL:-}" ]]; then
-  echo "Fehler: DATABASE_URL ist nicht gesetzt." >&2
+BASELINE="$(ls "$MIG_DIR" | grep -E '_baseline_schema$' | sort | tail -n 1 || true)"
+if [ -z "$BASELINE" ]; then
+  echo "ERROR: baseline migration (*_baseline_schema) not found in $MIG_DIR"
   exit 1
 fi
 
-mapfile -t migrations < <(find "$MIGRATIONS_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+echo "baseline=$BASELINE"
 
-if [[ ${#migrations[@]} -eq 0 ]]; then
-  echo "Fehler: Keine Migrationen in $MIGRATIONS_DIR gefunden." >&2
-  exit 1
-fi
-
-baseline=""
-for migration in "${migrations[@]}"; do
-  if [[ "$migration" == *_baseline_schema ]]; then
-    baseline="$migration"
-  fi
-done
-
-if [[ -z "$baseline" ]]; then
-  echo "Fehler: Keine *_baseline_schema Migration gefunden." >&2
-  exit 1
-fi
-
-echo "Baseline-Migration erkannt: $baseline"
-
-echo "Markiere Migrationen vor Baseline als applied ..."
-for migration in "${migrations[@]}"; do
-  if [[ "$migration" == "$baseline" ]]; then
+# Mark all migrations before baseline as applied.
+# Prisma expects folder names like 20260306001427_baseline_schema, etc.
+for m in $(ls "$MIG_DIR" | grep -E '^[0-9]{14}_' | sort); do
+  if [ "$m" = "$BASELINE" ]; then
     break
   fi
-
-  if [[ "$migration" =~ ^[0-9]{14}_.+ ]]; then
-    echo "  -> resolve --applied $migration"
-    pnpm prisma migrate resolve --applied "$migration"
-  fi
+  pnpm prisma migrate resolve --applied "$m"
 done
 
-echo "Fuehre prisma migrate deploy aus ..."
+# Apply pending migrations (should be baseline only on empty DB)
 pnpm prisma migrate deploy
 
-echo "Pruefe Migrationsstatus ..."
+# Basic verification (non-zero exit on problems)
 pnpm prisma migrate status
-
-echo "Baseline-Smoke-Test fuer leere DB erfolgreich abgeschlossen."

@@ -16,22 +16,24 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: kanzlei_ai_ci
-        ports:
-          - 5432:5432
+          POSTGRES_DB: ci
         options: >-
-          --health-cmd "pg_isready -U postgres -d kanzlei_ai_ci"
+          --health-cmd pg_isready -U postgres -d ci
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
+        ports:
+          - 5432:5432
 
-    # Dummy-ENV (keine Secrets), damit Prisma/Next nicht an fehlenden envs stirbt
     env:
+      # Dummy app env (keine Secrets)
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: dummy_dummy_dummy_dummy_dummy_dummy_dummy_dummy
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kanzlei_ai_ci?schema=public
-      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/kanzlei_ai_ci?schema=public
       SCIM_BEARER_TOKENS: dummy
+
+      # Ephemeral CI database (service container)
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/ci?schema=public
 
     steps:
       - name: Checkout
@@ -54,7 +56,7 @@ jobs:
       - name: Prisma generate
         run: pnpm prisma:generate
 
-      - name: CI Smoke Test (Fresh DB Baseline Flow)
+      - name: Migrations smoke test (empty DB baseline flow)
         run: ./scripts/migrate-empty-db-baseline.sh
 
       - name: Lint
