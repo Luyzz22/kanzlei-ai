@@ -4,135 +4,152 @@ import { CtaPanel } from "@/components/marketing/cta-panel"
 import { InfoPanel } from "@/components/marketing/info-panel"
 import { SectionIntro } from "@/components/marketing/section-intro"
 import { StatusBadge } from "@/components/marketing/status-badge"
-import { dokumentenliste, filterOptionen, type DokumentStatus, type Pruefstatus } from "@/config/workspace-documents"
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
+import { auth } from "@/lib/auth"
+import {
+  getWorkspaceDocumentStatusLabel,
+  getWorkspaceDocumentStatusTone,
+  listWorkspaceDocuments
+} from "@/lib/documents/workspace-core"
 
-const statusTone: Record<DokumentStatus, "neutral" | "success" | "warning"> = {
-  Entwurf: "neutral",
-  "In Prüfung": "warning",
-  Freigegeben: "success",
-  Archiviert: "neutral"
-}
+export default async function WorkspaceDokumentePage() {
+  const session = await auth()
 
-const pruefstatusTone: Record<Pruefstatus, "neutral" | "success" | "warning" | "risk"> = {
-  Ungeprüft: "neutral",
-  "Juristisch geprüft": "success",
-  "Freigabe ausstehend": "warning",
-  "Risiko markiert": "risk"
-}
+  if (!session?.user?.id) {
+    return (
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionIntro
+          eyebrow="Workspace · Dokumente"
+          title="Dokumentenliste nicht verfügbar"
+          description="Bitte melden Sie sich an, um den tenant-gebundenen Dokumentenbereich zu öffnen."
+        />
+        <Link href="/login" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+          Zur Anmeldung
+        </Link>
+      </main>
+    )
+  }
 
-export default function WorkspaceDokumentePage() {
-  return (
-    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-      <SectionIntro
-        eyebrow="Workspace · Dokumente"
-        title="Dokumenten-Workspace für Mandats- und Vertragsarbeit"
-        description="Die Übersicht bündelt Verträge und Dokumente organisationsbezogen. Fokus liegt auf belastbarer Lesbarkeit von Status, Prüfkontext und Zuständigkeit als Grundlage für nachgelagerte Freigabe- und Governance-Prozesse."
-      />
+  const tenantContext = await resolveTenantContextForUser(session.user.id)
 
-      <InfoPanel title="Filter und Suchkontext" tone="muted">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <label className="flex flex-col gap-2 xl:col-span-2">
-            <span className="text-sm font-medium text-slate-800">Suche (Vorbereitung)</span>
-            <input
-              type="search"
-              placeholder="Dokumenttitel, Aktenzeichen oder ID"
-              className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-slate-400"
-              aria-label="Suche in der Dokumentenliste"
-              readOnly
-            />
-          </label>
+  if (tenantContext.status === "none") {
+    return (
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionIntro
+          eyebrow="Workspace · Dokumente"
+          title="Kein Mandantenkontext verfügbar"
+          description="Für dieses Konto ist aktuell kein eindeutiger Mandantenkontext hinterlegt."
+        />
+      </main>
+    )
+  }
 
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-800">Dokumenttyp</span>
-            <select className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm" defaultValue="Alle Typen" aria-label="Filter Dokumenttyp">
-              {filterOptionen.dokumenttyp.map((option) => (
-                <option key={option}>{option}</option>
-              ))}
-            </select>
-          </label>
+  if (tenantContext.status === "multiple") {
+    return (
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionIntro
+          eyebrow="Workspace · Dokumente"
+          title="Mandantenkontext nicht eindeutig"
+          description="Diese Ansicht erfordert einen eindeutigen Mandantenkontext. Die gesteuerte Auswahl folgt in einem späteren Ausbau."
+        />
+      </main>
+    )
+  }
 
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-800">Status</span>
-            <select className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm" defaultValue="Alle Status" aria-label="Filter Status">
-              {filterOptionen.status.map((option) => (
-                <option key={option}>{option}</option>
-              ))}
-            </select>
-          </label>
+  try {
+    const documents = await listWorkspaceDocuments(tenantContext.tenantId)
 
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-800">Prüfstatus</span>
-            <select className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm" defaultValue="Alle Prüfstatus" aria-label="Filter Prüfstatus">
-              {filterOptionen.pruefstatus.map((option) => (
-                <option key={option}>{option}</option>
-              ))}
-            </select>
-          </label>
-        </div>
+    return (
+      <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionIntro
+          eyebrow="Workspace · Dokumente"
+          title="Dokumenten-Workspace"
+          description="Die Übersicht zeigt den tenant-gebundenen Dokumentenbestand mit Status, Erfassungszeitpunkt und Prüfkontext."
+        />
 
-        <div className="mt-3">
-          <label className="flex max-w-sm flex-col gap-2">
-            <span className="text-sm font-medium text-slate-800">Mandant / Organisation</span>
-            <select className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm" defaultValue="Alle Organisationen" aria-label="Filter Mandant oder Organisation">
-              {filterOptionen.organisation.map((option) => (
-                <option key={option}>{option}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </InfoPanel>
-
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Dokument</th>
-                <th className="px-4 py-3 font-semibold">Typ</th>
-                <th className="px-4 py-3 font-semibold">Organisation / Mandant</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Verantwortlich</th>
-                <th className="px-4 py-3 font-semibold">Letzte Änderung</th>
-                <th className="px-4 py-3 font-semibold">Prüfstatus</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {dokumentenliste.map((eintrag) => (
-                <tr key={eintrag.id} className="align-top hover:bg-slate-50/70">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/workspace/dokumente/${eintrag.id}`}
-                      className="font-medium text-slate-900 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
-                    >
-                      {eintrag.dokument}
-                    </Link>
-                    <p className="text-xs text-slate-500">{eintrag.id}</p>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{eintrag.typ}</td>
-                  <td className="px-4 py-3 text-slate-600">{eintrag.organisation}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge label={eintrag.status} tone={statusTone[eintrag.status]} />
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{eintrag.verantwortlich}</td>
-                  <td className="px-4 py-3 text-slate-600">{eintrag.letzteAenderung}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge label={eintrag.pruefstatus} tone={pruefstatusTone[eintrag.pruefstatus]} />
-                  </td>
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Dokument</th>
+                  <th className="px-4 py-3 font-semibold">Dokumenttyp</th>
+                  <th className="px-4 py-3 font-semibold">Organisation / Mandant</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold">Bearbeitungsverantwortung</th>
+                  <th className="px-4 py-3 font-semibold">Eingegangen</th>
+                  <th className="px-4 py-3 font-semibold">Prüfkontext</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {documents.length ? (
+                  documents.map((document) => (
+                    <tr key={document.id} className="align-top hover:bg-slate-50/70">
+                      <td className="px-4 py-3">
+                        <Link
+                          href={`/workspace/dokumente/${document.id}`}
+                          className="font-medium text-slate-900 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+                        >
+                          {document.title}
+                        </Link>
+                        <p className="text-xs text-slate-500">{document.id}</p>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{document.documentType}</td>
+                      <td className="px-4 py-3 text-slate-600">{document.organizationName}</td>
+                      <td className="px-4 py-3">
+                        <StatusBadge label={getWorkspaceDocumentStatusLabel(document.status)} tone={getWorkspaceDocumentStatusTone(document.status)} />
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{document.uploadedByLabel}</td>
+                      <td className="px-4 py-3 text-slate-600">{new Date(document.createdAt).toLocaleDateString("de-DE")}</td>
+                      <td className="px-4 py-3 text-slate-600">{document.reviewContext}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-6 text-sm text-slate-600">
+                      Für diesen Mandanten liegen derzeit keine Dokumente vor.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-      <CtaPanel
-        title="Read-only Ausbauzustand"
-        description="Diese Seite bildet aktuell den dokumentenbezogenen Lesekontext ab. Kommentare, aktive Versionierung, Freigabeschritte und Audit-nahe Aktivitätsverläufe werden in dedizierten Folge-PRs ergänzt."
-        primaryLabel="Dokumentendetail prüfen"
-        primaryHref="/workspace/dokumente/DOC-2026-014"
-        secondaryLabel="Trust Center öffnen"
-        secondaryHref="/trust-center"
-      />
-    </main>
-  )
+        <InfoPanel title="Orientierung" tone="muted">
+          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+            <li>Neue Dokumente können über den Upload-Workspace erfasst werden.</li>
+            <li>Dokumente in Prüfung werden in der Review-Queue weiterbearbeitet.</li>
+          </ul>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link href="/workspace/upload" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+              Zum Upload
+            </Link>
+            <Link href="/workspace/review-queue" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+              Zur Review-Queue
+            </Link>
+          </div>
+        </InfoPanel>
+
+        <CtaPanel
+          title="Read-only Ausbauzustand"
+          description="Die Seite fokussiert aktuell auf tenant-gebundene Lesbarkeit. Versionierung, Dateivorschau und Verlauf werden in späteren Ausbaustufen ergänzt."
+          primaryLabel="Dokument erfassen"
+          primaryHref="/workspace/upload"
+          secondaryLabel="Review-Queue"
+          secondaryHref="/workspace/review-queue"
+        />
+      </main>
+    )
+  } catch {
+    return (
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionIntro
+          eyebrow="Workspace · Dokumente"
+          title="Dokumente derzeit nicht verfügbar"
+          description="Die Dokumentenliste konnte aktuell nicht geladen werden. Bitte versuchen Sie es erneut."
+        />
+      </main>
+    )
+  }
 }

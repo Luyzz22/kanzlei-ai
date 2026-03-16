@@ -5,11 +5,13 @@ import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
 import { SectionIntro } from "@/components/marketing/section-intro"
 import { StatusBadge } from "@/components/marketing/status-badge"
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
+import { auth } from "@/lib/auth"
 import {
-  getWorkspaceDokumentDetailById,
-  type DokumentStatus,
-  type Pruefstatus
-} from "@/config/workspace-documents"
+  getWorkspaceDocumentById,
+  getWorkspaceDocumentStatusLabel,
+  getWorkspaceDocumentStatusTone
+} from "@/lib/documents/workspace-core"
 
 type DokumentDetailPageProps = {
   params: {
@@ -17,105 +19,162 @@ type DokumentDetailPageProps = {
   }
 }
 
-const statusTone: Record<DokumentStatus, "neutral" | "success" | "warning"> = {
-  Entwurf: "neutral",
-  "In Prüfung": "warning",
-  Freigegeben: "success",
-  Archiviert: "neutral"
-}
+export default async function DokumentDetailPage({ params }: DokumentDetailPageProps) {
+  const session = await auth()
 
-const pruefstatusTone: Record<Pruefstatus, "neutral" | "success" | "warning" | "risk"> = {
-  Ungeprüft: "neutral",
-  "Juristisch geprüft": "success",
-  "Freigabe ausstehend": "warning",
-  "Risiko markiert": "risk"
-}
-
-export default function DokumentDetailPage({ params }: DokumentDetailPageProps) {
-  const dokument = getWorkspaceDokumentDetailById(params.id)
-
-  if (!dokument) {
+  if (!session?.user?.id) {
     return (
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <SectionIntro
           eyebrow="Workspace · Dokumente"
-          title="Dokument nicht gefunden"
-          description="Das angeforderte Dokument ist in diesem Arbeitsbereich derzeit nicht verfügbar. Bitte prüfen Sie die Dokument-ID oder öffnen Sie die Übersicht erneut."
+          title="Dokumentdetail nicht verfügbar"
+          description="Bitte melden Sie sich an, um Dokumente im tenant-gebundenen Arbeitsbereich zu öffnen."
         />
-
-        <InfoPanel title="Hinweis" tone="muted">
-          Falls das Dokument im Fachbereich erwartet wird, stimmen Sie sich bitte mit der zuständigen Kanzleirolle oder der operativen Dokumentenverantwortung ab.
-          <div className="mt-4">
-            <Link href="/workspace/dokumente" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
-              Zurück zur Dokumentenübersicht
-            </Link>
-          </div>
-        </InfoPanel>
+        <Link href="/login" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+          Zur Anmeldung
+        </Link>
       </main>
     )
   }
 
-  return (
-    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+  const tenantContext = await resolveTenantContextForUser(session.user.id)
+
+  if (tenantContext.status === "none") {
+    return (
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <SectionIntro
-          eyebrow="Dokumentdetail · Read-only"
-          title={dokument.dokument}
-          description="Einzelfallansicht für Vertrags- und Dokumentarbeit mit Fokus auf Statusklarheit, Verantwortlichkeiten und prüfbaren Freigabekontext."
+          eyebrow="Workspace · Dokumente"
+          title="Kein Mandantenkontext verfügbar"
+          description="Für dieses Konto ist aktuell kein eindeutiger Mandantenkontext hinterlegt."
         />
+      </main>
+    )
+  }
 
-        <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Dokument-ID</p>
-            <p className="font-medium text-slate-900">{dokument.id}</p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Dokumenttyp</p>
-            <p className="font-medium text-slate-900">{dokument.typ}</p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Organisation / Mandant</p>
-            <p className="font-medium text-slate-900">{dokument.organisation}</p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Status</p>
-            <div className="mt-1">
-              <StatusBadge label={dokument.status} tone={statusTone[dokument.status]} />
+  if (tenantContext.status === "multiple") {
+    return (
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionIntro
+          eyebrow="Workspace · Dokumente"
+          title="Mandantenkontext nicht eindeutig"
+          description="Diese Ansicht erfordert einen eindeutigen Mandantenkontext. Die gesteuerte Auswahl folgt in einem späteren Ausbau."
+        />
+      </main>
+    )
+  }
+
+  try {
+    const document = await getWorkspaceDocumentById(tenantContext.tenantId, params.id)
+
+    if (!document) {
+      return (
+        <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+          <SectionIntro
+            eyebrow="Workspace · Dokumente"
+            title="Dokument nicht gefunden"
+            description="Das angeforderte Dokument ist in diesem Arbeitsbereich nicht verfügbar."
+          />
+
+          <InfoPanel title="Hinweis" tone="muted">
+            Bitte prüfen Sie die Dokument-ID oder öffnen Sie die Dokumentenübersicht erneut.
+            <div className="mt-4">
+              <Link href="/workspace/dokumente" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+                Zurück zur Dokumentenübersicht
+              </Link>
+            </div>
+          </InfoPanel>
+        </main>
+      )
+    }
+
+    return (
+      <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+          <SectionIntro
+            eyebrow="Dokumentdetail · Read-only"
+            title={document.title}
+            description="Einzelfallansicht mit tenant-gebundener Nachvollziehbarkeit von Status, Kontext und Review-Stand."
+          />
+
+          <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Dokument-ID</p>
+              <p className="font-medium text-slate-900">{document.id}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Dokumenttyp</p>
+              <p className="font-medium text-slate-900">{document.documentType}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Organisation / Mandant</p>
+              <p className="font-medium text-slate-900">{document.organizationName}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Status</p>
+              <div className="mt-1">
+                <StatusBadge label={getWorkspaceDocumentStatusLabel(document.status)} tone={getWorkspaceDocumentStatusTone(document.status)} />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Eingegangen</p>
+              <p className="font-medium text-slate-900">{new Date(document.createdAt).toLocaleDateString("de-DE")}</p>
             </div>
           </div>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Prüfstatus</p>
-            <div className="mt-1">
-              <StatusBadge label={dokument.pruefstatus} tone={pruefstatusTone[dokument.pruefstatus]} />
-            </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <FeatureCard
+            title="Dokumentkontext"
+            description={document.description ?? "Keine zusätzliche Beschreibung hinterlegt."}
+            meta={`Dateiname: ${document.filename}`}
+          />
+          <FeatureCard
+            title="Upload- und Bearbeitungskontext"
+            description={`Bearbeitungsverantwortung: ${document.uploadedByLabel}\n\nErfasst am: ${new Date(document.createdAt).toLocaleString("de-DE")}`}
+            meta={document.mimeType ? `MIME-Typ: ${document.mimeType}` : "MIME-Typ nicht hinterlegt"}
+          />
+          <FeatureCard
+            title="Prüf- und Freigabekontext"
+            description={document.reviewContext}
+            meta={`Aktueller Status: ${getWorkspaceDocumentStatusLabel(document.status)}`}
+          />
+          <FeatureCard
+            title="Technische Metadaten"
+            description={`Dokument-ID: ${document.id}\nDateigröße: ${document.sizeBytes ? `${document.sizeBytes} Bytes` : "Nicht hinterlegt"}`}
+            meta="Read-only Ansicht"
+          />
+        </section>
+
+        <InfoPanel title="Nächste Schritte" tone="muted">
+          <div className="flex flex-wrap gap-3">
+            <Link href="/workspace/dokumente" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+              Zur Dokumentenliste
+            </Link>
+            <Link href="/workspace/review-queue" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+              Zur Review-Queue
+            </Link>
           </div>
-        </div>
-      </section>
+        </InfoPanel>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        <FeatureCard title="Überblick" description={`Titel: ${dokument.dokument}\nTyp: ${dokument.typ}\nVerantwortlich: ${dokument.verantwortlich}\nLetzte Änderung: ${dokument.letzteAenderung}`} meta={`Version ${dokument.version} · Referenz ${dokument.referenz}`} />
-        <FeatureCard title="Dokumentkontext" description={`${dokument.gegenstand}\n\n${dokument.kurzbeschreibung}`} meta={dokument.frist ?? "Keine gesonderte Frist hinterlegt"} />
-        <FeatureCard title="Verantwortlichkeiten" description={`Organisation/Mandant: ${dokument.organisation}\n\n${dokument.bearbeitungsverantwortung}`} />
-        <FeatureCard title="Prüf- und Freigabekontext" description={`${dokument.freigabekontext}\n\nRisikohinweis: ${dokument.risikohinweis}`} />
-      </section>
-
-      <InfoPanel title="Nächste Ausbaustufen" tone="accent">
-        <ul className="list-disc space-y-2 pl-5">
-          <li>Kommentarfähige Fallkommunikation mit Rollen- und Rechtebezug.</li>
-          <li>Versionierung mit nachvollziehbarer Änderungsbegründung je Stand.</li>
-          <li>Freigabeprozess mit Vier-Augen-Prinzip und Verantwortlichkeitsmatrix.</li>
-          <li>Audit-nahe Aktivitätsansicht für revisionsorientierte Nachvollziehbarkeit.</li>
-        </ul>
-      </InfoPanel>
-
-      <CtaPanel
-        title="Arbeitskontext"
-        description="Die aktuelle Detailseite bleibt bewusst read-only. Für weitere Dokumente können Sie zur Übersicht zurückkehren oder den Trust-Kontext für Governance-Nachweise öffnen."
-        primaryLabel="Zur Dokumentenliste"
-        primaryHref="/workspace/dokumente"
-        secondaryLabel="Trust Center"
-        secondaryHref="/trust-center"
-      />
-    </main>
-  )
+        <CtaPanel
+          title="Arbeitskontext"
+          description="Die Detailansicht bleibt bewusst read-only und fokussiert auf nachvollziehbare Dokumentdaten."
+          primaryLabel="Zur Dokumentenliste"
+          primaryHref="/workspace/dokumente"
+          secondaryLabel="Upload öffnen"
+          secondaryHref="/workspace/upload"
+        />
+      </main>
+    )
+  } catch {
+    return (
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionIntro
+          eyebrow="Workspace · Dokumente"
+          title="Dokumentdetail derzeit nicht verfügbar"
+          description="Das Dokument konnte aktuell nicht geladen werden. Bitte versuchen Sie es erneut."
+        />
+      </main>
+    )
+  }
 }
