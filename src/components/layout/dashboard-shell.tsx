@@ -4,7 +4,7 @@ const navItems = [
   { href: "/dashboard", label: "Übersicht" },
   { href: "/dashboard/mandate", label: "Mandate" },
   { href: "/dashboard/audit", label: "Audit Log" },
-  { href: "/dashboard/settings", label: "Einstellungen" }
+  { href: "/dashboard/admin", label: "Admin Center" }
 ]
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
