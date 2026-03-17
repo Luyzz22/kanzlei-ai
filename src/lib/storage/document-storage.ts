@@ -1,10 +1,28 @@
 import "server-only"
 
 import { createHash, randomUUID } from "node:crypto"
-import { mkdir, rm, stat, writeFile } from "node:fs/promises"
+import { createReadStream } from "node:fs"
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
 
 const STORAGE_ROOT = path.join(process.cwd(), ".local", "storage")
+
+function resolveStoragePath(storageKey: string): string {
+  const normalizedKey = path.posix.normalize(storageKey)
+
+  if (!normalizedKey || normalizedKey.startsWith("../") || path.isAbsolute(normalizedKey)) {
+    throw new Error("Ungültiger Storage-Key")
+  }
+
+  const storageRoot = path.resolve(STORAGE_ROOT)
+  const absolutePath = path.resolve(storageRoot, normalizedKey)
+
+  if (!absolutePath.startsWith(`${storageRoot}${path.sep}`)) {
+    throw new Error("Ungültiger Storage-Key")
+  }
+
+  return absolutePath
+}
 
 function sanitizeFilename(filename: string): string {
   const normalized = filename
@@ -62,7 +80,26 @@ export async function storeDocumentFile(input: StoreDocumentFileInput): Promise<
 }
 
 export async function deleteStoredDocumentFile(storageKey: string): Promise<void> {
-  const filePath = path.join(STORAGE_ROOT, storageKey)
+  const filePath = resolveStoragePath(storageKey)
   await rm(filePath, { force: true })
 }
 
+export async function readStoredDocumentFile(storageKey: string): Promise<Buffer> {
+  const filePath = resolveStoragePath(storageKey)
+  return readFile(filePath)
+}
+
+export async function getStoredDocumentStats(storageKey: string): Promise<{ sizeBytes: number } | null> {
+  try {
+    const filePath = resolveStoragePath(storageKey)
+    const fileStats = await stat(filePath)
+    return { sizeBytes: fileStats.size }
+  } catch {
+    return null
+  }
+}
+
+export function createStoredDocumentReadStream(storageKey: string) {
+  const filePath = resolveStoragePath(storageKey)
+  return createReadStream(filePath)
+}

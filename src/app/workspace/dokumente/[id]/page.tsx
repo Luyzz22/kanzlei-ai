@@ -8,17 +8,37 @@ import { SectionIntro } from "@/components/marketing/section-intro"
 import { StatusBadge } from "@/components/marketing/status-badge"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
+import { listDocumentActivities } from "@/lib/documents/document-activity-core"
+import { getDocumentFileAccessContext, readDocumentTxtPreviewByStorageKey } from "@/lib/documents/file-access-core"
 import {
   getWorkspaceDocumentById,
   getWorkspaceDocumentStatusLabel,
   getWorkspaceDocumentStatusTone
 } from "@/lib/documents/workspace-core"
-import { listDocumentActivities } from "@/lib/documents/document-activity-core"
 
 type DokumentDetailPageProps = {
   params: {
     id: string
   }
+}
+
+function formatSize(sizeBytes: number | null): string {
+  if (!sizeBytes || sizeBytes <= 0) return "Nicht hinterlegt"
+
+  if (sizeBytes < 1024) return `${sizeBytes} Bytes`
+
+  const kb = sizeBytes / 1024
+  if (kb < 1024) return `${kb.toFixed(1)} KB`
+
+  const mb = kb / 1024
+  return `${mb.toFixed(1)} MB`
+}
+
+function getPreviewHint(mode: "txt" | "pdf" | "office" | "none"): string {
+  if (mode === "txt") return "Read-only Textvorschau verfügbar"
+  if (mode === "pdf") return "PDF erkannt · Browser-Vorschau folgt in einem späteren Ausbau"
+  if (mode === "office") return "Office-Dokument erkannt · Vorschaufunktion folgt"
+  return "Für dieses Dateiformat ist aktuell keine Vorschau verfügbar"
 }
 
 export default async function DokumentDetailPage({ params }: DokumentDetailPageProps) {
@@ -89,12 +109,19 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
       )
     }
 
-    const activities = await listDocumentActivities({
-      tenantId: tenantContext.tenantId,
-      documentId: document.id,
-      documentCreatedAt: document.createdAt,
-      uploadedByLabel: document.uploadedByLabel
-    })
+    const [activities, fileAccessContext] = await Promise.all([
+      listDocumentActivities({
+        tenantId: tenantContext.tenantId,
+        documentId: document.id,
+        documentCreatedAt: document.createdAt,
+        uploadedByLabel: document.uploadedByLabel
+      }),
+      getDocumentFileAccessContext(tenantContext.tenantId, document.id)
+    ])
+
+    const txtPreview = fileAccessContext?.previewMode === "txt" && fileAccessContext.fileAvailable && fileAccessContext.storageKey
+      ? await readDocumentTxtPreviewByStorageKey(fileAccessContext.storageKey)
+      : null
 
     return (
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -149,9 +176,65 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
           />
           <FeatureCard
             title="Technische Metadaten"
-            description={`Dokument-ID: ${document.id}\nDateigröße: ${document.sizeBytes ? `${document.sizeBytes} Bytes` : "Nicht hinterlegt"}`}
-            meta={document.storageKey ? "Dateiablage vorhanden (tenant-gebunden)" : "Dateiablage noch nicht vorhanden"}
+            description={`Dokument-ID: ${document.id}\nDateigröße: ${formatSize(fileAccessContext?.sizeBytes ?? document.sizeBytes ?? null)}`}
+            meta={fileAccessContext?.hasStorageReference ? "Dateiablage referenziert (tenant-gebunden)" : "Dateiablage noch nicht vorhanden"}
           />
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+          <h2 className="text-base font-semibold text-slate-900">Dateizugriff & Vorschau</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Der Zugriff erfolgt ausschließlich tenant-gebunden. Weitere Vorschaufunktionen folgen in einem späteren Ausbau.
+          </p>
+
+          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Dateiname</p>
+              <p className="font-medium text-slate-900">{document.filename}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Dateiformat (MIME)</p>
+              <p className="font-medium text-slate-900">{document.mimeType ?? "Nicht hinterlegt"}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Dateigröße</p>
+              <p className="font-medium text-slate-900">{formatSize(fileAccessContext?.sizeBytes ?? document.sizeBytes ?? null)}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Dateiablage</p>
+              <p className="font-medium text-slate-900">
+                {fileAccessContext?.fileAvailable
+                  ? "Vorhanden"
+                  : fileAccessContext?.hasStorageReference
+                    ? "Referenz vorhanden, Datei nicht auffindbar"
+                    : "Nicht vorhanden"}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            {fileAccessContext?.fileAvailable ? (
+              <Link
+                href={`/api/workspace/dokumente/${document.id}/download`}
+                className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
+              >
+                Dokument herunterladen
+              </Link>
+            ) : (
+              <p className="text-sm text-slate-600">Download aktuell nicht verfügbar, da keine vollständige Dateiablage vorliegt.</p>
+            )}
+          </div>
+
+          <InfoPanel title="Vorschauhinweis" tone="muted">
+            {fileAccessContext?.fileAvailable ? getPreviewHint(fileAccessContext.previewMode) : "Keine Vorschau verfügbar, da keine vollständige Dateiablage vorliegt."}
+          </InfoPanel>
+
+          {txtPreview ? (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Textvorschau (read-only)</p>
+              <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap text-sm text-slate-800">{txtPreview}</pre>
+            </div>
+          ) : null}
         </section>
 
         <DocumentActivityTimeline activities={activities} />

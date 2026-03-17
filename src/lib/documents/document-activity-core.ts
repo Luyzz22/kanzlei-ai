@@ -86,6 +86,19 @@ export function mapAuditEventToDocumentActivity(event: {
     }
   }
 
+
+  if (event.action === "document.file.downloaded") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Dokument heruntergeladen",
+      context: "Der tenant-gebundene Dokumentzugriff wurde als Download protokolliert.",
+      actorLabel,
+      category: "Audit",
+      action: event.action
+    }
+  }
+
   if (event.action === "document.review.approved") {
     return {
       id: `audit-${event.id}`,
