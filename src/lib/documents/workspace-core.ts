@@ -1,10 +1,10 @@
 import "server-only"
 
-import { DocumentIntakeStatus } from "@prisma/client"
+import { DocumentIntakeStatus, DocumentProcessingStatus } from "@prisma/client"
 
 import { withTenant } from "@/lib/tenant-context.server"
 
-export type WorkspaceDocumentStatusTone = "warning" | "info" | "success" | "neutral"
+export type WorkspaceDocumentStatusTone = "warning" | "info" | "success" | "neutral" | "risk"
 
 export type WorkspaceDocumentItem = {
   id: string
@@ -12,6 +12,7 @@ export type WorkspaceDocumentItem = {
   documentType: string
   organizationName: string
   status: DocumentIntakeStatus
+  processingStatus: DocumentProcessingStatus
   uploadedByLabel: string
   createdAt: Date
   reviewContext: string
@@ -23,6 +24,10 @@ export type WorkspaceDocumentDetail = WorkspaceDocumentItem & {
   mimeType: string | null
   sizeBytes: number | null
   storageKey: string | null
+  processedAt: Date | null
+  processingError: string | null
+  extractedTextPreview: string | null
+  textExtractedAt: Date | null
 }
 
 const statusToReviewContext: Record<DocumentIntakeStatus, string> = {
@@ -46,6 +51,20 @@ export function getWorkspaceDocumentStatusTone(status: DocumentIntakeStatus): Wo
   return "neutral"
 }
 
+export function getDocumentProcessingStatusLabel(status: DocumentProcessingStatus): string {
+  if (status === DocumentProcessingStatus.AUSSTEHEND) return "Ausstehend"
+  if (status === DocumentProcessingStatus.VERARBEITET) return "Verarbeitet"
+  if (status === DocumentProcessingStatus.NICHT_UNTERSTUETZT) return "Nicht unterstützt"
+  return "Fehlgeschlagen"
+}
+
+export function getDocumentProcessingStatusTone(status: DocumentProcessingStatus): WorkspaceDocumentStatusTone {
+  if (status === DocumentProcessingStatus.AUSSTEHEND) return "warning"
+  if (status === DocumentProcessingStatus.VERARBEITET) return "success"
+  if (status === DocumentProcessingStatus.NICHT_UNTERSTUETZT) return "neutral"
+  return "risk"
+}
+
 export async function listWorkspaceDocuments(tenantId: string): Promise<WorkspaceDocumentItem[]> {
   return withTenant(tenantId, async (tx) => {
     const documents = await tx.document.findMany({
@@ -56,6 +75,7 @@ export async function listWorkspaceDocuments(tenantId: string): Promise<Workspac
         documentType: true,
         organizationName: true,
         status: true,
+        processingStatus: true,
         createdAt: true,
         uploadedBy: {
           select: {
@@ -72,6 +92,7 @@ export async function listWorkspaceDocuments(tenantId: string): Promise<Workspac
       documentType: document.documentType,
       organizationName: document.organizationName,
       status: document.status,
+      processingStatus: document.processingStatus,
       uploadedByLabel: document.uploadedBy?.name ?? document.uploadedBy?.email ?? "Nicht zugeordnet",
       createdAt: document.createdAt,
       reviewContext: statusToReviewContext[document.status]
@@ -89,11 +110,16 @@ export async function getWorkspaceDocumentById(tenantId: string, documentId: str
         documentType: true,
         organizationName: true,
         status: true,
+        processingStatus: true,
         description: true,
         filename: true,
         mimeType: true,
         sizeBytes: true,
         storageKey: true,
+        processedAt: true,
+        processingError: true,
+        extractedTextPreview: true,
+        textExtractedAt: true,
         createdAt: true,
         uploadedBy: {
           select: {
@@ -114,11 +140,16 @@ export async function getWorkspaceDocumentById(tenantId: string, documentId: str
       documentType: document.documentType,
       organizationName: document.organizationName,
       status: document.status,
+      processingStatus: document.processingStatus,
       description: document.description,
       filename: document.filename,
       mimeType: document.mimeType,
       sizeBytes: document.sizeBytes,
       storageKey: document.storageKey,
+      processedAt: document.processedAt,
+      processingError: document.processingError,
+      extractedTextPreview: document.extractedTextPreview,
+      textExtractedAt: document.textExtractedAt,
       createdAt: document.createdAt,
       uploadedByLabel: document.uploadedBy?.name ?? document.uploadedBy?.email ?? "Nicht zugeordnet",
       reviewContext: statusToReviewContext[document.status]
