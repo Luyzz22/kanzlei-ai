@@ -99,6 +99,55 @@ export function mapAuditEventToDocumentActivity(event: {
     }
   }
 
+
+  if (event.action === "document.processing.started") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Dokumentverarbeitung gestartet",
+      context: "Die tenant-gebundene Extraktion wurde für dieses Dokument angestoßen.",
+      actorLabel,
+      category: "Audit",
+      action: event.action
+    }
+  }
+
+  if (event.action === "document.processing.completed") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Dokumentverarbeitung abgeschlossen",
+      context: "Ein extrahierbarer Textkontext wurde gespeichert und für nachgelagerte Schritte vorbereitet.",
+      actorLabel,
+      category: "Audit",
+      action: event.action
+    }
+  }
+
+  if (event.action === "document.processing.unsupported") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Format nicht unterstützt",
+      context: "Das Dateiformat wurde erkannt, die Extraktion ist in dieser Ausbaustufe jedoch noch nicht verfügbar.",
+      actorLabel,
+      category: "Audit",
+      action: event.action
+    }
+  }
+
+  if (event.action === "document.processing.failed") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Dokumentverarbeitung fehlgeschlagen",
+      context: "Die Verarbeitung konnte nicht abgeschlossen werden. Das Ergebnis wurde als fehlgeschlagen markiert.",
+      actorLabel,
+      category: "Audit",
+      action: event.action
+    }
+  }
+
   if (event.action === "document.review.approved") {
     return {
       id: `audit-${event.id}`,

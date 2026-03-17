@@ -9,8 +9,10 @@ import { StatusBadge } from "@/components/marketing/status-badge"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
 import { listDocumentActivities } from "@/lib/documents/document-activity-core"
-import { getDocumentFileAccessContext, readDocumentTxtPreviewByStorageKey } from "@/lib/documents/file-access-core"
+import { getDocumentFileAccessContext } from "@/lib/documents/file-access-core"
 import {
+  getDocumentProcessingStatusLabel,
+  getDocumentProcessingStatusTone,
   getWorkspaceDocumentById,
   getWorkspaceDocumentStatusLabel,
   getWorkspaceDocumentStatusTone
@@ -119,9 +121,6 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
       getDocumentFileAccessContext(tenantContext.tenantId, document.id)
     ])
 
-    const txtPreview = fileAccessContext?.previewMode === "txt" && fileAccessContext.fileAvailable && fileAccessContext.storageKey
-      ? await readDocumentTxtPreviewByStorageKey(fileAccessContext.storageKey)
-      : null
 
     return (
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -228,14 +227,64 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
           <InfoPanel title="Vorschauhinweis" tone="muted">
             {fileAccessContext?.fileAvailable ? getPreviewHint(fileAccessContext.previewMode) : "Keine Vorschau verfügbar, da keine vollständige Dateiablage vorliegt."}
           </InfoPanel>
-
-          {txtPreview ? (
-            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Textvorschau (read-only)</p>
-              <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap text-sm text-slate-800">{txtPreview}</pre>
-            </div>
-          ) : null}
         </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+          <h2 className="text-base font-semibold text-slate-900">Dokumentverarbeitung</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Die Verarbeitung bleibt tenant-gebunden und stellt einen kleinen, nachvollziehbaren Textkontext für spätere Analyse- und Review-Schritte bereit.
+          </p>
+
+          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Verarbeitungsstatus</p>
+              <div className="mt-1">
+                <StatusBadge
+                  label={getDocumentProcessingStatusLabel(document.processingStatus)}
+                  tone={getDocumentProcessingStatusTone(document.processingStatus)}
+                />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Zuletzt verarbeitet</p>
+              <p className="font-medium text-slate-900">
+                {document.processedAt ? new Date(document.processedAt).toLocaleString("de-DE") : "Verarbeitung ausstehend"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Textkontext extrahiert</p>
+              <p className="font-medium text-slate-900">
+                {document.textExtractedAt ? new Date(document.textExtractedAt).toLocaleString("de-DE") : "Noch kein Textkontext verfügbar"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Nächste Stufe</p>
+              <p className="font-medium text-slate-900">Review und Analyse auf Textkontext-Basis (späterer Ausbau)</p>
+            </div>
+          </div>
+
+          {document.processingStatus === "NICHT_UNTERSTUETZT" ? (
+            <InfoPanel title="Format aktuell nicht unterstützt" tone="muted">
+              Für dieses Dateiformat ist die automatische Textextraktion in der aktuellen Ausbaustufe noch nicht verfügbar.
+            </InfoPanel>
+          ) : null}
+
+          {document.processingStatus === "FEHLGESCHLAGEN" ? (
+            <InfoPanel title="Verarbeitung fehlgeschlagen" tone="muted">
+              {document.processingError ?? "Die Verarbeitung konnte nicht abgeschlossen werden. Bitte prüfen Sie die Datei und versuchen Sie es erneut."}
+            </InfoPanel>
+          ) : null}
+
+          {document.extractedTextPreview ? (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Extrahierter Textkontext (read-only)</p>
+              <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap text-sm text-slate-800">{document.extractedTextPreview}</pre>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-slate-600">Es liegt derzeit kein extrahierbarer Textkontext vor.</p>
+          )}
+        </section>
+
 
         <DocumentActivityTimeline activities={activities} />
 

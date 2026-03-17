@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { attachStoredFileToDocument, createDocumentIntake } from "@/lib/documents/intake-core"
+import { processDocumentForExtraction } from "@/lib/documents/processing-core"
 import { deleteStoredDocumentFile, storeDocumentFile } from "@/lib/storage/document-storage"
 import { z } from "zod"
 
@@ -170,9 +171,15 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
         }
       }
 
+      await processDocumentForExtraction({
+        tenantId: tenantContext.tenantId,
+        documentId: document.id,
+        actorId: session.user.id
+      })
+
       return {
         status: "success",
-        message: "Das Dokument wurde inklusive tenant-gebundener Dateiablage im Workspace gespeichert."
+        message: "Das Dokument wurde gespeichert und die Dokumentverarbeitung wurde für den aktuellen Mandanten angestoßen."
       }
     }
 

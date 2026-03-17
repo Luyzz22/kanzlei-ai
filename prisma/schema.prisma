@@ -160,6 +160,11 @@ model Document {
   sizeBytes    Int?
   sha256       String?  @db.VarChar(64)
   storageKey   String?
+  processingStatus DocumentProcessingStatus @default(AUSSTEHEND)
+  processedAt   DateTime?
+  processingError String?
+  extractedTextPreview String?
+  textExtractedAt DateTime?
   createdAt    DateTime @default(now())
 
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -168,6 +173,13 @@ model Document {
   auditEvents  AuditEvent[]
 
   @@index([tenantId, createdAt])
+}
+
+enum DocumentProcessingStatus {
+  AUSSTEHEND
+  VERARBEITET
+  NICHT_UNTERSTUETZT
+  FEHLGESCHLAGEN
 }
 
 enum DocumentIntakeStatus {

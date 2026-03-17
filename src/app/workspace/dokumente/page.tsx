@@ -10,6 +10,8 @@ import { StatusBadge } from "@/components/marketing/status-badge"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
 import {
+  getDocumentProcessingStatusLabel,
+  getDocumentProcessingStatusTone,
   getWorkspaceDocumentStatusLabel,
   getWorkspaceDocumentStatusTone,
   listWorkspaceDocuments
@@ -78,6 +80,7 @@ export default async function WorkspaceDokumentePage() {
                   <th className="px-4 py-3 font-semibold">Dokumenttyp</th>
                   <th className="px-4 py-3 font-semibold">Organisation / Mandant</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold">Verarbeitung</th>
                   <th className="px-4 py-3 font-semibold">Bearbeitungsverantwortung</th>
                   <th className="px-4 py-3 font-semibold">Eingegangen</th>
                   <th className="px-4 py-3 font-semibold">Prüfkontext</th>
@@ -101,13 +104,19 @@ export default async function WorkspaceDokumentePage() {
                       <td className="px-4 py-3">
                         <StatusBadge label={getWorkspaceDocumentStatusLabel(document.status)} tone={getWorkspaceDocumentStatusTone(document.status)} />
                       </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge
+                          label={getDocumentProcessingStatusLabel(document.processingStatus)}
+                          tone={getDocumentProcessingStatusTone(document.processingStatus)}
+                        />
+                      </td>
                       <td className="px-4 py-3 text-slate-600">{document.uploadedByLabel}</td>
                       <td className="px-4 py-3 text-slate-600">{new Date(document.createdAt).toLocaleDateString("de-DE")}</td>
                       <td className="px-4 py-3 text-slate-600">{document.reviewContext}</td>
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan={7} className="px-4 py-6"><EmptyState title="Keine Dokumente vorhanden" description="Für diesen Mandanten liegen derzeit keine Dokumente vor." actionLabel="Zum Upload" actionHref="/workspace/upload" /></td></tr>
+                  <tr><td colSpan={8} className="px-4 py-6"><EmptyState title="Keine Dokumente vorhanden" description="Für diesen Mandanten liegen derzeit keine Dokumente vor." actionLabel="Zum Upload" actionHref="/workspace/upload" /></td></tr>
                 )}
               </tbody>
             </table>
