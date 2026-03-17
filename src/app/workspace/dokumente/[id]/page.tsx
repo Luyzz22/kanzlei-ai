@@ -150,7 +150,7 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
           <FeatureCard
             title="Technische Metadaten"
             description={`Dokument-ID: ${document.id}\nDateigröße: ${document.sizeBytes ? `${document.sizeBytes} Bytes` : "Nicht hinterlegt"}`}
-            meta="Read-only Ansicht"
+            meta={document.storageKey ? "Dateiablage vorhanden (tenant-gebunden)" : "Dateiablage noch nicht vorhanden"}
           />
         </section>
 

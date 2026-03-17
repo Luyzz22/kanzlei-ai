@@ -1,0 +1,68 @@
+import "server-only"
+
+import { createHash, randomUUID } from "node:crypto"
+import { mkdir, rm, stat, writeFile } from "node:fs/promises"
+import path from "node:path"
+
+const STORAGE_ROOT = path.join(process.cwd(), ".local", "storage")
+
+function sanitizeFilename(filename: string): string {
+  const normalized = filename
+    .normalize("NFKC")
+    .replace(/[\\/]/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9._-äöüÄÖÜß]/g, "")
+    .replace(/-+/g, "-")
+    .slice(0, 120)
+
+  if (!normalized) {
+    return "dokument"
+  }
+
+  return normalized
+}
+
+function createStorageKey(tenantId: string, documentId: string, filename: string): string {
+  const cleaned = sanitizeFilename(filename)
+  return path.posix.join("tenants", tenantId, "documents", documentId, `${randomUUID()}-${cleaned}`)
+}
+
+export type StoreDocumentFileInput = {
+  tenantId: string
+  documentId: string
+  originalFilename: string
+  mimeType: string
+  content: Buffer
+}
+
+export type StoreDocumentFileResult = {
+  storageKey: string
+  filename: string
+  mimeType: string
+  sizeBytes: number
+  sha256: string
+}
+
+export async function storeDocumentFile(input: StoreDocumentFileInput): Promise<StoreDocumentFileResult> {
+  const storageKey = createStorageKey(input.tenantId, input.documentId, input.originalFilename)
+  const filePath = path.join(STORAGE_ROOT, storageKey)
+
+  await mkdir(path.dirname(filePath), { recursive: true })
+  await writeFile(filePath, input.content)
+
+  const storedStats = await stat(filePath)
+
+  return {
+    storageKey,
+    filename: sanitizeFilename(input.originalFilename),
+    mimeType: input.mimeType,
+    sizeBytes: storedStats.size,
+    sha256: createHash("sha256").update(input.content).digest("hex")
+  }
+}
+
+export async function deleteStoredDocumentFile(storageKey: string): Promise<void> {
+  const filePath = path.join(STORAGE_ROOT, storageKey)
+  await rm(filePath, { force: true })
+}
+

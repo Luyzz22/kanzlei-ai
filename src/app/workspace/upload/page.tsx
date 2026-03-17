@@ -18,8 +18,9 @@ export default function WorkspaceUploadPage() {
       <InfoPanel title="Hinweis zum aktuellen Umfang" tone="muted">
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
           <li>Die Intake-Erfassung speichert Metadaten und Status tenant-gebunden in der Datenbank.</li>
+          <li>Optional hochgeladene Dateien werden tenant-gebunden intern abgelegt und per Storage-Key referenziert.</li>
           <li>Der Status startet mit „Eingegangen“ und ist für spätere Review-Prozesse vorbereitet.</li>
-          <li>Dateiinhalt wird in diesem Schritt noch nicht persistiert; optionale Dateimetadaten werden erfasst.</li>
+          <li>Weitere Verarbeitung wie Parsing oder Vorschau folgt in einem nachgelagerten Ausbau.</li>
         </ul>
       </InfoPanel>
     </PageShell>

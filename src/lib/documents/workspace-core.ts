@@ -22,6 +22,7 @@ export type WorkspaceDocumentDetail = WorkspaceDocumentItem & {
   filename: string
   mimeType: string | null
   sizeBytes: number | null
+  storageKey: string | null
 }
 
 const statusToReviewContext: Record<DocumentIntakeStatus, string> = {
@@ -92,6 +93,7 @@ export async function getWorkspaceDocumentById(tenantId: string, documentId: str
         filename: true,
         mimeType: true,
         sizeBytes: true,
+        storageKey: true,
         createdAt: true,
         uploadedBy: {
           select: {
@@ -116,6 +118,7 @@ export async function getWorkspaceDocumentById(tenantId: string, documentId: str
       filename: document.filename,
       mimeType: document.mimeType,
       sizeBytes: document.sizeBytes,
+      storageKey: document.storageKey,
       createdAt: document.createdAt,
       uploadedByLabel: document.uploadedBy?.name ?? document.uploadedBy?.email ?? "Nicht zugeordnet",
       reviewContext: statusToReviewContext[document.status]
