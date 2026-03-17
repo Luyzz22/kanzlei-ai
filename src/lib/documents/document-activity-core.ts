@@ -74,6 +74,18 @@ export function mapAuditEventToDocumentActivity(event: {
     }
   }
 
+  if (event.action === "document.file.stored") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Dateiablage abgeschlossen",
+      context: "Die hochgeladene Datei wurde tenant-gebunden abgelegt und dem Dokument per Storage-Key zugeordnet.",
+      actorLabel,
+      category: "Intake",
+      action: event.action
+    }
+  }
+
   if (event.action === "document.review.approved") {
     return {
       id: `audit-${event.id}`,

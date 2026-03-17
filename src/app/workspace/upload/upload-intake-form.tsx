@@ -30,8 +30,8 @@ export function UploadIntakeForm() {
       <div>
         <h2 className="text-lg font-semibold tracking-tight text-slate-950">Dokumenteingang erfassen</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Der Eingang wird tenant-gebunden gespeichert. Dateiinhalt wird in diesem Schritt noch nicht
-          persistiert; optional werden Dateimetadaten erfasst.
+          Der Eingang wird tenant-gebunden gespeichert. Optional hochgeladene Dateien werden sicher abgelegt und
+          über einen internen Storage-Key dem Dokument zugeordnet.
         </p>
       </div>
 
@@ -81,8 +81,10 @@ export function UploadIntakeForm() {
           <input
             name="file"
             type="file"
+            accept=".pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
             className="h-10 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-2 file:py-1"
           />
+          <span className="text-xs text-slate-500">Erlaubte Formate: PDF, DOC, DOCX, TXT · maximal 25 MB</span>
           {state.fieldErrors?.file ? <span className="text-xs text-rose-700">{state.fieldErrors.file}</span> : null}
         </label>
       </div>

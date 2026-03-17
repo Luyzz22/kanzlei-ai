@@ -17,6 +17,17 @@ export type CreateDocumentIntakeInput = {
   sizeBytes?: number
 }
 
+export type AttachStoredFileInput = {
+  tenantId: string
+  actorId: string
+  documentId: string
+  filename: string
+  mimeType: string
+  sizeBytes: number
+  storageKey: string
+  sha256: string
+}
+
 export async function createDocumentIntake(input: CreateDocumentIntakeInput) {
   return withTenant(input.tenantId, async (tx) => {
     const document = await tx.document.create({
@@ -47,6 +58,40 @@ export async function createDocumentIntake(input: CreateDocumentIntakeInput) {
         organizationName: input.organizationName,
         status: DocumentIntakeStatus.EINGEGANGEN,
         hasDateiMetadaten: Boolean(input.mimeType || input.sizeBytes)
+      } satisfies Prisma.InputJsonValue
+    })
+
+    return document
+  })
+}
+
+export async function attachStoredFileToDocument(input: AttachStoredFileInput) {
+  return withTenant(input.tenantId, async (tx) => {
+    const document = await tx.document.update({
+      where: {
+        id: input.documentId
+      },
+      data: {
+        filename: input.filename,
+        mimeType: input.mimeType,
+        sizeBytes: input.sizeBytes,
+        storageKey: input.storageKey,
+        sha256: input.sha256
+      }
+    })
+
+    await writeAuditEventTx(tx, {
+      tenantId: input.tenantId,
+      actorId: input.actorId,
+      action: "document.file.stored",
+      resourceType: "document",
+      resourceId: document.id,
+      documentId: document.id,
+      metadata: {
+        filename: input.filename,
+        mimeType: input.mimeType,
+        sizeBytes: input.sizeBytes,
+        hasStorageKey: true
       } satisfies Prisma.InputJsonValue
     })
 

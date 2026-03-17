@@ -2,7 +2,8 @@
 
 import { auth } from "@/lib/auth"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
-import { createDocumentIntake } from "@/lib/documents/intake-core"
+import { attachStoredFileToDocument, createDocumentIntake } from "@/lib/documents/intake-core"
+import { deleteStoredDocumentFile, storeDocumentFile } from "@/lib/storage/document-storage"
 import { z } from "zod"
 
 export type IntakeFormState = {
@@ -34,6 +35,22 @@ function buildStubFilename(title: string): string {
 
   const fallback = normalized || "dokument"
   return `${fallback}.intake-stub`
+}
+
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+
+function resolveMimeType(file: File): string {
+  if (file.type && erlaubteMimeTypes.includes(file.type)) {
+    return file.type
+  }
+
+  const filename = file.name.toLowerCase()
+  if (filename.endsWith(".pdf")) return "application/pdf"
+  if (filename.endsWith(".doc")) return "application/msword"
+  if (filename.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  if (filename.endsWith(".txt")) return "text/plain"
+
+  return ""
 }
 
 export async function createIntakeAction(_: IntakeFormState, formData: FormData): Promise<IntakeFormState> {
@@ -86,7 +103,7 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
   const uploadedFile = formData.get("file")
   const file = uploadedFile instanceof File ? uploadedFile : null
 
-  if (file && file.size > 25 * 1024 * 1024) {
+  if (file && file.size > MAX_FILE_SIZE_BYTES) {
     return {
       status: "error",
       message: "Die Datei ist zu groß.",
@@ -96,7 +113,9 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
     }
   }
 
-  if (file && file.size > 0 && file.type && !erlaubteMimeTypes.includes(file.type)) {
+  const resolvedMimeType = file && file.size > 0 ? resolveMimeType(file) : ""
+
+  if (file && file.size > 0 && !resolvedMimeType) {
     return {
       status: "error",
       message: "Der Dateityp wird derzeit nicht unterstützt.",
@@ -109,21 +128,57 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
   const cleanedDescription = parsed.data.description?.trim() || undefined
 
   try {
-    await createDocumentIntake({
+    const document = await createDocumentIntake({
       tenantId: tenantContext.tenantId,
       actorId: session.user.id,
       title: parsed.data.title,
       documentType: parsed.data.documentType,
       organizationName: parsed.data.organizationName,
       description: cleanedDescription,
-      filename: file && file.size > 0 ? file.name : buildStubFilename(parsed.data.title),
-      mimeType: file && file.size > 0 ? file.type || "application/octet-stream" : "application/x-intake-stub",
-      sizeBytes: file && file.size > 0 ? file.size : undefined
+      filename: buildStubFilename(parsed.data.title),
+      mimeType: file && file.size > 0 ? undefined : "application/x-intake-stub",
+      sizeBytes: undefined
     })
+
+    if (file && file.size > 0) {
+      const fileBuffer = Buffer.from(await file.arrayBuffer())
+      const storedFile = await storeDocumentFile({
+        tenantId: tenantContext.tenantId,
+        documentId: document.id,
+        originalFilename: file.name,
+        mimeType: resolvedMimeType,
+        content: fileBuffer
+      })
+
+      try {
+        await attachStoredFileToDocument({
+          tenantId: tenantContext.tenantId,
+          actorId: session.user.id,
+          documentId: document.id,
+          filename: storedFile.filename,
+          mimeType: storedFile.mimeType,
+          sizeBytes: storedFile.sizeBytes,
+          storageKey: storedFile.storageKey,
+          sha256: storedFile.sha256
+        })
+      } catch {
+        await deleteStoredDocumentFile(storedFile.storageKey)
+        return {
+          status: "error",
+          message:
+            "Das Dokument wurde angelegt, aber die tenant-gebundene Dateiablage konnte nicht abgeschlossen werden. Bitte laden Sie die Datei erneut hoch."
+        }
+      }
+
+      return {
+        status: "success",
+        message: "Das Dokument wurde inklusive tenant-gebundener Dateiablage im Workspace gespeichert."
+      }
+    }
 
     return {
       status: "success",
-      message: "Der Dokumenteingang wurde angelegt und dem Mandantenkontext zugeordnet."
+      message: "Der Dokumenteingang wurde ohne Datei angelegt und dem Mandantenkontext zugeordnet."
     }
   } catch {
     return {
