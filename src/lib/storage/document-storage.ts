@@ -42,7 +42,7 @@ function sanitizeFilename(filename: string): string {
 
 function createStorageKey(tenantId: string, documentId: string, filename: string): string {
   const cleaned = sanitizeFilename(filename)
-  return path.posix.join("tenants", tenantId, "documents", documentId, `${randomUUID()}-${cleaned}`)
+  return path.posix.join("tenants", tenantId, "documents", documentId, "original", `${randomUUID()}-${cleaned}`)
 }
 
 export type StoreDocumentFileInput = {
@@ -63,7 +63,7 @@ export type StoreDocumentFileResult = {
 
 export async function storeDocumentFile(input: StoreDocumentFileInput): Promise<StoreDocumentFileResult> {
   const storageKey = createStorageKey(input.tenantId, input.documentId, input.originalFilename)
-  const filePath = path.join(STORAGE_ROOT, storageKey)
+  const filePath = resolveStoragePath(storageKey)
 
   await mkdir(path.dirname(filePath), { recursive: true })
   await writeFile(filePath, input.content)

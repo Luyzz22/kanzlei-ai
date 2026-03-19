@@ -52,7 +52,7 @@ export function getWorkspaceDocumentStatusTone(status: DocumentIntakeStatus): Wo
 }
 
 export function getDocumentProcessingStatusLabel(status: DocumentProcessingStatus): string {
-  if (status === DocumentProcessingStatus.AUSSTEHEND) return "Ausstehend"
+  if (status === DocumentProcessingStatus.AUSSTEHEND) return "Vorbereitet"
   if (status === DocumentProcessingStatus.VERARBEITET) return "Verarbeitet"
   if (status === DocumentProcessingStatus.NICHT_UNTERSTUETZT) return "Nicht unterstützt"
   return "Fehlgeschlagen"
