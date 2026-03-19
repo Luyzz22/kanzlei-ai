@@ -35,20 +35,25 @@ const erlaubteMimeTypes = [
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
 
-function normalizeOptionalUploadFile(fileInput: FormDataEntryValue | null): File | null {
-  if (!(fileInput instanceof File)) {
-    return null
-  }
+type OptionalUploadFileResolution =
+  | { kind: "none" }
+  | { kind: "empty" }
+  | { kind: "file"; file: File }
 
-  if (fileInput.size <= 0) {
-    return null
+function normalizeOptionalUploadFile(fileInput: FormDataEntryValue | null): OptionalUploadFileResolution {
+  if (!(fileInput instanceof File)) {
+    return { kind: "none" }
   }
 
   if (fileInput.name.trim().length === 0) {
-    return null
+    return { kind: "none" }
   }
 
-  return fileInput
+  if (fileInput.size <= 0) {
+    return { kind: "empty" }
+  }
+
+  return { kind: "file", file: fileInput }
 }
 
 function resolveMimeType(file: File): string {
@@ -112,7 +117,19 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
     }
   }
 
-  const file = normalizeOptionalUploadFile(formData.get("file"))
+  const uploadFileResolution = normalizeOptionalUploadFile(formData.get("file"))
+
+  if (uploadFileResolution.kind === "empty") {
+    return {
+      status: "error",
+      message: "Die ausgewählte Datei ist leer.",
+      fieldErrors: {
+        file: "Bitte wählen Sie eine Datei mit Inhalt aus."
+      }
+    }
+  }
+
+  const file = uploadFileResolution.kind === "file" ? uploadFileResolution.file : null
 
   if (file && file.size > MAX_FILE_SIZE_BYTES) {
     return {
