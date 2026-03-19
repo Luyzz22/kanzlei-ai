@@ -6,6 +6,7 @@ import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
 import { SectionIntro } from "@/components/marketing/section-intro"
 import { StatusBadge } from "@/components/marketing/status-badge"
+import { ProcessingTriggerForm } from "@/app/workspace/dokumente/[id]/processing-trigger-form"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
 import { listDocumentActivities } from "@/lib/documents/document-activity-core"
@@ -242,8 +243,8 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
         <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
           <h2 className="text-base font-semibold text-slate-900">Dokumentverarbeitung</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Die Verarbeitung bleibt tenant-gebunden. In dieser Ausbaustufe wird ausschließlich der vorbereitete
-            Verarbeitungsstand dokumentiert.
+            Die Verarbeitung bleibt tenant-gebunden. In dieser Ausbaustufe wird ein ehrlicher Verarbeitungsstand mit
+            optionaler Textgrundlage dokumentiert.
           </p>
 
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
@@ -287,9 +288,49 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
           ) : null}
 
           <p className="mt-4 text-sm text-slate-600">
-            Es werden derzeit keine Parsing- oder OCR-Ergebnisse angezeigt. Der Status dient der nachvollziehbaren
-            Vorbereitung des nächsten Verarbeitungsschritts.
+            Die aktuelle Verarbeitung liefert eine read-only Textgrundlage für unterstützte Formate. OCR und
+            weitergehende Analysen folgen in späteren Ausbaustufen.
           </p>
+
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <h3 className="text-sm font-semibold text-slate-900">Extraktion & Textgrundlage</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              In dieser Ausbaustufe wird die tenant-gebundene Textextraktion für TXT-Dateien unterstützt.
+            </p>
+
+            <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Extrahiert am</p>
+                <p className="font-medium text-slate-900">
+                  {document.textExtractedAt ? new Date(document.textExtractedAt).toLocaleString("de-DE") : "Noch keine Extraktion durchgeführt"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Textgrundlage</p>
+                <p className="font-medium text-slate-900">
+                  {document.extractedTextPreview ? "Verfügbar (Read-only Vorschau)" : "Nicht verfügbar"}
+                </p>
+              </div>
+            </div>
+
+            {document.extractedTextPreview ? (
+              <div className="mt-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">Extrahierter Textauszug</p>
+                <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-800">
+                  {document.extractedTextPreview}
+                </pre>
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-slate-600">
+                Es liegt aktuell keine extrahierbare Textgrundlage vor. Für nicht unterstützte Formate bleibt der
+                Status nachvollziehbar im Verarbeitungsstand dokumentiert.
+              </p>
+            )}
+
+            <div className="mt-4">
+              <ProcessingTriggerForm documentId={document.id} />
+            </div>
+          </div>
         </section>
 
 

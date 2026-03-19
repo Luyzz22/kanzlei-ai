@@ -7,7 +7,7 @@ import {
   createDocumentIntake,
   markDocumentStorageFailure
 } from "@/lib/documents/intake-core"
-import { prepareDocumentProcessing } from "@/lib/documents/processing-core"
+import { processDocumentExtraction } from "@/lib/documents/processing-core"
 import { deleteStoredDocumentFile, storeDocumentFile } from "@/lib/storage/document-storage"
 import { z } from "zod"
 
@@ -176,7 +176,7 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
         storageKey: storedFile.storageKey,
         sha256: storedFile.sha256
       })
-      await prepareDocumentProcessing({
+      await processDocumentExtraction({
         tenantId: tenantContext.tenantId,
         documentId: document.id,
         actorId: session.user.id
@@ -184,7 +184,7 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
       return {
         status: "success",
         message:
-          "Das Dokument und die Datei wurden tenant-gebunden gespeichert. Der Verarbeitungsstatus wurde auf „vorbereitet“ gesetzt."
+          "Das Dokument und die Datei wurden tenant-gebunden gespeichert. Die initiale Dokumentverarbeitung wurde gestartet."
       }
     } catch {
       await deleteStoredDocumentFile(storedFile.storageKey)
