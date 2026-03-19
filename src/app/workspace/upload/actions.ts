@@ -35,6 +35,22 @@ const erlaubteMimeTypes = [
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
 
+function normalizeOptionalUploadFile(fileInput: FormDataEntryValue | null): File | null {
+  if (!(fileInput instanceof File)) {
+    return null
+  }
+
+  if (fileInput.size <= 0) {
+    return null
+  }
+
+  if (fileInput.name.trim().length === 0) {
+    return null
+  }
+
+  return fileInput
+}
+
 function resolveMimeType(file: File): string {
   if (file.type && erlaubteMimeTypes.includes(file.type)) {
     return file.type
@@ -96,8 +112,7 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
     }
   }
 
-  const uploadedFile = formData.get("file")
-  const file = uploadedFile instanceof File ? uploadedFile : null
+  const file = normalizeOptionalUploadFile(formData.get("file"))
 
   if (file && file.size > MAX_FILE_SIZE_BYTES) {
     return {
@@ -144,7 +159,7 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
       }
     }
 
-    const fileMimeType = resolveMimeType(file)
+    const fileMimeType = resolvedMimeType
 
     if (!fileMimeType) {
       return {
