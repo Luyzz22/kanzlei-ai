@@ -7,7 +7,7 @@ import {
   createDocumentIntake,
   markDocumentStorageFailure
 } from "@/lib/documents/intake-core"
-import { prepareDocumentProcessing } from "@/lib/documents/processing-core"
+import { processDocumentExtraction } from "@/lib/documents/processing-core"
 import { deleteStoredDocumentFile, storeDocumentFile } from "@/lib/storage/document-storage"
 import { z } from "zod"
 
@@ -16,6 +16,8 @@ export type IntakeFormState = {
   message?: string
   fieldErrors?: Partial<Record<"title" | "documentType" | "organizationName" | "description" | "file", string>>
 }
+
+const PLACEHOLDER_FILENAME = "kein-dateiupload"
 
 const intakeSchema = z.object({
   title: z.string().trim().min(3, "Bitte einen Dokumenttitel mit mindestens 3 Zeichen angeben.").max(160, "Bitte maximal 160 Zeichen für den Dokumenttitel verwenden."),
@@ -97,17 +99,7 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
   const uploadedFile = formData.get("file")
   const file = uploadedFile instanceof File ? uploadedFile : null
 
-  if (!file || file.size === 0) {
-    return {
-      status: "error",
-      message: "Bitte wählen Sie eine Datei für den Dokumenteingang aus.",
-      fieldErrors: {
-        file: "Für den produktiven Dokumenteingang ist eine Datei erforderlich."
-      }
-    }
-  }
-
-  if (file.size > MAX_FILE_SIZE_BYTES) {
+  if (file && file.size > MAX_FILE_SIZE_BYTES) {
     return {
       status: "error",
       message: "Die Datei ist zu groß.",
@@ -117,9 +109,9 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
     }
   }
 
-  const resolvedMimeType = resolveMimeType(file)
+  const resolvedMimeType = file ? resolveMimeType(file) : undefined
 
-  if (!resolvedMimeType) {
+  if (file && !resolvedMimeType) {
     return {
       status: "error",
       message: "Der Dateityp wird derzeit nicht unterstützt.",
@@ -139,17 +131,37 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
       documentType: parsed.data.documentType,
       organizationName: parsed.data.organizationName,
       description: cleanedDescription,
-      filename: file.name,
+      filename: file?.name || PLACEHOLDER_FILENAME,
       mimeType: resolvedMimeType,
-      sizeBytes: file.size
+      sizeBytes: file?.size
     })
+
+    if (!file) {
+      return {
+        status: "success",
+        message:
+          "Der Dokumenteingang wurde tenant-gebunden ohne Eingangsdatei erfasst. Eine Datei kann in einem folgenden Schritt nachgezogen werden."
+      }
+    }
+
+    const fileMimeType = resolveMimeType(file)
+
+    if (!fileMimeType) {
+      return {
+        status: "error",
+        message: "Der Dateityp wird derzeit nicht unterstützt.",
+        fieldErrors: {
+          file: "Bitte laden Sie PDF-, DOC-, DOCX- oder TXT-Dateien hoch."
+        }
+      }
+    }
 
     const fileBuffer = Buffer.from(await file.arrayBuffer())
     const storedFile = await storeDocumentFile({
       tenantId: tenantContext.tenantId,
       documentId: document.id,
       originalFilename: file.name,
-      mimeType: resolvedMimeType,
+      mimeType: fileMimeType,
       content: fileBuffer
     })
 
@@ -164,7 +176,7 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
         storageKey: storedFile.storageKey,
         sha256: storedFile.sha256
       })
-      await prepareDocumentProcessing({
+      await processDocumentExtraction({
         tenantId: tenantContext.tenantId,
         documentId: document.id,
         actorId: session.user.id
@@ -172,7 +184,7 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
       return {
         status: "success",
         message:
-          "Das Dokument und die Datei wurden tenant-gebunden gespeichert. Der Verarbeitungsstatus wurde auf „vorbereitet“ gesetzt."
+          "Das Dokument und die Datei wurden tenant-gebunden gespeichert. Die initiale Dokumentverarbeitung wurde gestartet."
       }
     } catch {
       await deleteStoredDocumentFile(storedFile.storageKey)
