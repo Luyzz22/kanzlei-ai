@@ -2,8 +2,12 @@
 
 import { auth } from "@/lib/auth"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
-import { attachStoredFileToDocument, createDocumentIntake } from "@/lib/documents/intake-core"
-import { processDocumentForExtraction } from "@/lib/documents/processing-core"
+import {
+  attachStoredFileToDocument,
+  createDocumentIntake,
+  markDocumentStorageFailure
+} from "@/lib/documents/intake-core"
+import { prepareDocumentProcessing } from "@/lib/documents/processing-core"
 import { deleteStoredDocumentFile, storeDocumentFile } from "@/lib/storage/document-storage"
 import { z } from "zod"
 
@@ -26,17 +30,6 @@ const erlaubteMimeTypes = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "text/plain"
 ]
-
-function buildStubFilename(title: string): string {
-  const normalized = title
-    .toLowerCase()
-    .replace(/[^a-z0-9äöüß-\s]/gi, "")
-    .replace(/\s+/g, "-")
-    .slice(0, 60)
-
-  const fallback = normalized || "dokument"
-  return `${fallback}.intake-stub`
-}
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
 
@@ -104,7 +97,17 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
   const uploadedFile = formData.get("file")
   const file = uploadedFile instanceof File ? uploadedFile : null
 
-  if (file && file.size > MAX_FILE_SIZE_BYTES) {
+  if (!file || file.size === 0) {
+    return {
+      status: "error",
+      message: "Bitte wählen Sie eine Datei für den Dokumenteingang aus.",
+      fieldErrors: {
+        file: "Für den produktiven Dokumenteingang ist eine Datei erforderlich."
+      }
+    }
+  }
+
+  if (file.size > MAX_FILE_SIZE_BYTES) {
     return {
       status: "error",
       message: "Die Datei ist zu groß.",
@@ -114,9 +117,9 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
     }
   }
 
-  const resolvedMimeType = file && file.size > 0 ? resolveMimeType(file) : ""
+  const resolvedMimeType = resolveMimeType(file)
 
-  if (file && file.size > 0 && !resolvedMimeType) {
+  if (!resolvedMimeType) {
     return {
       status: "error",
       message: "Der Dateityp wird derzeit nicht unterstützt.",
@@ -136,56 +139,54 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
       documentType: parsed.data.documentType,
       organizationName: parsed.data.organizationName,
       description: cleanedDescription,
-      filename: buildStubFilename(parsed.data.title),
-      mimeType: file && file.size > 0 ? undefined : "application/x-intake-stub",
-      sizeBytes: undefined
+      filename: file.name,
+      mimeType: resolvedMimeType,
+      sizeBytes: file.size
     })
 
-    if (file && file.size > 0) {
-      const fileBuffer = Buffer.from(await file.arrayBuffer())
-      const storedFile = await storeDocumentFile({
+    const fileBuffer = Buffer.from(await file.arrayBuffer())
+    const storedFile = await storeDocumentFile({
+      tenantId: tenantContext.tenantId,
+      documentId: document.id,
+      originalFilename: file.name,
+      mimeType: resolvedMimeType,
+      content: fileBuffer
+    })
+
+    try {
+      await attachStoredFileToDocument({
         tenantId: tenantContext.tenantId,
+        actorId: session.user.id,
         documentId: document.id,
-        originalFilename: file.name,
-        mimeType: resolvedMimeType,
-        content: fileBuffer
+        filename: storedFile.filename,
+        mimeType: storedFile.mimeType,
+        sizeBytes: storedFile.sizeBytes,
+        storageKey: storedFile.storageKey,
+        sha256: storedFile.sha256
       })
-
-      try {
-        await attachStoredFileToDocument({
-          tenantId: tenantContext.tenantId,
-          actorId: session.user.id,
-          documentId: document.id,
-          filename: storedFile.filename,
-          mimeType: storedFile.mimeType,
-          sizeBytes: storedFile.sizeBytes,
-          storageKey: storedFile.storageKey,
-          sha256: storedFile.sha256
-        })
-      } catch {
-        await deleteStoredDocumentFile(storedFile.storageKey)
-        return {
-          status: "error",
-          message:
-            "Das Dokument wurde angelegt, aber die tenant-gebundene Dateiablage konnte nicht abgeschlossen werden. Bitte laden Sie die Datei erneut hoch."
-        }
-      }
-
-      await processDocumentForExtraction({
+      await prepareDocumentProcessing({
         tenantId: tenantContext.tenantId,
         documentId: document.id,
         actorId: session.user.id
       })
-
       return {
         status: "success",
-        message: "Das Dokument wurde gespeichert und die Dokumentverarbeitung wurde für den aktuellen Mandanten angestoßen."
+        message:
+          "Das Dokument und die Datei wurden tenant-gebunden gespeichert. Der Verarbeitungsstatus wurde auf „vorbereitet“ gesetzt."
       }
-    }
-
-    return {
-      status: "success",
-      message: "Der Dokumenteingang wurde ohne Datei angelegt und dem Mandantenkontext zugeordnet."
+    } catch {
+      await deleteStoredDocumentFile(storedFile.storageKey)
+      await markDocumentStorageFailure({
+        tenantId: tenantContext.tenantId,
+        actorId: session.user.id,
+        documentId: document.id,
+        errorMessage: "Dateispeicherung konnte nicht konsistent abgeschlossen werden."
+      })
+      return {
+        status: "error",
+        message:
+          "Das Dokument wurde angelegt, aber die tenant-gebundene Dateiablage konnte nicht abgeschlossen werden. Bitte laden Sie die Datei erneut hoch."
+      }
     }
   } catch {
     return {
