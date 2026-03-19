@@ -11,6 +11,7 @@ import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
 import { listDocumentActivities } from "@/lib/documents/document-activity-core"
 import { getDocumentFileAccessContext } from "@/lib/documents/file-access-core"
+import { buildDocumentAnalysisView, type AnalysisFieldStatus } from "@/lib/documents/analysis-core"
 import {
   getDocumentProcessingStatusLabel,
   getDocumentProcessingStatusTone,
@@ -50,6 +51,12 @@ function getDisplayFilename(filename: string, hasStorageReference: boolean): str
   }
 
   return filename
+}
+
+function getAnalysisStatusTone(status: AnalysisFieldStatus): "success" | "info" | "neutral" {
+  if (status === "erkannt") return "success"
+  if (status === "teilweise erkannt") return "info"
+  return "neutral"
 }
 
 export default async function DokumentDetailPage({ params }: DokumentDetailPageProps) {
@@ -129,6 +136,15 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
       }),
       getDocumentFileAccessContext(tenantContext.tenantId, document.id)
     ])
+
+    const documentAnalysis = buildDocumentAnalysisView({
+      title: document.title,
+      documentType: document.documentType,
+      organizationName: document.organizationName,
+      description: document.description,
+      processingStatus: document.processingStatus,
+      extractedTextPreview: document.extractedTextPreview
+    })
 
 
     return (
@@ -331,6 +347,58 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
               <ProcessingTriggerForm documentId={document.id} />
             </div>
           </div>
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+          <h2 className="text-base font-semibold text-slate-900">Strukturierte Analyse</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Diese read-only Analysebasis wird tenant-gebunden aus der vorhandenen Textgrundlage und Dokumentmetadaten
+            abgeleitet.
+          </p>
+
+          <div className="mt-4">
+            <StatusBadge
+              label={`Analyse-Stand: ${documentAnalysis.analysisStatus}`}
+              tone={getAnalysisStatusTone(documentAnalysis.analysisStatus)}
+            />
+          </div>
+          <p className="mt-2 text-sm text-slate-600">{documentAnalysis.statusHint}</p>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <FeatureCard
+              title="Erkannte Metadaten"
+              description={[
+                `Dokumenteinordnung: ${documentAnalysis.inferredDocumentType.value} (${documentAnalysis.inferredDocumentType.status})`,
+                `Referenz: ${documentAnalysis.reference.value ?? "nicht eindeutig erkannt"} (${documentAnalysis.reference.status})`,
+                `Parteien: ${
+                  documentAnalysis.parties.values.length
+                    ? documentAnalysis.parties.values.join(" · ")
+                    : "nicht eindeutig erkannt"
+                } (${documentAnalysis.parties.status})`,
+                `Datumsangaben: ${
+                  documentAnalysis.dateSignals.values.length
+                    ? documentAnalysis.dateSignals.values.map((entry) => `${entry.label}: ${entry.value}`).join(" · ")
+                    : "nicht eindeutig erkannt"
+                } (${documentAnalysis.dateSignals.status})`
+              ].join("\n")}
+              meta={`Dokumentkontext: ${document.organizationName}`}
+            />
+            <FeatureCard
+              title="Erkannte Prüfbereiche"
+              description={documentAnalysis.clauseAreas
+                .map((entry) => `${entry.label}: ${entry.status}`)
+                .join("\n")}
+              meta="Die Kennzeichnung basiert auf konservativen Signalmustern aus dem Textauszug."
+            />
+          </div>
+
+          <InfoPanel title="Analysehinweise" tone="muted">
+            <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {documentAnalysis.limitations.map((limitation) => (
+                <li key={limitation}>{limitation}</li>
+              ))}
+            </ul>
+          </InfoPanel>
         </section>
 
 
