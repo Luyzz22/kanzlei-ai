@@ -43,6 +43,14 @@ function getPreviewHint(mode: "txt" | "pdf" | "office" | "none"): string {
   return "Für dieses Dateiformat ist aktuell keine Vorschau verfügbar"
 }
 
+function getDisplayFilename(filename: string, hasStorageReference: boolean): string {
+  if (!hasStorageReference && filename === "kein-dateiupload") {
+    return "Keine Eingangsdatei hinterlegt"
+  }
+
+  return filename
+}
+
 export default async function DokumentDetailPage({ params }: DokumentDetailPageProps) {
   const session = await auth()
 
@@ -161,7 +169,7 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
           <FeatureCard
             title="Dokumentkontext"
             description={document.description ?? "Keine zusätzliche Beschreibung hinterlegt."}
-            meta={`Dateiname: ${document.filename}`}
+            meta={`Dateiname: ${getDisplayFilename(document.filename, Boolean(fileAccessContext?.hasStorageReference))}`}
           />
           <FeatureCard
             title="Upload- und Bearbeitungskontext"
@@ -189,7 +197,9 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <p className="text-xs uppercase tracking-wide text-slate-500">Dateiname</p>
-              <p className="font-medium text-slate-900">{document.filename}</p>
+              <p className="font-medium text-slate-900">
+                {getDisplayFilename(document.filename, Boolean(fileAccessContext?.hasStorageReference))}
+              </p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-wide text-slate-500">Dateiformat (MIME)</p>
