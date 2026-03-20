@@ -103,9 +103,14 @@ export default async function WorkspaceReviewQueuePage() {
                   <tr key={document.id} className="align-top hover:bg-slate-50/70">
                     <td className="px-4 py-3">
                       <p className="font-medium text-slate-900">{document.title}</p>
-                      <Link href={`/workspace/dokumente/${document.id}`} className="text-xs text-slate-500 underline-offset-4 hover:underline">
-                        {document.id}
-                      </Link>
+                      <div className="flex flex-col gap-1">
+                        <Link href={`/workspace/dokumente/${document.id}`} className="text-xs text-slate-500 underline-offset-4 hover:underline">
+                          {document.id}
+                        </Link>
+                        <Link href={`/workspace/dokumente/${document.id}/dossier`} className="text-xs text-slate-500 underline-offset-4 hover:underline">
+                          Dossier öffnen
+                        </Link>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-slate-600">{document.documentType}</td>
                     <td className="px-4 py-3 text-slate-600">{document.organizationName}</td>

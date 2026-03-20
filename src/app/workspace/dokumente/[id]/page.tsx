@@ -214,6 +214,12 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
           </div>
 
           <p className="mt-4 text-sm text-slate-600">{document.reviewContext} Diese Arbeitsoberfläche bleibt bewusst read-only und nachvollziehbar.</p>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link href={`/workspace/dokumente/${document.id}/dossier`} className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+              Dossier öffnen
+            </Link>
+          </div>
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1.65fr_1fr]">
