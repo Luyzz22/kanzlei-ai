@@ -97,7 +97,12 @@ export default async function WorkspaceDokumentePage() {
                         >
                           {document.title}
                         </Link>
-                        <p className="text-xs text-slate-500">{document.id}</p>
+                        <div className="mt-1 flex flex-col gap-1">
+                          <p className="text-xs text-slate-500">{document.id}</p>
+                          <Link href={`/workspace/dokumente/${document.id}/dossier`} className="text-xs text-slate-500 underline-offset-4 hover:underline">
+                            Dossier öffnen
+                          </Link>
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-slate-600">{document.documentType}</td>
                       <td className="px-4 py-3 text-slate-600">{document.organizationName}</td>
