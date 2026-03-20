@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import { DocumentCommentsPanel } from "@/components/documents/document-comments-panel"
 import { DocumentActivityTimeline } from "@/components/documents/document-activity-timeline"
+import { DocumentReviewPanel } from "@/components/documents/document-review-panel"
 import { EmptyState } from "@/components/marketing/empty-state"
 import { InfoPanel } from "@/components/marketing/info-panel"
 import { PageShell } from "@/components/marketing/page-shell"
@@ -12,6 +13,11 @@ import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
 import { listDocumentComments } from "@/lib/documents/comments-core"
 import { getDocumentWorkbenchData } from "@/lib/documents/workbench-core"
+import {
+  listDocumentFindings,
+  listDocumentReviewNotes,
+  listReviewAssignableMembers
+} from "@/lib/documents/review-workbench-core"
 import {
   getDocumentProcessingStatusLabel,
   getDocumentProcessingStatusTone,
@@ -95,7 +101,7 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
   }
 
   try {
-    const workbench = await getDocumentWorkbenchData(tenantContext.tenantId, params.id)
+    const workbench = await getDocumentWorkbenchData(tenantContext.tenantId, session.user.id, params.id)
 
     if (!workbench) {
       return (
@@ -118,14 +124,27 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
       )
     }
 
-    const commentsResult = await listDocumentComments({
-      tenantId: tenantContext.tenantId,
-      actorId: session.user.id,
-      documentId: params.id
-    })
+    const [commentsResult, notesResult, findingsResult, assignableMembersResult] = await Promise.all([
+      listDocumentComments({
+        tenantId: tenantContext.tenantId,
+        actorId: session.user.id,
+        documentId: params.id
+      }),
+      listDocumentReviewNotes(tenantContext.tenantId, session.user.id, params.id),
+      listDocumentFindings(tenantContext.tenantId, session.user.id, params.id),
+      listReviewAssignableMembers(tenantContext.tenantId, session.user.id)
+    ])
 
-    if (!commentsResult.ok) {
-      if (commentsResult.code === "FORBIDDEN_MEMBERSHIP") {
+    if (!commentsResult.ok || !notesResult.ok || !findingsResult.ok || !assignableMembersResult.ok) {
+      const code = commentsResult.ok
+        ? notesResult.ok
+          ? findingsResult.ok
+            ? assignableMembersResult.code
+            : findingsResult.code
+          : notesResult.code
+        : commentsResult.code
+
+      if (code === "FORBIDDEN_MEMBERSHIP") {
         return (
           <PageShell width="wide" className="space-y-6">
             <SectionIntro
@@ -148,7 +167,7 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
       )
     }
 
-    const { document, activities, fileAccess, analysis, reviewContext } = workbench
+    const { document, activities, fileAccess, analysis, reviewContext, reviewSummary } = workbench
     const previewParagraphs = document.extractedTextPreview ? splitPreviewText(document.extractedTextPreview) : []
 
     return (
@@ -374,6 +393,14 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
             </InfoPanel>
           </div>
         </section>
+
+        <DocumentReviewPanel
+          documentId={document.id}
+          notes={notesResult.notes}
+          findings={findingsResult.findings}
+          reviewSummary={reviewSummary}
+          assignableMembers={assignableMembersResult.members}
+        />
 
         <DocumentCommentsPanel documentId={document.id} comments={commentsResult.comments} canWrite />
 
