@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/marketing/status-badge"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
 import { listReviewQueueDocuments } from "@/lib/documents/review-core"
+import { getReviewReadinessTone } from "@/lib/documents/review-workbench-core"
 
 import { ReviewRowActions } from "@/app/workspace/review-queue/review-row-actions"
 
@@ -87,6 +88,11 @@ export default async function WorkspaceReviewQueuePage() {
                 <th className="px-4 py-3 font-semibold">Typ</th>
                 <th className="px-4 py-3 font-semibold">Organisation / Mandant</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Freigabereife</th>
+                <th className="px-4 py-3 font-semibold">Review-Verantwortung</th>
+                <th className="px-4 py-3 font-semibold">Fälligkeit</th>
+                <th className="px-4 py-3 font-semibold">Offene Findings</th>
+                <th className="px-4 py-3 font-semibold">Entscheidungsvermerk</th>
                 <th className="px-4 py-3 font-semibold">Eingang</th>
                 <th className="px-4 py-3 font-semibold">Aktion</th>
               </tr>
@@ -106,6 +112,13 @@ export default async function WorkspaceReviewQueuePage() {
                     <td className="px-4 py-3">
                       <StatusBadge label={statusLabel[document.status]} tone={statusTone[document.status]} />
                     </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge label={document.readinessLabel} tone={getReviewReadinessTone(document.readiness)} />
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{document.reviewOwnerLabel ?? "Nicht zugewiesen"}</td>
+                    <td className="px-4 py-3 text-slate-600">{document.reviewDueAt ? new Date(document.reviewDueAt).toLocaleDateString("de-DE") : "Nicht gesetzt"}</td>
+                    <td className="px-4 py-3 text-slate-600">{document.openFindingsCount}</td>
+                    <td className="px-4 py-3 text-slate-600">{document.hasDecisionMemo ? "Vorhanden" : "Fehlt"}</td>
                     <td className="px-4 py-3 text-slate-600">{new Date(document.createdAt).toLocaleDateString("de-DE")}</td>
                     <td className="min-w-56 px-4 py-3">
                       <ReviewRowActions documentId={document.id} currentStatus={document.status} userRole={session.user.role} />
@@ -114,7 +127,7 @@ export default async function WorkspaceReviewQueuePage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-sm text-slate-600">
+                  <td colSpan={12} className="px-4 py-6 text-sm text-slate-600">
                     Derzeit liegen keine review-fähigen Dokumente im Status „Eingegangen“ oder „In Prüfung“ vor.
                   </td>
                 </tr>

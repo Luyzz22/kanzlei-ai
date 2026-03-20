@@ -160,6 +160,78 @@ export function mapAuditEventToDocumentActivity(event: {
     }
   }
 
+  if (event.action === "document.review.note.created") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Review-Notiz erstellt",
+      context: "Eine strukturierte Review-Notiz wurde erfasst.",
+      actorLabel,
+      category: "Review",
+      action: event.action
+    }
+  }
+
+  if (event.action === "document.review.memo.created") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Freigabevermerk erstellt",
+      context: "Ein formaler Entscheidungs- bzw. Freigabevermerk wurde hinterlegt.",
+      actorLabel,
+      category: "Freigabe",
+      action: event.action
+    }
+  }
+
+  if (event.action === "document.finding.created") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Prüfhinweis erstellt",
+      context: "Ein neuer Finding-Eintrag wurde im Prüfregister angelegt.",
+      actorLabel,
+      category: "Review",
+      action: event.action
+    }
+  }
+
+  if (event.action === "document.finding.resolved") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Prüfhinweis aktualisiert",
+      context: "Ein Finding wurde als geklärt oder akzeptiert markiert.",
+      actorLabel,
+      category: "Review",
+      action: event.action
+    }
+  }
+
+  if (event.action === "document.review.owner.assigned") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Review-Verantwortung angepasst",
+      context: "Die Verantwortlichkeit für die Dokumentprüfung wurde aktualisiert.",
+      actorLabel,
+      category: "Review",
+      action: event.action
+    }
+  }
+
+  if (event.action === "document.review.due_date.updated") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Review-Fälligkeit geändert",
+      context: "Der Zieltermin für die Prüfung wurde angepasst.",
+      actorLabel,
+      category: "Review",
+      action: event.action
+    }
+  }
+
   if (event.action === "document.review.approved") {
     return {
       id: `audit-${event.id}`,

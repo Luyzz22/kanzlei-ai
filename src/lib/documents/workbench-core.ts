@@ -4,6 +4,7 @@ import { type DocumentIntakeStatus } from "@prisma/client"
 
 import { listDocumentActivities, type DocumentActivityItem } from "@/lib/documents/document-activity-core"
 import { getDocumentFileAccessContext } from "@/lib/documents/file-access-core"
+import { getDocumentReviewSummary, type DocumentReviewSummary } from "@/lib/documents/review-workbench-core"
 import { getWorkspaceDocumentById, type WorkspaceDocumentDetail } from "@/lib/documents/workspace-core"
 
 export type StructuredAnalysisTopic = {
@@ -29,6 +30,7 @@ export type DocumentWorkbenchData = {
     latestReviewAction: DocumentActivityItem | null
     latestApprovalAction: DocumentActivityItem | null
   }
+  reviewSummary: DocumentReviewSummary
   analysis: {
     metadata: StructuredAnalysisSection[]
     clauseTopics: StructuredAnalysisTopic[]
@@ -158,28 +160,34 @@ function buildReviewContext(document: WorkspaceDocumentDetail, activities: Docum
   }
 }
 
-export async function getDocumentWorkbenchData(tenantId: string, documentId: string): Promise<DocumentWorkbenchData | null> {
+export async function getDocumentWorkbenchData(tenantId: string, actorId: string, documentId: string): Promise<DocumentWorkbenchData | null> {
   const document = await getWorkspaceDocumentById(tenantId, documentId)
 
   if (!document) {
     return null
   }
 
-  const [activities, fileAccess] = await Promise.all([
+  const [activities, fileAccess, reviewSummaryResult] = await Promise.all([
     listDocumentActivities({
       tenantId,
       documentId: document.id,
       documentCreatedAt: document.createdAt,
       uploadedByLabel: document.uploadedByLabel
     }),
-    getDocumentFileAccessContext(tenantId, document.id)
+    getDocumentFileAccessContext(tenantId, document.id),
+    getDocumentReviewSummary(tenantId, actorId, document.id)
   ])
+
+  if (!reviewSummaryResult.ok) {
+    return null
+  }
 
   return {
     document,
     fileAccess,
     activities,
     reviewContext: buildReviewContext(document, activities),
+    reviewSummary: reviewSummaryResult.summary,
     analysis: buildStructuredAnalysis(document)
   }
 }

@@ -3,6 +3,7 @@ import "server-only"
 import { DocumentIntakeStatus, Role, TenantRole } from "@prisma/client"
 
 import { writeAuditEventTx } from "@/lib/audit-write"
+import { deriveReviewReadinessState, getReviewReadinessLabel, type ReviewReadinessState } from "@/lib/documents/review-workbench-core"
 import { withTenant } from "@/lib/tenant-context.server"
 
 export type ReviewQueueDocument = {
@@ -12,11 +13,17 @@ export type ReviewQueueDocument = {
   organizationName: string
   status: DocumentIntakeStatus
   createdAt: Date
+  reviewOwnerLabel: string | null
+  reviewDueAt: Date | null
+  openFindingsCount: number
+  hasDecisionMemo: boolean
+  readiness: ReviewReadinessState
+  readinessLabel: string
 }
 
 export async function listReviewQueueDocuments(tenantId: string): Promise<ReviewQueueDocument[]> {
   return withTenant(tenantId, async (tx) => {
-    return tx.document.findMany({
+    const documents = await tx.document.findMany({
       where: {
         status: {
           in: [DocumentIntakeStatus.EINGEGANGEN, DocumentIntakeStatus.IN_PRUEFUNG]
@@ -29,8 +36,63 @@ export async function listReviewQueueDocuments(tenantId: string): Promise<Review
         documentType: true,
         organizationName: true,
         status: true,
-        createdAt: true
+        createdAt: true,
+        reviewDueAt: true,
+        reviewOwner: {
+          select: {
+            name: true,
+            email: true
+          }
+        },
+        reviewNotes: {
+          where: {
+            type: "DECISION_MEMO"
+          },
+          take: 1,
+          select: {
+            id: true
+          }
+        },
+        findings: {
+          select: {
+            status: true
+          }
+        }
       }
+    })
+
+    const mapped = documents.map((document) => {
+      const openFindingsCount = document.findings.filter((item) => item.status === "OFFEN").length
+      const readiness = deriveReviewReadinessState({
+        status: document.status,
+        openFindingsCount,
+        hasReviewOwner: Boolean(document.reviewOwner),
+        hasDecisionMemo: document.reviewNotes.length > 0
+      })
+
+      return {
+        id: document.id,
+        title: document.title,
+        documentType: document.documentType,
+        organizationName: document.organizationName,
+        status: document.status,
+        createdAt: document.createdAt,
+        reviewOwnerLabel: document.reviewOwner ? document.reviewOwner.name ?? document.reviewOwner.email ?? "Unbekannt" : null,
+        reviewDueAt: document.reviewDueAt,
+        openFindingsCount,
+        hasDecisionMemo: document.reviewNotes.length > 0,
+        readiness,
+        readinessLabel: getReviewReadinessLabel(readiness)
+      }
+    })
+
+    return mapped.sort((a, b) => {
+      const aDue = a.reviewDueAt ? new Date(a.reviewDueAt).getTime() : Number.MAX_SAFE_INTEGER
+      const bDue = b.reviewDueAt ? new Date(b.reviewDueAt).getTime() : Number.MAX_SAFE_INTEGER
+
+      if (a.openFindingsCount !== b.openFindingsCount) return b.openFindingsCount - a.openFindingsCount
+      if (aDue !== bDue) return aDue - bDue
+      return b.createdAt.getTime() - a.createdAt.getTime()
     })
   })
 }

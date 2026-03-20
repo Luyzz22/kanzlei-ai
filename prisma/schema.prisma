@@ -30,8 +30,12 @@ model User {
 
   // Enterprise relations
   memberships       TenantMember[]
-  uploadedDocuments Document[]
+  uploadedDocuments Document[] @relation("DocumentUploadedBy")
   documentComments  DocumentComment[]
+  documentReviewNotes DocumentReviewNote[] @relation("DocumentReviewNoteAuthor")
+  createdFindings DocumentFinding[] @relation("DocumentFindingCreatedBy")
+  resolvedFindings DocumentFinding[] @relation("DocumentFindingResolvedBy")
+  reviewOwnedDocuments Document[] @relation("DocumentReviewOwner")
   analysisLogs      AnalysisLog[]
   auditEvents       AuditEvent[]
   updatedGovernanceSettings TenantGovernanceSettings[] @relation("TenantGovernanceSettingsUpdatedBy")
@@ -112,6 +116,8 @@ model Tenant {
   members      TenantMember[]
   documents    Document[]
   documentComments DocumentComment[]
+  documentReviewNotes DocumentReviewNote[]
+  documentFindings DocumentFinding[]
   auditEvents  AuditEvent[]
   analysisLogs AnalysisLog[]
   governanceSettings TenantGovernanceSettings?
@@ -167,15 +173,22 @@ model Document {
   processingError String?
   extractedTextPreview String?
   textExtractedAt DateTime?
+  reviewOwnerId String?
+  reviewDueAt DateTime?
   createdAt    DateTime @default(now())
 
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  uploadedBy   User?         @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  uploadedBy   User?         @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  reviewOwner  User?         @relation("DocumentReviewOwner", fields: [reviewOwnerId], references: [id], onDelete: SetNull)
   comments     DocumentComment[]
+  reviewNotes  DocumentReviewNote[]
+  findings     DocumentFinding[]
   analysisLogs AnalysisLog[]
   auditEvents  AuditEvent[]
 
   @@index([tenantId, createdAt])
+  @@index([tenantId, reviewDueAt])
+  @@index([reviewOwnerId])
 }
 
 model DocumentComment {
@@ -196,6 +209,70 @@ model DocumentComment {
   @@index([tenantId, documentId, createdAt])
   @@index([documentId, createdAt])
   @@index([authorId, createdAt])
+}
+
+enum DocumentReviewNoteType {
+  NOTE
+  DECISION_MEMO
+}
+
+model DocumentReviewNote {
+  id         String   @id @default(cuid())
+  tenantId   String
+  documentId String
+  authorId   String
+  type       DocumentReviewNoteType @default(NOTE)
+  title      String?  @db.VarChar(160)
+  body       String   @db.Text
+  sectionKey String?  @db.VarChar(64)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author   User     @relation("DocumentReviewNoteAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, documentId, type, createdAt])
+  @@index([documentId, createdAt])
+  @@index([authorId, createdAt])
+}
+
+enum DocumentFindingSeverity {
+  NIEDRIG
+  MITTEL
+  HOCH
+}
+
+enum DocumentFindingStatus {
+  OFFEN
+  GEKLAERT
+  AKZEPTIERT
+}
+
+model DocumentFinding {
+  id           String   @id @default(cuid())
+  tenantId     String
+  documentId   String
+  createdById  String
+  title        String   @db.VarChar(180)
+  description  String   @db.Text
+  severity     DocumentFindingSeverity @default(MITTEL)
+  status       DocumentFindingStatus @default(OFFEN)
+  sectionKey   String?  @db.VarChar(64)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  resolvedAt   DateTime?
+  resolvedById String?
+
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy  User     @relation("DocumentFindingCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  resolvedBy User?    @relation("DocumentFindingResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, documentId, status, createdAt])
+  @@index([documentId, createdAt])
+  @@index([createdById, createdAt])
+  @@index([resolvedById, resolvedAt])
 }
 
 enum DocumentProcessingStatus {
