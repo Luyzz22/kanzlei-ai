@@ -1,20 +1,18 @@
 import Link from "next/link"
 
 import { DocumentActivityTimeline } from "@/components/documents/document-activity-timeline"
-import { CtaPanel } from "@/components/marketing/cta-panel"
-import { FeatureCard } from "@/components/marketing/feature-card"
+import { EmptyState } from "@/components/marketing/empty-state"
 import { InfoPanel } from "@/components/marketing/info-panel"
+import { PageShell } from "@/components/marketing/page-shell"
 import { SectionIntro } from "@/components/marketing/section-intro"
 import { StatusBadge } from "@/components/marketing/status-badge"
 import { ProcessingTriggerForm } from "@/app/workspace/dokumente/[id]/processing-trigger-form"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
-import { listDocumentActivities } from "@/lib/documents/document-activity-core"
-import { getDocumentFileAccessContext } from "@/lib/documents/file-access-core"
+import { getDocumentWorkbenchData } from "@/lib/documents/workbench-core"
 import {
   getDocumentProcessingStatusLabel,
   getDocumentProcessingStatusTone,
-  getWorkspaceDocumentById,
   getWorkspaceDocumentStatusLabel,
   getWorkspaceDocumentStatusTone
 } from "@/lib/documents/workspace-core"
@@ -27,21 +25,12 @@ type DokumentDetailPageProps = {
 
 function formatSize(sizeBytes: number | null): string {
   if (!sizeBytes || sizeBytes <= 0) return "Nicht hinterlegt"
-
   if (sizeBytes < 1024) return `${sizeBytes} Bytes`
 
   const kb = sizeBytes / 1024
   if (kb < 1024) return `${kb.toFixed(1)} KB`
 
-  const mb = kb / 1024
-  return `${mb.toFixed(1)} MB`
-}
-
-function getPreviewHint(mode: "txt" | "pdf" | "office" | "none"): string {
-  if (mode === "txt") return "Read-only Textvorschau verfügbar"
-  if (mode === "pdf") return "PDF erkannt · Browser-Vorschau folgt in einem späteren Ausbau"
-  if (mode === "office") return "Office-Dokument erkannt · Vorschaufunktion folgt"
-  return "Für dieses Dateiformat ist aktuell keine Vorschau verfügbar"
+  return `${(kb / 1024).toFixed(1)} MB`
 }
 
 function getDisplayFilename(filename: string, hasStorageReference: boolean): string {
@@ -52,21 +41,28 @@ function getDisplayFilename(filename: string, hasStorageReference: boolean): str
   return filename
 }
 
+function splitPreviewText(text: string): string[] {
+  return text
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+}
+
 export default async function DokumentDetailPage({ params }: DokumentDetailPageProps) {
   const session = await auth()
 
   if (!session?.user?.id) {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="wide" className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Dokumente"
-          title="Dokumentdetail nicht verfügbar"
+          title="Document Workbench nicht verfügbar"
           description="Bitte melden Sie sich an, um Dokumente im tenant-gebundenen Arbeitsbereich zu öffnen."
         />
         <Link href="/login" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
           Zur Anmeldung
         </Link>
-      </main>
+      </PageShell>
     )
   }
 
@@ -74,34 +70,34 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
 
   if (tenantContext.status === "none") {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="wide" className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Dokumente"
           title="Kein Mandantenkontext verfügbar"
           description="Für dieses Konto ist aktuell kein eindeutiger Mandantenkontext hinterlegt."
         />
-      </main>
+      </PageShell>
     )
   }
 
   if (tenantContext.status === "multiple") {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="wide" className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Dokumente"
           title="Mandantenkontext nicht eindeutig"
           description="Diese Ansicht erfordert einen eindeutigen Mandantenkontext. Die gesteuerte Auswahl folgt in einem späteren Ausbau."
         />
-      </main>
+      </PageShell>
     )
   }
 
   try {
-    const document = await getWorkspaceDocumentById(tenantContext.tenantId, params.id)
+    const workbench = await getDocumentWorkbenchData(tenantContext.tenantId, params.id)
 
-    if (!document) {
+    if (!workbench) {
       return (
-        <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <PageShell width="wide" className="space-y-6">
           <SectionIntro
             eyebrow="Workspace · Dokumente"
             title="Dokument nicht gefunden"
@@ -116,31 +112,23 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
               </Link>
             </div>
           </InfoPanel>
-        </main>
+        </PageShell>
       )
     }
 
-    const [activities, fileAccessContext] = await Promise.all([
-      listDocumentActivities({
-        tenantId: tenantContext.tenantId,
-        documentId: document.id,
-        documentCreatedAt: document.createdAt,
-        uploadedByLabel: document.uploadedByLabel
-      }),
-      getDocumentFileAccessContext(tenantContext.tenantId, document.id)
-    ])
-
+    const { document, activities, fileAccess, analysis, reviewContext } = workbench
+    const previewParagraphs = document.extractedTextPreview ? splitPreviewText(document.extractedTextPreview) : []
 
     return (
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="wide" className="space-y-6">
         <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
           <SectionIntro
-            eyebrow="Dokumentdetail · Read-only"
+            eyebrow="Document Workbench · Read-only"
             title={document.title}
-            description="Einzelfallansicht mit tenant-gebundener Nachvollziehbarkeit von Status, Kontext und Review-Stand."
+            description="Tenant-gebundene Arbeitsoberfläche für Dokumentkontext, Textgrundlage, strukturierte Analyse, Freigabekontext und Verlauf."
           />
 
-          <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-6">
             <div>
               <p className="text-xs uppercase tracking-wide text-slate-500">Dokument-ID</p>
               <p className="font-medium text-slate-900">{document.id}</p>
@@ -154,102 +142,13 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
               <p className="font-medium text-slate-900">{document.organizationName}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Status</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Bearbeitungsstand</p>
               <div className="mt-1">
                 <StatusBadge label={getWorkspaceDocumentStatusLabel(document.status)} tone={getWorkspaceDocumentStatusTone(document.status)} />
               </div>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Eingegangen</p>
-              <p className="font-medium text-slate-900">{new Date(document.createdAt).toLocaleDateString("de-DE")}</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-2">
-          <FeatureCard
-            title="Dokumentkontext"
-            description={document.description ?? "Keine zusätzliche Beschreibung hinterlegt."}
-            meta={`Dateiname: ${getDisplayFilename(document.filename, Boolean(fileAccessContext?.hasStorageReference))}`}
-          />
-          <FeatureCard
-            title="Upload- und Bearbeitungskontext"
-            description={`Bearbeitungsverantwortung: ${document.uploadedByLabel}\n\nErfasst am: ${new Date(document.createdAt).toLocaleString("de-DE")}`}
-            meta={document.mimeType ? `MIME-Typ: ${document.mimeType}` : "MIME-Typ nicht hinterlegt"}
-          />
-          <FeatureCard
-            title="Prüf- und Freigabekontext"
-            description={document.reviewContext}
-            meta={`Aktueller Status: ${getWorkspaceDocumentStatusLabel(document.status)}`}
-          />
-          <FeatureCard
-            title="Technische Metadaten"
-            description={`Dokument-ID: ${document.id}\nDateigröße: ${formatSize(fileAccessContext?.sizeBytes ?? document.sizeBytes ?? null)}`}
-            meta={fileAccessContext?.hasStorageReference ? "Dateiablage referenziert (tenant-gebunden)" : "Dateiablage noch nicht vorhanden"}
-          />
-        </section>
-
-        <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-          <h2 className="text-base font-semibold text-slate-900">Dateizugriff & Vorschau</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Der Zugriff erfolgt ausschließlich tenant-gebunden. Weitere Vorschaufunktionen folgen in einem späteren Ausbau.
-          </p>
-
-          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Dateiname</p>
-              <p className="font-medium text-slate-900">
-                {getDisplayFilename(document.filename, Boolean(fileAccessContext?.hasStorageReference))}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Dateiformat (MIME)</p>
-              <p className="font-medium text-slate-900">{document.mimeType ?? "Nicht hinterlegt"}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Dateigröße</p>
-              <p className="font-medium text-slate-900">{formatSize(fileAccessContext?.sizeBytes ?? document.sizeBytes ?? null)}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Dateiablage</p>
-              <p className="font-medium text-slate-900">
-                {fileAccessContext?.fileAvailable
-                  ? "Vorhanden"
-                  : fileAccessContext?.hasStorageReference
-                    ? "Referenz vorhanden, Datei nicht auffindbar"
-                    : "Nicht vorhanden"}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-3">
-            {fileAccessContext?.fileAvailable ? (
-              <Link
-                href={`/api/workspace/dokumente/${document.id}/download`}
-                className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
-              >
-                Dokument herunterladen
-              </Link>
-            ) : (
-              <p className="text-sm text-slate-600">Download aktuell nicht verfügbar, da keine vollständige Dateiablage vorliegt.</p>
-            )}
-          </div>
-
-          <InfoPanel title="Vorschauhinweis" tone="muted">
-            {fileAccessContext?.fileAvailable ? getPreviewHint(fileAccessContext.previewMode) : "Keine Vorschau verfügbar, da keine vollständige Dateiablage vorliegt."}
-          </InfoPanel>
-        </section>
-
-        <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-          <h2 className="text-base font-semibold text-slate-900">Dokumentverarbeitung</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Die Verarbeitung bleibt tenant-gebunden. In dieser Ausbaustufe wird ein ehrlicher Verarbeitungsstand mit
-            optionaler Textgrundlage dokumentiert.
-          </p>
-
-          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Verarbeitungsstatus</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Verarbeitungsstand</p>
               <div className="mt-1">
                 <StatusBadge
                   label={getDocumentProcessingStatusLabel(document.processingStatus)}
@@ -258,47 +157,29 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
               </div>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Zuletzt verarbeitet</p>
-              <p className="font-medium text-slate-900">
-                {document.processedAt ? new Date(document.processedAt).toLocaleString("de-DE") : "Noch keine Verarbeitung durchgeführt"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Dateiablage-Referenz</p>
-              <p className="font-medium text-slate-900">
-                {document.storageKey ? "Vorhanden (tenant-gebunden)" : "Nicht hinterlegt"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Nächste Stufe</p>
-              <p className="font-medium text-slate-900">Parsing, OCR und KI-Analyse folgen in späteren PRs</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Eingegangen</p>
+              <p className="font-medium text-slate-900">{new Date(document.createdAt).toLocaleDateString("de-DE")}</p>
             </div>
           </div>
 
-          {document.processingStatus === "NICHT_UNTERSTUETZT" ? (
-            <InfoPanel title="Format aktuell nicht unterstützt" tone="muted">
-              Für dieses Dateiformat ist die automatische Textextraktion in der aktuellen Ausbaustufe noch nicht verfügbar.
-            </InfoPanel>
-          ) : null}
+          <p className="mt-4 text-sm text-slate-600">{document.reviewContext} Diese Arbeitsoberfläche bleibt bewusst read-only und nachvollziehbar.</p>
+        </section>
 
-          {document.processingStatus === "FEHLGESCHLAGEN" ? (
-            <InfoPanel title="Verarbeitung fehlgeschlagen" tone="muted">
-              {document.processingError ?? "Die Verarbeitung konnte nicht abgeschlossen werden. Bitte prüfen Sie die Datei und versuchen Sie es erneut."}
-            </InfoPanel>
-          ) : null}
-
-          <p className="mt-4 text-sm text-slate-600">
-            Die aktuelle Verarbeitung liefert eine read-only Textgrundlage für unterstützte Formate. OCR und
-            weitergehende Analysen folgen in späteren Ausbaustufen.
-          </p>
-
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <h3 className="text-sm font-semibold text-slate-900">Extraktion & Textgrundlage</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              In dieser Ausbaustufe wird die tenant-gebundene Textextraktion für TXT-Dateien unterstützt.
+        <section className="grid gap-4 xl:grid-cols-[1.65fr_1fr]">
+          <InfoPanel title="Textgrundlage" tone="default">
+            <p className="text-sm text-slate-600">
+              Extrahierter Dokumenttext als Arbeitsgrundlage. Die Vorschau basiert auf verfügbarer Extraktion und wird tenant-gebunden bereitgestellt.
             </p>
 
-            <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+            <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Dateiname</p>
+                <p className="font-medium text-slate-900">{getDisplayFilename(document.filename, Boolean(fileAccess?.hasStorageReference))}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Dateigröße</p>
+                <p className="font-medium text-slate-900">{formatSize(fileAccess?.sizeBytes ?? document.sizeBytes ?? null)}</p>
+              </div>
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">Extrahiert am</p>
                 <p className="font-medium text-slate-900">
@@ -306,33 +187,161 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
                 </p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Textgrundlage</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Dateizugriff</p>
                 <p className="font-medium text-slate-900">
-                  {document.extractedTextPreview ? "Verfügbar (Read-only Vorschau)" : "Nicht verfügbar"}
+                  {fileAccess?.fileAvailable
+                    ? "Dateiablage verfügbar"
+                    : fileAccess?.hasStorageReference
+                      ? "Referenz vorhanden, Datei derzeit nicht auffindbar"
+                      : "Keine Dateiablage hinterlegt"}
                 </p>
               </div>
             </div>
 
-            {document.extractedTextPreview ? (
-              <div className="mt-4">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Extrahierter Textauszug</p>
-                <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-800">
-                  {document.extractedTextPreview}
-                </pre>
+            {previewParagraphs.length ? (
+              <div className="mt-4 max-h-[560px] space-y-3 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-4">
+                {previewParagraphs.map((paragraph, index) => (
+                  <p key={`${index}-${paragraph.slice(0, 16)}`} className="text-sm leading-relaxed text-slate-800">
+                    {paragraph}
+                  </p>
+                ))}
               </div>
             ) : (
-              <p className="mt-4 text-sm text-slate-600">
-                Es liegt aktuell keine extrahierbare Textgrundlage vor. Für nicht unterstützte Formate bleibt der
-                Status nachvollziehbar im Verarbeitungsstand dokumentiert.
-              </p>
+              <div className="mt-4">
+                <EmptyState
+                  title="Keine nutzbare Textgrundlage verfügbar"
+                  description="Für dieses Dokument liegt derzeit noch keine nutzbare Textgrundlage vor. Die strukturierte Analyse ist erst nach erfolgreicher Textextraktion verfügbar."
+                />
+              </div>
             )}
 
-            <div className="mt-4">
+            {document.processingStatus === "FEHLGESCHLAGEN" ? (
+              <p className="mt-4 text-sm text-rose-700">
+                Verarbeitungshinweis: {document.processingError ?? "Die Verarbeitung konnte nicht abgeschlossen werden."}
+              </p>
+            ) : null}
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              {fileAccess?.fileAvailable ? (
+                <Link
+                  href={`/api/workspace/dokumente/${document.id}/download`}
+                  className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
+                >
+                  Dokument herunterladen
+                </Link>
+              ) : null}
               <ProcessingTriggerForm documentId={document.id} />
             </div>
+          </InfoPanel>
+
+          <div className="space-y-4">
+            <InfoPanel title="Strukturierte Analyse" tone="default">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Erkannte Metadaten</p>
+                  <div className="mt-2 space-y-3">
+                    {analysis.metadata.map((section) => (
+                      <div key={section.heading} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-sm font-medium text-slate-900">{section.heading}</p>
+                        {section.values.length ? (
+                          <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-slate-700">
+                            {section.values.map((value) => (
+                              <li key={value}>{value}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mt-1 text-sm text-slate-600">{section.emptyHint}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prüfbereiche / Klauselthemen</p>
+                  <ul className="mt-2 space-y-2">
+                    {analysis.clauseTopics.map((topic) => (
+                      <li key={topic.label} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-slate-900">{topic.label}</p>
+                          <StatusBadge label={topic.available ? "Erkannt" : "Offen"} tone={topic.available ? "info" : "neutral"} />
+                        </div>
+                        <p className="mt-1 text-sm text-slate-700">{topic.note}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Analysehinweise / Grenzen</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-slate-700">
+                    {analysis.guidance.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </InfoPanel>
+
+            <InfoPanel title="Review- & Freigabekontext" tone="muted">
+              <div className="grid gap-3 text-sm">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Aktueller Review-Stand</p>
+                  <p className="font-medium text-slate-900">{reviewContext.currentReviewState}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Aktueller Freigabestand</p>
+                  <p className="font-medium text-slate-900">{reviewContext.approvalState}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Privilegierter Schritt</p>
+                  <p className="font-medium text-slate-900">{reviewContext.privilegedStepRecorded ? "Im Verlauf protokolliert" : "Derzeit nicht protokolliert"}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Letzte Review-Aktion</p>
+                  <p className="font-medium text-slate-900">
+                    {reviewContext.latestReviewAction
+                      ? `${reviewContext.latestReviewAction.title} · ${new Date(reviewContext.latestReviewAction.timestamp).toLocaleString("de-DE")}`
+                      : "Noch keine Review-Aktion protokolliert"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Letzte Freigabe / Archivierung</p>
+                  <p className="font-medium text-slate-900">
+                    {reviewContext.latestApprovalAction
+                      ? `${reviewContext.latestApprovalAction.title} · ${new Date(reviewContext.latestApprovalAction.timestamp).toLocaleString("de-DE")}`
+                      : "Noch keine Freigabe- oder Archivierungsaktion protokolliert"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <Link href="/workspace/review-queue" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+                  Zur Review-Queue
+                </Link>
+              </div>
+            </InfoPanel>
+
+            <InfoPanel title="Technische & organisatorische Metadaten" tone="muted">
+              <div className="grid gap-3 text-sm">
+                <p>
+                  <span className="text-xs uppercase tracking-wide text-slate-500">MIME-Typ:</span>{" "}
+                  <span className="font-medium text-slate-900">{document.mimeType ?? "Nicht hinterlegt"}</span>
+                </p>
+                <p>
+                  <span className="text-xs uppercase tracking-wide text-slate-500">Dateiablage:</span>{" "}
+                  <span className="font-medium text-slate-900">{document.storageKey ? "Storage-Key tenant-gebunden hinterlegt" : "Keine Dateiablage hinterlegt"}</span>
+                </p>
+                <p>
+                  <span className="text-xs uppercase tracking-wide text-slate-500">Zuletzt verarbeitet:</span>{" "}
+                  <span className="font-medium text-slate-900">
+                    {document.processedAt ? new Date(document.processedAt).toLocaleString("de-DE") : "Noch keine Verarbeitung durchgeführt"}
+                  </span>
+                </p>
+              </div>
+            </InfoPanel>
           </div>
         </section>
-
 
         <DocumentActivityTimeline activities={activities} />
 
@@ -341,31 +350,22 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
             <Link href="/workspace/dokumente" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
               Zur Dokumentenliste
             </Link>
-            <Link href="/workspace/review-queue" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
-              Zur Review-Queue
+            <Link href="/workspace/upload" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+              Upload öffnen
             </Link>
           </div>
         </InfoPanel>
-
-        <CtaPanel
-          title="Arbeitskontext"
-          description="Die Detailansicht bleibt bewusst read-only und fokussiert auf nachvollziehbare Dokumentdaten."
-          primaryLabel="Zur Dokumentenliste"
-          primaryHref="/workspace/dokumente"
-          secondaryLabel="Upload öffnen"
-          secondaryHref="/workspace/upload"
-        />
-      </main>
+      </PageShell>
     )
   } catch {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageShell width="wide" className="space-y-6">
         <SectionIntro
           eyebrow="Workspace · Dokumente"
-          title="Dokumentdetail derzeit nicht verfügbar"
+          title="Document Workbench derzeit nicht verfügbar"
           description="Das Dokument konnte aktuell nicht geladen werden. Bitte versuchen Sie es erneut."
         />
-      </main>
+      </PageShell>
     )
   }
 }
