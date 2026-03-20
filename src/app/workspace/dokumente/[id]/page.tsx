@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { DocumentCommentsPanel } from "@/components/documents/document-comments-panel"
 import { DocumentActivityTimeline } from "@/components/documents/document-activity-timeline"
 import { EmptyState } from "@/components/marketing/empty-state"
 import { InfoPanel } from "@/components/marketing/info-panel"
@@ -9,6 +10,7 @@ import { StatusBadge } from "@/components/marketing/status-badge"
 import { ProcessingTriggerForm } from "@/app/workspace/dokumente/[id]/processing-trigger-form"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
+import { listDocumentComments } from "@/lib/documents/comments-core"
 import { getDocumentWorkbenchData } from "@/lib/documents/workbench-core"
 import {
   getDocumentProcessingStatusLabel,
@@ -112,6 +114,36 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
               </Link>
             </div>
           </InfoPanel>
+        </PageShell>
+      )
+    }
+
+    const commentsResult = await listDocumentComments({
+      tenantId: tenantContext.tenantId,
+      actorId: session.user.id,
+      documentId: params.id
+    })
+
+    if (!commentsResult.ok) {
+      if (commentsResult.code === "FORBIDDEN_MEMBERSHIP") {
+        return (
+          <PageShell width="wide" className="space-y-6">
+            <SectionIntro
+              eyebrow="Workspace · Dokumente"
+              title="Keine Berechtigung"
+              description="Für diese Aktion fehlt die erforderliche Berechtigung."
+            />
+          </PageShell>
+        )
+      }
+
+      return (
+        <PageShell width="wide" className="space-y-6">
+          <SectionIntro
+            eyebrow="Workspace · Dokumente"
+            title="Dokument nicht gefunden"
+            description="Das angeforderte Dokument ist in diesem Arbeitsbereich nicht verfügbar."
+          />
         </PageShell>
       )
     }
@@ -342,6 +374,8 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
             </InfoPanel>
           </div>
         </section>
+
+        <DocumentCommentsPanel documentId={document.id} comments={commentsResult.comments} canWrite />
 
         <DocumentActivityTimeline activities={activities} />
 
