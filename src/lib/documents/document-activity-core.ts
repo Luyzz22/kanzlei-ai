@@ -148,6 +148,18 @@ export function mapAuditEventToDocumentActivity(event: {
     }
   }
 
+  if (event.action === "document.comment.created") {
+    return {
+      id: `audit-${event.id}`,
+      timestamp: event.createdAt,
+      title: "Kommentar hinzugefügt",
+      context: "Ein dokumentbezogener Hinweis wurde im tenant-gebundenen Kommentarkontext erfasst.",
+      actorLabel,
+      category: "Review",
+      action: event.action
+    }
+  }
+
   if (event.action === "document.review.approved") {
     return {
       id: `audit-${event.id}`,

@@ -31,6 +31,7 @@ model User {
   // Enterprise relations
   memberships       TenantMember[]
   uploadedDocuments Document[]
+  documentComments  DocumentComment[]
   analysisLogs      AnalysisLog[]
   auditEvents       AuditEvent[]
   updatedGovernanceSettings TenantGovernanceSettings[] @relation("TenantGovernanceSettingsUpdatedBy")
@@ -110,6 +111,7 @@ model Tenant {
 
   members      TenantMember[]
   documents    Document[]
+  documentComments DocumentComment[]
   auditEvents  AuditEvent[]
   analysisLogs AnalysisLog[]
   governanceSettings TenantGovernanceSettings?
@@ -169,10 +171,31 @@ model Document {
 
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   uploadedBy   User?         @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  comments     DocumentComment[]
   analysisLogs AnalysisLog[]
   auditEvents  AuditEvent[]
 
   @@index([tenantId, createdAt])
+}
+
+model DocumentComment {
+  id         String   @id @default(cuid())
+  tenantId   String
+  documentId String
+  authorId   String
+  body       String   @db.Text
+  sectionKey String?  @db.VarChar(64)
+  anchorText String?  @db.VarChar(280)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, documentId, createdAt])
+  @@index([documentId, createdAt])
+  @@index([authorId, createdAt])
 }
 
 enum DocumentProcessingStatus {
