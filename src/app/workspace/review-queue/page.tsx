@@ -80,6 +80,12 @@ export default async function WorkspaceReviewQueuePage() {
         description="Die Queue zeigt review-fähige Dokumente für den aktiven Mandanten. Privilegierte Schritte (Freigabe/Archivierung) erfordern eine Begründung, folgen dem Vier-Augen-Grundsatz und werden tenant-gebunden auditierbar protokolliert."
       />
 
+      <div>
+        <Link href="/workspace/faelle" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+          Zum Fallregister
+        </Link>
+      </div>
+
       <TableShell title="Review-Queue" description="Prüf- und Freigabefähige Dokumente für den aktiven Mandantenkontext.">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
