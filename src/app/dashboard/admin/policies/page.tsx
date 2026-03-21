@@ -1,4 +1,6 @@
 import { AdminEmptyState } from "@/components/admin/admin-empty-state"
+import Link from "next/link"
+
 import { CtaPanel } from "@/components/marketing/cta-panel"
 import { FeatureCard } from "@/components/marketing/feature-card"
 import { InfoPanel } from "@/components/marketing/info-panel"
@@ -12,11 +14,9 @@ import {
 import { requireAdminAccess } from "@/lib/admin/guards"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import {
-  TENANT_GOVERNANCE_DEFAULTS,
-  getTenantGovernanceSettings
-} from "@/lib/tenant-settings/governance-settings-core"
-
-import { GovernanceSettingsForm } from "./governance-settings-form"
+  getTenantRetentionSettings,
+  getTenantSecuritySettings
+} from "@/lib/tenant-settings/security-retention-settings-core"
 
 const maturityTone: Record<TenantPolicyMaturity, "neutral" | "info" | "warning" | "success"> = {
   read_only_grundlage: "neutral",
@@ -67,7 +67,8 @@ export default async function AdminPoliciesPage() {
     )
   }
 
-  const governanceSettings = await getTenantGovernanceSettings(tenantContext.tenantId)
+  const securitySettings = await getTenantSecuritySettings(tenantContext.tenantId)
+  const retentionSettings = await getTenantRetentionSettings(tenantContext.tenantId)
 
   return (
     <main className="space-y-6">
@@ -90,24 +91,37 @@ export default async function AdminPoliciesPage() {
       </InfoPanel>
 
       <section className="space-y-4">
-        <InfoPanel title="Editierbarer Governance-Bereich" tone="muted">
+        <InfoPanel title="Aktiv konfigurierbare Bereiche" tone="muted">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge
-              label={governanceSettings.hasPersistedSettings ? "Konfiguration gespeichert" : "Default-Konfiguration aktiv"}
-              tone={governanceSettings.hasPersistedSettings ? "success" : "warning"}
+              label={securitySettings.hasPersistedSettings ? "Security-Vorgaben gespeichert" : "Security-Defaults aktiv"}
+              tone={securitySettings.hasPersistedSettings ? "success" : "warning"}
             />
-            <StatusBadge label="Audit-nahe Speicherung" tone="info" />
+            <StatusBadge
+              label={retentionSettings.hasPersistedSettings ? "Retention-Vorgaben gespeichert" : "Retention-Defaults aktiv"}
+              tone={retentionSettings.hasPersistedSettings ? "success" : "warning"}
+            />
             <StatusBadge label="Nur privilegierte Rollen" tone="neutral" />
           </div>
           <p className="mt-3 text-sm text-slate-700">
-            Aktuelle Default-Werte: Session-Timeout {TENANT_GOVERNANCE_DEFAULTS.sessionTimeoutMinutes} Minuten, MFA für
-            privilegierte Rollen {TENANT_GOVERNANCE_DEFAULTS.requireMfaForPrivilegedRoles ? "aktiv" : "inaktiv"},
-            Aufbewahrung {TENANT_GOVERNANCE_DEFAULTS.documentRetentionDays} Tage, Auto-Archivierung{" "}
-            {TENANT_GOVERNANCE_DEFAULTS.autoArchiveApprovedDocuments ? "aktiv" : "inaktiv"}.
+            Die Bearbeitung erfolgt getrennt über die Admin-Bereiche „Sicherheit & Zugriff“ sowie „Datenschutz &
+            Aufbewahrung“. Die Registry bleibt als zentrale Governance-Übersicht bewusst schlank und read-only.
           </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              href="/dashboard/admin/security-access"
+              className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
+            >
+              Sicherheit & Zugriff öffnen
+            </Link>
+            <Link
+              href="/dashboard/admin/privacy-retention"
+              className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
+            >
+              Datenschutz & Aufbewahrung öffnen
+            </Link>
+          </div>
         </InfoPanel>
-
-        <GovernanceSettingsForm initialValues={governanceSettings} />
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">

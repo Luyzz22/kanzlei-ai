@@ -139,14 +139,23 @@ model TenantMember {
 
 
 model TenantGovernanceSettings {
-  id                            String   @id @default(cuid())
-  tenantId                      String   @unique
-  sessionTimeoutMinutes         Int      @default(30)
-  requireMfaForPrivilegedRoles  Boolean  @default(true)
-  documentRetentionDays         Int      @default(365)
-  autoArchiveApprovedDocuments  Boolean  @default(false)
-  updatedByUserId               String?
-  updatedAt                     DateTime @updatedAt
+  id                                       String   @id @default(cuid())
+  tenantId                                 String   @unique
+  sessionTimeoutMinutes                    Int      @default(30)
+  requireMfaForPrivilegedRoles             Boolean  @default(true)
+  documentRetentionDays                    Int      @default(365)
+  autoArchiveApprovedDocuments             Boolean  @default(false)
+  adminSessionTimeoutMinutes               Int      @default(30)
+  standardSessionTimeoutMinutes            Int      @default(480)
+  requireApprovalForPrivilegedRoleChanges  Boolean  @default(true)
+  requireReasonForPrivilegedReviewActions  Boolean  @default(true)
+  defaultDocumentRetentionDays             Int      @default(365)
+  auditEvidenceRetentionDays               Int      @default(1825)
+  reviewDueDays                            Int      @default(14)
+  archiveAfterApprovalDays                 Int      @default(30)
+  softDeletePolicyEnabled                  Boolean  @default(false)
+  updatedByUserId                          String?
+  updatedAt                                DateTime @updatedAt
 
   tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   updatedByUser User?  @relation("TenantGovernanceSettingsUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
