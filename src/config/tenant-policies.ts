@@ -39,15 +39,15 @@ export const TENANT_POLICY_CATEGORIES: TenantPolicyCategory[] = [
     title: "Rollen & administrative Freigaben",
     description:
       "Richtlinienrahmen für Rollenänderungen, Freigabeprinzipien und nachvollziehbare Verantwortlichkeiten.",
-    maturity: "definiert",
+    maturity: "verfuegbar",
     owner: "Tenant-Administration",
     policies: [
-      "Rollenänderungen nur mit dokumentierter Begründung im Zielbild vorgesehen",
-      "Vier-Augen-Freigabe für privilegierte Änderungen als Governance-Standard definiert",
-      "Trennung von antragstellender und freigebender Rolle im Ausbaupfad festgehalten"
+      "Tenantbezogene Freigaberichtlinien für Review-Start, Freigabe und Archivierung sind editierbar",
+      "Vier-Augen-Prinzip und Begründungspflichten werden im Review-Core technisch durchgesetzt",
+      "Erweiterte Governance-Flows bleiben bewusst außerhalb dieses Ausbauschritts"
     ],
-    reviewHint: "Review-Hinweis: Freigabeschwellen pro Organisation abstimmen.",
-    nextMilestone: "Freigabe-Workflows mit Audit-Feldern und Versionshistorie"
+    reviewHint: "Review-Hinweis: Rollenbeschränkungen und Begründungspflichten je Tenant regelmäßig validieren.",
+    nextMilestone: "Versionierte Richtlinien und erweiterte Freigabeketten im Governance-Kontext"
   },
   {
     id: "datenschutz-aufbewahrung",

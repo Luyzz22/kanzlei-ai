@@ -7,8 +7,9 @@ import { TableShell } from "@/components/marketing/table-shell"
 import { StatusBadge } from "@/components/marketing/status-badge"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
-import { listReviewQueueDocuments } from "@/lib/documents/review-core"
+import { getApprovalPolicyUiSummary, listReviewQueueDocuments } from "@/lib/documents/review-core"
 import { getReviewReadinessTone } from "@/lib/documents/review-workbench-core"
+import { getTenantApprovalPolicy } from "@/lib/tenant-settings/approval-policy-core"
 
 import { ReviewRowActions } from "@/app/workspace/review-queue/review-row-actions"
 
@@ -71,14 +72,27 @@ export default async function WorkspaceReviewQueuePage() {
   }
 
   const documents = await listReviewQueueDocuments(tenantContext.tenantId)
+  const policy = await getTenantApprovalPolicy(tenantContext.tenantId)
+  const policyHints = getApprovalPolicyUiSummary(policy)
 
   return (
     <PageShell className="space-y-6">
       <SectionIntro
         eyebrow="Workspace · Review Queue"
         title="Prüf- und Freigabequeue"
-        description="Die Queue zeigt review-fähige Dokumente für den aktiven Mandanten. Privilegierte Schritte (Freigabe/Archivierung) erfordern eine Begründung, folgen dem Vier-Augen-Grundsatz und werden tenant-gebunden auditierbar protokolliert."
+        description="Die Queue zeigt review-fähige Dokumente für den aktiven Mandanten. Aktionen folgen den aktiven tenantbezogenen Freigaberichtlinien und werden auditierbar protokolliert."
       />
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <p className="text-sm font-medium text-slate-900">Aktive Richtlinienhinweise</p>
+        <ul className="mt-2 flex flex-wrap gap-2 text-xs text-slate-700">
+          {policyHints.map((hint) => (
+            <li key={hint} className="rounded-full bg-slate-100 px-3 py-1">
+              {hint}
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <div>
         <Link href="/workspace/faelle" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
@@ -135,7 +149,7 @@ export default async function WorkspaceReviewQueuePage() {
                     <td className="px-4 py-3 text-slate-600">{document.hasDecisionMemo ? "Vorhanden" : "Fehlt"}</td>
                     <td className="px-4 py-3 text-slate-600">{new Date(document.createdAt).toLocaleDateString("de-DE")}</td>
                     <td className="min-w-56 px-4 py-3">
-                      <ReviewRowActions documentId={document.id} currentStatus={document.status} userRole={session.user.role} />
+                      <ReviewRowActions documentId={document.id} currentStatus={document.status} userRole={session.user.role} policy={policy} />
                     </td>
                   </tr>
                 ))

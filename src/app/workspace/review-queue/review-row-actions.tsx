@@ -4,11 +4,13 @@ import { DocumentIntakeStatus, Role } from "@prisma/client"
 import { useFormState, useFormStatus } from "react-dom"
 
 import { reviewTransitionAction, type ReviewActionState } from "@/app/workspace/review-queue/actions"
+import type { TenantApprovalPolicyValues } from "@/lib/tenant-settings/approval-policy-core"
 
 type ReviewRowActionsProps = {
   documentId: string
   currentStatus: DocumentIntakeStatus
   userRole: Role
+  policy: TenantApprovalPolicyValues
 }
 
 const initialState: ReviewActionState = {
@@ -34,7 +36,7 @@ function ActionMessage({ state }: { state: ReviewActionState }) {
   return <p className={`text-xs ${state.status === "success" ? "text-emerald-700" : "text-rose-700"}`}>{state.message}</p>
 }
 
-export function ReviewRowActions({ documentId, currentStatus, userRole }: ReviewRowActionsProps) {
+export function ReviewRowActions({ documentId, currentStatus, userRole, policy }: ReviewRowActionsProps) {
   const [stateStart, actionStart] = useFormState(reviewTransitionAction, initialState)
   const [stateApprove, actionApprove] = useFormState(reviewTransitionAction, initialState)
   const [stateArchive, actionArchive] = useFormState(reviewTransitionAction, initialState)
@@ -66,13 +68,20 @@ export function ReviewRowActions({ documentId, currentStatus, userRole }: Review
           <input
             name="reason"
             maxLength={500}
-            required
-            placeholder="Begründung für die Freigabe"
+            required={policy.requireReasonForApproval}
+            placeholder={
+              policy.requireReasonForApproval ? "Begründung für die Freigabe (verpflichtend)" : "Begründung für die Freigabe (optional)"
+            }
             className="h-8 w-full rounded-md border border-slate-300 px-2 text-xs text-slate-700"
           />
           <SubmitActionButton label="Freigabe erteilen" />
           <ActionMessage state={stateApprove} />
-          {userRole !== Role.ADMIN ? <p className="text-xs text-slate-500">Nur privilegierte Rollen können freigeben.</p> : null}
+          {policy.approvalRestrictedToPrivilegedRoles && userRole !== Role.ADMIN ? (
+            <p className="text-xs text-slate-500">Freigabe nur für privilegierte Rollen.</p>
+          ) : null}
+          {policy.requireFourEyesForApproval ? (
+            <p className="text-xs text-slate-500">Vier-Augen-Prinzip aktiv.</p>
+          ) : null}
         </form>
 
         <form action={actionArchive} className="space-y-2 rounded-md border border-slate-200 p-2">
@@ -82,12 +91,19 @@ export function ReviewRowActions({ documentId, currentStatus, userRole }: Review
           <input
             name="reason"
             maxLength={500}
-            required
-            placeholder="Begründung für die Archivierung"
+            required={policy.requireReasonForArchiving}
+            placeholder={
+              policy.requireReasonForArchiving
+                ? "Begründung für die Archivierung (verpflichtend)"
+                : "Begründung für die Archivierung (optional)"
+            }
             className="h-8 w-full rounded-md border border-slate-300 px-2 text-xs text-slate-700"
           />
           <SubmitActionButton label="Archivieren" />
           <ActionMessage state={stateArchive} />
+          {policy.archivingRestrictedToPrivilegedRoles && userRole !== Role.ADMIN ? (
+            <p className="text-xs text-slate-500">Archivierung nur für privilegierte Rollen.</p>
+          ) : null}
         </form>
       </div>
     )

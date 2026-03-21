@@ -51,6 +51,16 @@ export const ADMIN_CENTER_SECTIONS: AdminCenterSection[] = [
     nextMilestone: "Technische Durchsetzung für MFA-, Freigabe- und Begründungspflichten in privilegierten Workflows"
   },
   {
+    id: "approval-policies",
+    title: "Freigaberichtlinien",
+    summary:
+      "Tenant-spezifische Richtlinien für Start der Prüfung, Freigabe und Archivierung mit technischer Durchsetzung im Review-Prozess.",
+    availability: "verfügbar",
+    owner: "Compliance",
+    href: "/dashboard/admin/approval-policies",
+    nextMilestone: "Versionierte Governance-Erweiterungen für mehrstufige Freigaben"
+  },
+  {
     id: "audit-evidence",
     title: "Audit & Nachweise",
     summary:

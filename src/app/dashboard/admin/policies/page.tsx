@@ -17,6 +17,7 @@ import {
   getTenantRetentionSettings,
   getTenantSecuritySettings
 } from "@/lib/tenant-settings/security-retention-settings-core"
+import { getTenantApprovalPolicy } from "@/lib/tenant-settings/approval-policy-core"
 
 const maturityTone: Record<TenantPolicyMaturity, "neutral" | "info" | "warning" | "success"> = {
   read_only_grundlage: "neutral",
@@ -69,6 +70,7 @@ export default async function AdminPoliciesPage() {
 
   const securitySettings = await getTenantSecuritySettings(tenantContext.tenantId)
   const retentionSettings = await getTenantRetentionSettings(tenantContext.tenantId)
+  const approvalPolicy = await getTenantApprovalPolicy(tenantContext.tenantId)
 
   return (
     <main className="space-y-6">
@@ -101,6 +103,10 @@ export default async function AdminPoliciesPage() {
               label={retentionSettings.hasPersistedSettings ? "Retention-Vorgaben gespeichert" : "Retention-Defaults aktiv"}
               tone={retentionSettings.hasPersistedSettings ? "success" : "warning"}
             />
+            <StatusBadge
+              label={approvalPolicy.hasPersistedSettings ? "Freigaberichtlinien gespeichert" : "Freigaberichtlinien im Default"}
+              tone={approvalPolicy.hasPersistedSettings ? "success" : "warning"}
+            />
             <StatusBadge label="Nur privilegierte Rollen" tone="neutral" />
           </div>
           <p className="mt-3 text-sm text-slate-700">
@@ -119,6 +125,12 @@ export default async function AdminPoliciesPage() {
               className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
             >
               Datenschutz & Aufbewahrung öffnen
+            </Link>
+            <Link
+              href="/dashboard/admin/approval-policies"
+              className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
+            >
+              Freigaberichtlinien öffnen
             </Link>
           </div>
         </InfoPanel>

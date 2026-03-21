@@ -90,31 +90,31 @@ export async function reviewTransitionAction(_: ReviewActionState, formData: For
   })
 
   if (!result.ok) {
-    if (result.code === "FORBIDDEN_START_REVIEW") {
+    if (result.code === "FORBIDDEN_START_REVIEW_BY_POLICY") {
       return {
         status: "error",
-        message: "Sie sind für den Start der Prüfung nicht berechtigt."
+        message: "Die Freigabe ist gemäß der aktiven Tenant-Richtlinie nicht zulässig."
       }
     }
 
-    if (result.code === "FORBIDDEN_PRIVILEGED") {
+    if (result.code === "FORBIDDEN_APPROVAL_BY_POLICY" || result.code === "FORBIDDEN_ARCHIVE_BY_POLICY") {
       return {
         status: "error",
-        message: "Freigabe und Archivierung sind nur für privilegierte Rollen zulässig."
+        message: "Dieser Schritt ist gemäß der aktiven Tenant-Richtlinie nicht zulässig."
       }
     }
 
-    if (result.code === "FOUR_EYES_REQUIRED") {
+    if (result.code === "FOUR_EYES_REQUIRED_BY_POLICY") {
       return {
         status: "error",
         message: "Freigabe im Vier-Augen-Prinzip: Die hochladende Person kann dieses Dokument nicht selbst freigeben."
       }
     }
 
-    if (result.code === "MISSING_REASON") {
+    if (result.code === "MISSING_APPROVAL_REASON" || result.code === "MISSING_ARCHIVE_REASON") {
       return {
         status: "error",
-        message: "Für diesen privilegierten Schritt ist eine Begründung erforderlich."
+        message: "Für diesen Schritt ist eine Begründung erforderlich."
       }
     }
 
