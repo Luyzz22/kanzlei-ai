@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 
 import { CtaPanel } from "@/components/marketing/cta-panel"
 import { InfoPanel } from "@/components/marketing/info-panel"
@@ -138,6 +139,14 @@ export default function AuditPage() {
           <StatusBadge label="Mandanten-isolierte Ansicht" tone="info" />
           <StatusBadge label="Export verfügbar" tone="success" />
           <StatusBadge label="Filterprofil in Vorbereitung" tone="warning" />
+        </div>
+        <div className="mt-3">
+          <Link
+            href="/dashboard/audit/aktivitaeten"
+            className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
+          >
+            Zur globalen Aktivitäten-Arbeitsliste
+          </Link>
         </div>
       </InfoPanel>
 
