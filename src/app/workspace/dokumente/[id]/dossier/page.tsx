@@ -367,6 +367,9 @@ export default async function DokumentDossierPage({ params }: DokumentDossierPag
           <Link href={`/workspace/dokumente/${dossier.document.id}`} className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
             Zur Dokumentansicht
           </Link>
+          <Link href={`/workspace/dokumente/${dossier.document.id}/evidence`} className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+            Nachweispaket öffnen
+          </Link>
           <Link href="/workspace/review-queue" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
             Zur Review-Queue
           </Link>

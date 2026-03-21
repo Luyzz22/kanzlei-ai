@@ -110,6 +110,9 @@ export default async function WorkspaceReviewQueuePage() {
                         <Link href={`/workspace/dokumente/${document.id}/dossier`} className="text-xs text-slate-500 underline-offset-4 hover:underline">
                           Dossier öffnen
                         </Link>
+                        <Link href={`/workspace/dokumente/${document.id}/evidence`} className="text-xs text-slate-500 underline-offset-4 hover:underline">
+                          Nachweisansicht
+                        </Link>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-slate-600">{document.documentType}</td>
