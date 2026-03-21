@@ -219,6 +219,9 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
             <Link href={`/workspace/dokumente/${document.id}/dossier`} className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
               Dossier öffnen
             </Link>
+            <Link href={`/workspace/dokumente/${document.id}/evidence`} className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+              Nachweispaket öffnen
+            </Link>
           </div>
         </section>
 
