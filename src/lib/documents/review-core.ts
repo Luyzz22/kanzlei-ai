@@ -4,6 +4,10 @@ import { DocumentIntakeStatus, Role, TenantRole } from "@prisma/client"
 
 import { writeAuditEventTx } from "@/lib/audit-write"
 import { deriveReviewReadinessState, getReviewReadinessLabel, type ReviewReadinessState } from "@/lib/documents/review-workbench-core"
+import {
+  TENANT_APPROVAL_POLICY_DEFAULTS,
+  type TenantApprovalPolicyValues
+} from "@/lib/tenant-settings/approval-policy-core"
 import { withTenant } from "@/lib/tenant-context.server"
 
 export type ReviewQueueDocument = {
@@ -105,40 +109,62 @@ export type TransitionDocumentReviewInput = {
   reason?: string
 }
 
-const transitionPolicy: Record<
-  DocumentIntakeStatus,
-  Partial<Record<DocumentIntakeStatus, { action: string; requiresReason: boolean; privileged: boolean }>>
-> = {
+type TransitionRule = {
+  action: string
+  mode: "start_review" | "approval" | "archive"
+}
+
+const transitionPolicy: Record<DocumentIntakeStatus, Partial<Record<DocumentIntakeStatus, TransitionRule>>> = {
   [DocumentIntakeStatus.EINGEGANGEN]: {
     [DocumentIntakeStatus.IN_PRUEFUNG]: {
       action: "document.review.started",
-      requiresReason: false,
-      privileged: false
+      mode: "start_review"
     }
   },
   [DocumentIntakeStatus.IN_PRUEFUNG]: {
     [DocumentIntakeStatus.FREIGEGEBEN]: {
       action: "document.review.approved",
-      requiresReason: true,
-      privileged: true
+      mode: "approval"
     },
     [DocumentIntakeStatus.ARCHIVIERT]: {
       action: "document.review.archived",
-      requiresReason: true,
-      privileged: true
+      mode: "archive"
     }
   },
   [DocumentIntakeStatus.FREIGEGEBEN]: {
     [DocumentIntakeStatus.ARCHIVIERT]: {
       action: "document.review.archived",
-      requiresReason: true,
-      privileged: true
+      mode: "archive"
     }
   },
   [DocumentIntakeStatus.ARCHIVIERT]: {}
 }
 
-function canStartReview(platformRole: Role, tenantRole: TenantRole): boolean {
+type ReviewTransitionErrorCode =
+  | "FORBIDDEN_START_REVIEW_BY_POLICY"
+  | "FORBIDDEN_APPROVAL_BY_POLICY"
+  | "FORBIDDEN_ARCHIVE_BY_POLICY"
+  | "MISSING_APPROVAL_REASON"
+  | "MISSING_ARCHIVE_REASON"
+  | "FOUR_EYES_REQUIRED_BY_POLICY"
+  | "INVALID_TRANSITION"
+  | "NOT_FOUND"
+  | "FORBIDDEN_MEMBERSHIP"
+  | "TENANT_MISMATCH"
+
+type ReviewTransitionError = {
+  ok: false
+  code: ReviewTransitionErrorCode
+  currentStatus?: DocumentIntakeStatus
+}
+
+type ReviewTransitionSuccess = {
+  ok: true
+  documentId: string
+  status: DocumentIntakeStatus
+}
+
+function canStartReviewByBaseline(platformRole: Role, tenantRole: TenantRole): boolean {
   return platformRole === Role.ADMIN || platformRole === Role.ANWALT || tenantRole === TenantRole.OWNER || tenantRole === TenantRole.ADMIN
 }
 
@@ -146,7 +172,68 @@ function canPerformPrivilegedReviewStep(platformRole: Role, tenantRole: TenantRo
   return platformRole === Role.ADMIN && (tenantRole === TenantRole.OWNER || tenantRole === TenantRole.ADMIN)
 }
 
-export async function transitionDocumentReviewStatus(input: TransitionDocumentReviewInput) {
+function evaluateReviewTransitionPolicy(input: {
+  transition: TransitionRule
+  policy: TenantApprovalPolicyValues
+  reason?: string
+  actorPlatformRole: Role
+  actorTenantRole: TenantRole
+  uploadedById: string | null
+  actorId: string
+}): ReviewTransitionError | { ok: true } {
+  const canPrivileged = canPerformPrivilegedReviewStep(input.actorPlatformRole, input.actorTenantRole)
+  const canBaselineStart = canStartReviewByBaseline(input.actorPlatformRole, input.actorTenantRole)
+
+  if (input.transition.mode === "start_review") {
+    if (input.policy.reviewStartRestrictedToPrivilegedRoles && !canPrivileged) {
+      return { ok: false, code: "FORBIDDEN_START_REVIEW_BY_POLICY" }
+    }
+
+    if (!input.policy.reviewStartRestrictedToPrivilegedRoles && !canBaselineStart) {
+      return { ok: false, code: "FORBIDDEN_START_REVIEW_BY_POLICY" }
+    }
+
+    return { ok: true }
+  }
+
+  if (input.transition.mode === "approval") {
+    if (input.policy.approvalRestrictedToPrivilegedRoles && !canPrivileged) {
+      return { ok: false, code: "FORBIDDEN_APPROVAL_BY_POLICY" }
+    }
+
+    if (!input.policy.approvalRestrictedToPrivilegedRoles && !canBaselineStart) {
+      return { ok: false, code: "FORBIDDEN_APPROVAL_BY_POLICY" }
+    }
+
+    if (input.policy.requireReasonForApproval && !input.reason?.trim()) {
+      return { ok: false, code: "MISSING_APPROVAL_REASON" }
+    }
+
+    if (input.policy.requireFourEyesForApproval && input.uploadedById && input.uploadedById === input.actorId) {
+      return { ok: false, code: "FOUR_EYES_REQUIRED_BY_POLICY" }
+    }
+
+    return { ok: true }
+  }
+
+  if (input.policy.archivingRestrictedToPrivilegedRoles && !canPrivileged) {
+    return { ok: false, code: "FORBIDDEN_ARCHIVE_BY_POLICY" }
+  }
+
+  if (!input.policy.archivingRestrictedToPrivilegedRoles && !canBaselineStart) {
+    return { ok: false, code: "FORBIDDEN_ARCHIVE_BY_POLICY" }
+  }
+
+  if (input.policy.requireReasonForArchiving && !input.reason?.trim()) {
+    return { ok: false, code: "MISSING_ARCHIVE_REASON" }
+  }
+
+  return { ok: true }
+}
+
+export async function transitionDocumentReviewStatus(
+  input: TransitionDocumentReviewInput
+): Promise<ReviewTransitionError | ReviewTransitionSuccess> {
   return withTenant(input.tenantId, async (tx) => {
     const membership = await tx.tenantMember.findUnique({
       where: {
@@ -166,7 +253,7 @@ export async function transitionDocumentReviewStatus(input: TransitionDocumentRe
     })
 
     if (!membership) {
-      return { ok: false as const, code: "FORBIDDEN_MEMBERSHIP" }
+      return { ok: false, code: "FORBIDDEN_MEMBERSHIP" }
     }
 
     const document = await tx.document.findUnique({
@@ -183,33 +270,62 @@ export async function transitionDocumentReviewStatus(input: TransitionDocumentRe
     })
 
     if (!document) {
-      return { ok: false as const, code: "NOT_FOUND" }
+      return { ok: false, code: "NOT_FOUND" }
     }
 
     if (document.tenantId !== input.tenantId) {
-      return { ok: false as const, code: "TENANT_MISMATCH" }
+      return { ok: false, code: "TENANT_MISMATCH" }
     }
 
     const transition = transitionPolicy[document.status]?.[input.nextStatus]
 
     if (!transition) {
-      return { ok: false as const, code: "INVALID_TRANSITION", currentStatus: document.status }
+      return { ok: false, code: "INVALID_TRANSITION", currentStatus: document.status }
     }
 
-    if (transition.requiresReason && !input.reason?.trim()) {
-      return { ok: false as const, code: "MISSING_REASON" }
-    }
+    const persistedPolicy = await tx.tenantGovernanceSettings.findUnique({
+      where: { tenantId: input.tenantId },
+      select: {
+        requireFourEyesForApproval: true,
+        requireReasonForApproval: true,
+        requireReasonForArchiving: true,
+        approvalRestrictedToPrivilegedRoles: true,
+        archivingRestrictedToPrivilegedRoles: true,
+        reviewStartRestrictedToPrivilegedRoles: true
+      }
+    })
 
-    if (transition.privileged && !canPerformPrivilegedReviewStep(membership.user.role, membership.role)) {
-      return { ok: false as const, code: "FORBIDDEN_PRIVILEGED" }
-    }
+    const policy: TenantApprovalPolicyValues = persistedPolicy ?? TENANT_APPROVAL_POLICY_DEFAULTS
 
-    if (!transition.privileged && !canStartReview(membership.user.role, membership.role)) {
-      return { ok: false as const, code: "FORBIDDEN_START_REVIEW" }
-    }
+    const evaluation = evaluateReviewTransitionPolicy({
+      transition,
+      policy,
+      reason: input.reason,
+      actorPlatformRole: membership.user.role,
+      actorTenantRole: membership.role,
+      uploadedById: document.uploadedById,
+      actorId: input.actorId
+    })
 
-    if (input.nextStatus === DocumentIntakeStatus.FREIGEGEBEN && document.uploadedById && document.uploadedById === input.actorId) {
-      return { ok: false as const, code: "FOUR_EYES_REQUIRED" }
+    if (!evaluation.ok) {
+      await writeAuditEventTx(tx, {
+        tenantId: input.tenantId,
+        actorId: input.actorId,
+        action: "document.review.transition.denied",
+        resourceType: "document",
+        resourceId: document.id,
+        documentId: document.id,
+        metadata: {
+          attemptedStatus: input.nextStatus,
+          previousStatus: document.status,
+          deniedByCode: evaluation.code,
+          policySnapshot: policy,
+          actorPlatformRole: membership.user.role,
+          actorTenantRole: membership.role
+        }
+      })
+
+      return evaluation
     }
 
     const updated = await tx.document.update({
@@ -232,7 +348,11 @@ export async function transitionDocumentReviewStatus(input: TransitionDocumentRe
         previousStatus: document.status,
         nextStatus: input.nextStatus,
         reason: input.reason ?? null,
-        privilegedStep: transition.privileged,
+        policySnapshot: policy,
+        fourEyesRequired: policy.requireFourEyesForApproval,
+        reasonRequired: transition.mode === "approval" ? policy.requireReasonForApproval : policy.requireReasonForArchiving,
+        approvalRestricted: policy.approvalRestrictedToPrivilegedRoles,
+        archiveRestricted: policy.archivingRestrictedToPrivilegedRoles,
         actorPlatformRole: membership.user.role,
         actorTenantRole: membership.role,
         title: document.title,
@@ -242,9 +362,25 @@ export async function transitionDocumentReviewStatus(input: TransitionDocumentRe
     })
 
     return {
-      ok: true as const,
+      ok: true,
       documentId: updated.id,
       status: updated.status
     }
   })
+}
+
+export function getApprovalPolicyUiSummary(policy: TenantApprovalPolicyValues): string[] {
+  const hints: string[] = []
+
+  if (policy.requireFourEyesForApproval) hints.push("Vier-Augen-Prinzip aktiv")
+  if (policy.approvalRestrictedToPrivilegedRoles) hints.push("Freigabe nur für privilegierte Rollen")
+  if (policy.archivingRestrictedToPrivilegedRoles) hints.push("Archivierung nur für privilegierte Rollen")
+  if (policy.requireReasonForApproval || policy.requireReasonForArchiving) hints.push("Begründungspflichten aktiv")
+  if (policy.reviewStartRestrictedToPrivilegedRoles) hints.push("Start der Prüfung privilegiert")
+
+  return hints.length ? hints : ["Baseline-Regeln aktiv"]
+}
+
+export function getDefaultApprovalPolicyForUi(): TenantApprovalPolicyValues {
+  return TENANT_APPROVAL_POLICY_DEFAULTS
 }
