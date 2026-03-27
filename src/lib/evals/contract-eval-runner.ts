@@ -1,4 +1,4 @@
-import type { ContractPipelineSuccess } from "@/lib/ai/analysis-pipeline"
+import { hashTextSha256, type ContractPipelineSuccess } from "@/lib/ai/analysis-pipeline"
 import {
   CONTRACT_ANALYSIS_PROMPT_VERSION,
   CONTRACT_EXTRACTION_PROMPT_KEY,
@@ -136,7 +136,7 @@ export function scoreContractEvalCase(
 }
 
 /** Deterministische Pipeline-Antwort für CI / lokale Runs ohne API (EVAL_MOCK=true). */
-export function buildSyntheticEvalPipelineSuccess(_documentText: string): ContractPipelineSuccess {
+export function buildSyntheticEvalPipelineSuccess(documentText: string): ContractPipelineSuccess {
   return {
     extraction: {
       contractType: "Mietvertrag Wohnraum",
@@ -171,7 +171,7 @@ export function buildSyntheticEvalPipelineSuccess(_documentText: string): Contra
     totalCost: 0,
     routerSummary: "eval-synthetic",
     fallbackModelKeys: [],
-    inputTextHash: "0".repeat(64),
+    inputTextHash: hashTextSha256(documentText),
     aggregateConfidence: 0.8,
     promptMetadata: {
       bundleKey: CONTRACT_PROMPT_BUNDLE_KEY,
