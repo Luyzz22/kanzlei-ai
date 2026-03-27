@@ -1,18 +1,23 @@
 import type { ReactNode } from "react"
 
-import { sectionSurfaceClasses } from "@/config/ui-patterns"
-
 type InfoPanelProps = {
   title: string
   children: ReactNode
-  tone?: keyof typeof sectionSurfaceClasses
+  tone?: "default" | "muted" | "accent" | "dark"
+}
+
+const toneClasses = {
+  default: "border-gray-100 bg-white",
+  muted: "border-gray-100 bg-gray-50/50",
+  accent: "border-[#003856]/10 bg-[#003856]/[0.02]",
+  dark: "border-gray-800 bg-gray-950 text-gray-100",
 }
 
 export function InfoPanel({ title, children, tone = "default" }: InfoPanelProps) {
   return (
-    <section className={`${sectionSurfaceClasses[tone]} p-5 sm:p-6`}>
-      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-      <div className="mt-3 text-sm leading-relaxed text-slate-600">{children}</div>
+    <section className={`rounded-2xl border p-6 sm:p-8 ${toneClasses[tone]}`}>
+      <h2 className={`text-[18px] font-semibold tracking-tight ${tone === "dark" ? "text-white" : "text-gray-900"}`}>{title}</h2>
+      <div className={`mt-4 text-[14px] leading-relaxed ${tone === "dark" ? "text-gray-300" : "text-gray-500"}`}>{children}</div>
     </section>
   )
 }

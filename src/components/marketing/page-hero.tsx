@@ -9,14 +9,17 @@ type PageHeroProps = {
 
 export function PageHero({ eyebrow, title, description, children }: PageHeroProps) {
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-950 px-6 py-8 text-slate-100 shadow-sm sm:px-8 sm:py-10">
-      <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
-        <div className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-200">{eyebrow}</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h1>
-          <p className="max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">{description}</p>
+    <section className="relative overflow-hidden border-b border-gray-100 bg-white pb-16 pt-16 sm:pb-20 sm:pt-20">
+      <div className="pointer-events-none absolute -right-32 -top-32 h-[400px] w-[400px] rounded-full bg-gradient-to-br from-[#003856]/[0.03] to-transparent blur-3xl" />
+      <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+        <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#003856]">{eyebrow}</p>
+            <h1 className="mt-3 text-[2rem] font-semibold leading-[1.15] tracking-tight text-gray-950 sm:text-[2.5rem]">{title}</h1>
+            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-gray-500 sm:text-[16px]">{description}</p>
+          </div>
+          {children}
         </div>
-        {children}
       </div>
     </section>
   )

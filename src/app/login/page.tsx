@@ -16,7 +16,7 @@ export default function LoginPage() {
     event.preventDefault()
 
     if (!email.trim() || !password.trim()) {
-      setError("Bitte geben Sie Ihre E-Mail-Adresse und Ihr Passwort ein.")
+      setError("Bitte E-Mail und Passwort eingeben.")
       return
     }
 
@@ -31,87 +31,111 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError("Die Zugangsdaten sind nicht korrekt oder es ist ein Fehler aufgetreten.")
+        setError("Die Zugangsdaten sind nicht korrekt.")
       } else {
         router.push("/dashboard")
       }
     } catch {
-      setError("Es ist ein technischer Fehler aufgetreten. Bitte versuchen Sie es erneut.")
+      setError("Technischer Fehler. Bitte erneut versuchen.")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <section className="grid gap-6 rounded-3xl border border-slate-800 bg-slate-950 p-6 text-slate-100 sm:p-8 lg:grid-cols-[1.1fr_420px]">
-        <div className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-200">Zugang · KanzleiAI</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-white">Anmeldung zum Workspace</h1>
-          <p className="max-w-xl text-sm text-slate-300 sm:text-base">
-            Melden Sie sich an, um tenant-gebundene Dokumente, Review-Queue und Governance-Flächen im geschützten
-            Arbeitsbereich zu öffnen.
-          </p>
-          <div className="grid gap-3 text-sm sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-700 bg-slate-900 p-3">Dokumente und Verträge im Prüfkontext</div>
-            <div className="rounded-xl border border-slate-700 bg-slate-900 p-3">Freigabe- und Audit-Nachweise pro Mandant</div>
+    <main className="flex min-h-[calc(100vh-200px)] items-center justify-center px-5 py-16">
+      <div className="w-full max-w-[420px]">
+        {/* Logo + Header */}
+        <div className="mb-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#003856]">
+            <span className="text-[14px] font-bold text-white">KA</span>
           </div>
+          <h1 className="mt-5 text-[1.5rem] font-semibold tracking-tight text-gray-950">
+            Anmelden
+          </h1>
+          <p className="mt-1.5 text-[14px] text-gray-500">
+            Zugang zum KanzleiAI Workspace
+          </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-700 bg-slate-900 p-6">
-          {error && <div className="mb-5 rounded-lg border border-rose-200/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</div>}
+        {/* Error */}
+        {error && (
+          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+            {error}
+          </div>
+        )}
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-200">
-                E-Mail-Adresse
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="ihre@email.de"
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-slate-50 placeholder:text-slate-500 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-300/30"
-              />
-            </div>
+        {/* Form */}
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="email" className="mb-1.5 block text-[13px] font-medium text-gray-700">
+              E-Mail-Adresse
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ihre@kanzlei.de"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-400 transition-colors focus:border-[#003856] focus:outline-none focus:ring-2 focus:ring-[#003856]/10"
+            />
+          </div>
 
-            <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-200">
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label htmlFor="password" className="text-[13px] font-medium text-gray-700">
                 Passwort
               </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••"
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-slate-50 placeholder:text-slate-500 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-300/30"
-              />
+              <Link href="/password-reset" className="text-[12px] font-medium text-[#003856] hover:text-[#00507a]">
+                Vergessen?
+              </Link>
             </div>
+            <input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-400 transition-colors focus:border-[#003856] focus:outline-none focus:ring-2 focus:ring-[#003856]/10"
+            />
+          </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {loading ? "Anmeldung läuft..." : "Anmelden"}
-            </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-full bg-[#003856] py-3.5 text-[14px] font-medium text-white transition-all hover:bg-[#002a42] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? "Wird angemeldet..." : "Anmelden"}
+          </button>
+        </form>
 
-            <div className="rounded-lg border border-dashed border-slate-700 px-4 py-4 text-center text-sm text-slate-400">
-              SSO-Einstieg (SAML/Entra) wird im nächsten Ausbauschritt ergänzt.
-            </div>
-          </form>
-
-          <footer className="mt-5 text-sm text-slate-300">
-            <Link href="/password-reset" className="font-medium underline underline-offset-4 hover:text-white">
-              Passwort vergessen?
-            </Link>
-          </footer>
+        {/* SSO Divider */}
+        <div className="mt-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span className="text-[12px] text-gray-400">oder</span>
+          <div className="h-px flex-1 bg-gray-200" />
         </div>
-      </section>
+
+        {/* SSO Button */}
+        <button
+          disabled
+          className="mt-4 flex w-full items-center justify-center gap-2.5 rounded-full border border-gray-200 bg-white py-3.5 text-[14px] font-medium text-gray-400 transition-colors"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zM24 11.4H12.6V0H24v11.4z" />
+          </svg>
+          Microsoft SSO (bald verfügbar)
+        </button>
+
+        <p className="mt-6 text-center text-[12px] text-gray-400">
+          Noch kein Konto?{" "}
+          <Link href="/enterprise-kontakt" className="font-medium text-[#003856] hover:text-[#00507a]">
+            Demo anfragen
+          </Link>
+        </p>
+      </div>
     </main>
   )
 }
