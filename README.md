@@ -31,16 +31,26 @@ pnpm prisma generate
 pnpm dev
 ```
 
+Lokale URL: `http://localhost:3001` (`NEXTAUTH_URL=http://localhost:3001`).
+Produktion: `https://www.kanzlei-ai.com`.
+
 ## Prisma
 
 ```bash
 pnpm prisma migrate dev --name init
 ```
 
+Für Neon/Postgres mit Pooling gilt:
+- `DATABASE_URL` = Runtime/Pooling-Verbindung
+- `DIRECT_URL` = direkte Prisma-CLI-Verbindung (Migrate/Introspect)
+- Die Prisma-Skripte setzen für lokale Convenience automatisch `DIRECT_URL=$DATABASE_URL`, falls `DIRECT_URL` nicht explizit gesetzt ist.
+
 ## Hinweise
 
 - Für produktiven Einsatz müssen Rechts- und AVV-Texte rechtlich geprüft werden.
 - OAuth-Credentials in `.env` ergänzen (`AUTH_GOOGLE_*`, `AUTH_MICROSOFT_*`).
+- Microsoft Entra wird nur geladen, wenn `AUTH_MICROSOFT_ID`, `AUTH_MICROSOFT_SECRET` **und** `AUTH_MICROSOFT_ENTRA_ID_ISSUER` gesetzt sind.
+- SCIM ist standardmäßig deaktiviert und wird nur aktiviert, wenn Token **und** `SCIM_TENANT_SLUG` gesetzt sind.
 - CI: GitHub Actions (lint/typecheck/build).
 
 ## Tenant RLS (Enterprise)

@@ -6,6 +6,19 @@ function parseCsv(raw: string | undefined): string[] {
     .filter(Boolean)
 }
 
+function scimConfig() {
+  const multi = parseCsv(process.env.SCIM_BEARER_TOKENS)
+  const single = process.env.SCIM_BEARER_TOKEN ? [process.env.SCIM_BEARER_TOKEN] : []
+  const tokens = multi.length ? multi : single
+  const slug = process.env.SCIM_TENANT_SLUG?.trim()
+
+  return {
+    tokens,
+    slug,
+    enabled: tokens.length > 0 && Boolean(slug)
+  }
+}
+
 function getClientIp(request: Request): string | null {
   const xff = request.headers.get("x-forwarded-for")
   if (xff) return xff.split(",")[0]?.trim() ?? null
@@ -50,15 +63,18 @@ function ipAllowed(ip: string | null, allow: string[]): boolean {
 }
 
 function tokenAllowed(provided: string | null): boolean {
-  const multi = parseCsv(process.env.SCIM_BEARER_TOKENS)
-  const single = process.env.SCIM_BEARER_TOKEN ? [process.env.SCIM_BEARER_TOKEN] : []
-  const tokens = multi.length ? multi : single
+  const { tokens } = scimConfig()
   if (!tokens.length) return false
   if (!provided) return false
   return tokens.includes(provided)
 }
 
 export function requireScimAuth(request: Request) {
+  const { enabled } = scimConfig()
+  if (!enabled) {
+    return { ok: false as const, status: 503, error: "SCIM provisioning is disabled" }
+  }
+
   const allowIps = parseCsv(process.env.SCIM_ALLOWED_IPS)
   const ip = getClientIp(request)
 

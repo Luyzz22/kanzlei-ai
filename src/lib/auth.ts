@@ -57,7 +57,7 @@ export const authConfig: NextAuthConfig = {
       : []),
 
     // Microsoft Entra ID (OIDC)
-    ...(process.env.AUTH_MICROSOFT_ID && process.env.AUTH_MICROSOFT_SECRET
+    ...(process.env.AUTH_MICROSOFT_ID && process.env.AUTH_MICROSOFT_SECRET && process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER
       ? [
           MicrosoftEntraID({
             clientId: process.env.AUTH_MICROSOFT_ID,
