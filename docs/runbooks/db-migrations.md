@@ -68,55 +68,30 @@ Prisma stoppt `migrate deploy`, wenn eine Migration in der Ziel-DB fehlgeschlage
 
 ---
 
-## Fresh DB / Neon Branch Setup: Baseline-Migration verwenden
+## Fresh DB / Neon Branch Setup: konsolidierte Baseline (Development)
 
-### Problem
-Unsere historische Migration-Historie kann bei frischen/leeren Datenbanken kollidieren (z.B. doppelte Enum-Erstellung oder unguarded DDL in alten Pfaden).
-Daher existiert eine Baseline-Migration (*_baseline_schema), die den aktuellen Schema-Stand in einem konsistenten Schritt aufsetzt.
+### Hintergrund
+Historische Dev-Migrationen wurden in `prisma/migrations_legacy` archiviert, weil sie auf frischen Datenbanken kollidieren konnten
+(mehrfache `CREATE TABLE`/`CREATE INDEX` derselben Objekte).  
+Aktive Dev-Historie startet daher mit **einer** konsolidierten Baseline in `prisma/migrations`.
 
-Wichtig: Prisma fuehrt Migrationen immer in chronologischer Reihenfolge aus. Eine Baseline am Ende ersetzt die Historie nicht automatisch.
-Fuer eine leere DB muessen Migrationen vor der Baseline als applied markiert werden, damit Prisma anschliessend nur die Baseline ausfuehrt.
-
-### Vorgehen: neue DB (leer) - Baseline ausfuehren, Historie ueberspringen
-ACHTUNG: Nur fuer leere DBs / neue Neon-Branches, niemals auf Prod.
-
-1) Baseline-Migrationsnamen ermitteln (Ordnername unter prisma/migrations/*_baseline_schema).
-2) Alle Migrationen vor der Baseline als applied markieren und danach deploy ausfuehren:
+### Vorgehen: neue/leere Dev-DB
 
 ```bash
-BASELINE="$(ls prisma/migrations | grep _baseline_schema | sort | tail -n 1)"
-echo "baseline=$BASELINE"
-
-for m in $(ls prisma/migrations | grep -E "^[0-9]{14}_" | sort); do
-  [ "$m" = "$BASELINE" ] && break
-  pnpm prisma migrate resolve --applied "$m"
-done
-
-pnpm prisma migrate deploy
+pnpm exec prisma migrate deploy
+pnpm exec prisma migrate status
 ```
 
-3) Danach: App Smoke-Checks (Health, Auth, SCIM, Audit Verify).
-
-### Vorgehen: bestehende DB (bereits produktiv) - Baseline NICHT ausfuehren
-Auf bestehenden DBs darf die Baseline nicht laufen (sie enthaelt CREATEs des gesamten Schemas).
-Stattdessen wird sie in der History als bereits applied markiert:
+### Vorgehen: bestehende Prod-DB
+Bestehende produktive Datenbanken werden **nicht** per `migrate reset` neu aufgebaut.
+Stattdessen wie gehabt:
 
 ```bash
-BASELINE="$(ls prisma/migrations | grep _baseline_schema | sort | tail -n 1)"
-pnpm prisma migrate resolve --applied "$BASELINE"
-pnpm prisma migrate deploy
+pnpm exec prisma migrate deploy
+pnpm exec prisma migrate status
 ```
 
-### Verifikation
-- pnpm prisma migrate status zeigt keine failed Migrationen.
-- _prisma_migrations enthaelt einen Eintrag fuer die Baseline mit finished_at gesetzt.
-
-### Automatisierter Fresh-DB-Flow (lokal/CI)
-
-Fuer den Baseline-Flow auf einer leeren DB gibt es ein Script:
-
-```bash
-./scripts/migrate-empty-db-baseline.sh
-```
-
-Das Script erkennt `*_baseline_schema` dynamisch, markiert alle vorherigen Migrationen als `applied`, fuehrt danach `prisma migrate deploy` aus und validiert mit `prisma migrate status`.
+### Hinweise zu Verbindungs-URLs
+- `DATABASE_URL`: Runtime/Pooling-Verbindung (App)
+- `DIRECT_URL`: direkte Verbindung für Prisma CLI (Migrate/Introspection)
+- Optional für isolierte Migration-Tests: `SHADOW_DATABASE_URL` via Umgebungsvariable setzen (ohne feste Pflicht im Schema)
