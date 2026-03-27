@@ -1,7 +1,9 @@
 export enum ModelType {
   CLAUDE_SONNET_4 = "claude-sonnet-4",
   GEMINI_2_5_PRO = "gemini-2.5-pro",
-  GPT_4O_MINI = "gpt-4o-mini"
+  GPT_4O_MINI = "gpt-4o-mini",
+  /** OpenAI-kompatibler HTTP-Endpunkt (z. B. Llama, EU-Hosting) — nur bei gesetzter LLAMA_*-Konfiguration */
+  LLAMA_COMPAT = "llama-compat"
 }
 
 export enum AnalysisType {

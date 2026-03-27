@@ -38,6 +38,7 @@ model User {
   resolvedFindings DocumentFinding[] @relation("DocumentFindingResolvedBy")
   reviewOwnedDocuments Document[] @relation("DocumentReviewOwner")
   analysisLogs      AnalysisLog[]
+  analysisRuns      AnalysisRun[]
   auditEvents       AuditEvent[]
   updatedGovernanceSettings TenantGovernanceSettings[] @relation("TenantGovernanceSettingsUpdatedBy")
 }
@@ -79,24 +80,27 @@ model VerificationToken {
 }
 
 model AnalysisLog {
-  id         String   @id @default(cuid())
-  tenantId   String?
-  userId     String
-  documentId String?
-  modelUsed  String
-  tokensUsed Int
-  cost       Float
-  duration   Int
-  createdAt  DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String?
+  userId        String
+  documentId    String?
+  analysisRunId String?
+  modelUsed     String
+  tokensUsed    Int
+  cost          Float
+  duration      Int
+  createdAt     DateTime @default(now())
 
-  tenant      Tenant?      @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document    Document?    @relation(fields: [documentId], references: [id], onDelete: SetNull)
-  auditEvents AuditEvent[]
+  tenant       Tenant?      @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document     Document?    @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  analysisRun  AnalysisRun? @relation(fields: [analysisRunId], references: [id], onDelete: SetNull)
+  auditEvents  AuditEvent[]
 
   @@index([tenantId, createdAt])
   @@index([userId, createdAt])
   @@index([documentId, createdAt])
+  @@index([analysisRunId])
 }
 
 // --- Enterprise multi-tenancy & audit logging ---
@@ -121,6 +125,9 @@ model Tenant {
   documentFindings DocumentFinding[]
   auditEvents  AuditEvent[]
   analysisLogs AnalysisLog[]
+  analysisRuns AnalysisRun[]
+  analysisFindings AnalysisFinding[]
+  documentExtractions DocumentExtraction[]
   governanceSettings TenantGovernanceSettings?
 }
 
@@ -198,8 +205,11 @@ model Document {
   reviewOwner  User?         @relation("DocumentReviewOwner", fields: [reviewOwnerId], references: [id], onDelete: SetNull)
   comments     DocumentComment[]
   reviewNotes  DocumentReviewNote[]
-  findings     DocumentFinding[]
-  analysisLogs AnalysisLog[]
+  findings            DocumentFinding[]
+  analysisLogs        AnalysisLog[]
+  analysisRuns        AnalysisRun[]
+  aiAnalysisFindings  AnalysisFinding[]
+  documentExtractions DocumentExtraction[]
   auditEvents  AuditEvent[]
 
   @@index([tenantId, createdAt])
@@ -330,4 +340,138 @@ model AuditEvent {
   @@index([tenantId, createdAt])
   @@index([actorId, createdAt])
   @@index([resourceType, resourceId])
+}
+
+// --- KI-Vertragsanalyse (Multi-Provider, auditierbar) ---
+
+enum AiProviderKind {
+  OPENAI
+  ANTHROPIC
+  GOOGLE_GEMINI
+  LLAMA_COMPAT
+}
+
+enum AnalysisRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum AnalysisReviewState {
+  UNGEPRUEFT
+  IN_PRUEFUNG
+  FREIGEGEBEN
+}
+
+enum AnalysisPipelineStageName {
+  EXTRACTION
+  RISK_AND_GUIDANCE
+}
+
+model AnalysisRun {
+  id                        String                 @id @default(cuid())
+  tenantId                  String
+  documentId                String
+  userId                    String
+  status                    AnalysisRunStatus      @default(QUEUED)
+  promptVersion             String                 @default("1") @db.VarChar(32)
+  inputTextHash             String?                @db.VarChar(64)
+  documentContentHash       String?                @db.VarChar(64)
+  startedAt                 DateTime               @default(now())
+  completedAt               DateTime?
+  primaryProvider           AiProviderKind?
+  primaryModel              String?                @db.VarChar(120)
+  routerSummary             String?                @db.Text
+  fallbackModelKeys         Json?
+  structuredOutputValid     Boolean                @default(false)
+  validationErrorSummary    String?                @db.Text
+  aggregateConfidence       Float?
+  riskScore01               Float?
+  errorCode                 String?                @db.VarChar(64)
+  fallbackReason            String?                @db.Text
+  reviewState               AnalysisReviewState    @default(UNGEPRUEFT)
+  totalTokensUsed           Int                    @default(0)
+  totalCostEstimate         Float                  @default(0)
+  durationMs                Int?
+  recommendedMeasures       Json?
+  negotiationHints          Json?
+  explanationSummary        String?                @db.Text
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document  Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  decisions AnalysisProviderDecision[]
+  findings  AnalysisFinding[]
+  extraction DocumentExtraction?
+
+  analysisLogs AnalysisLog[]
+
+  @@index([tenantId, documentId, startedAt])
+  @@index([tenantId, status, startedAt])
+  @@index([documentId, startedAt])
+}
+
+model AnalysisProviderDecision {
+  id                   String          @id @default(cuid())
+  analysisRunId        String
+  stage                AnalysisPipelineStageName
+  attemptOrder         Int
+  provider             AiProviderKind
+  model                String          @db.VarChar(120)
+  selectionReason      String          @db.Text
+  wasPrimaryChoice     Boolean         @default(false)
+  wasSuccessful        Boolean         @default(false)
+  fallbackFromProvider AiProviderKind?
+  latencyMs            Int?
+  tokensUsed           Int?
+  errorCode            String?         @db.VarChar(64)
+  structuredValid      Boolean         @default(false)
+
+  analysisRun AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+
+  @@index([analysisRunId, stage, attemptOrder])
+}
+
+model AnalysisFinding {
+  id            String   @id @default(cuid())
+  tenantId      String
+  documentId    String
+  analysisRunId String
+  category      String   @db.VarChar(64)
+  title         String   @db.VarChar(240)
+  description   String   @db.Text
+  severity      DocumentFindingSeverity
+  confidence    Float?
+  sourceStage   AnalysisPipelineStageName?
+  clauseRef     String?  @db.VarChar(200)
+  createdAt     DateTime @default(now())
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document    Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  analysisRun AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, documentId, createdAt])
+  @@index([analysisRunId])
+}
+
+model DocumentExtraction {
+  id             String   @id @default(cuid())
+  tenantId       String
+  documentId     String
+  analysisRunId  String   @unique
+  contractType   String   @db.VarChar(120)
+  parties        Json
+  term           Json
+  legalTopics    Json
+  confidence     Float?
+  promptVersion  String   @db.VarChar(32)
+  contentHash    String?  @db.VarChar(64)
+  createdAt      DateTime @default(now())
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document    Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  analysisRun AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, documentId])
 }

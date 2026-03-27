@@ -3,6 +3,8 @@ import type { AIProviderConfig, ModelType } from "@/types/ai"
 export interface AnalyzeInput {
   prompt: string
   documentText: string
+  /** Strikte JSON-Ausgabe anfordern (Anbieter-spezifisch). */
+  jsonMode?: boolean
 }
 
 export interface AIAnalysisResponse {

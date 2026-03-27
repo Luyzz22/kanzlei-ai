@@ -2,6 +2,10 @@ import { ModelType, type AIProviderConfig } from "@/types/ai"
 
 import { BaseAIProvider, type AIAnalysisResponse, type AnalyzeInput } from "./types"
 
+function geminiModelId(): string {
+  return process.env.GEMINI_CHAT_MODEL?.trim() || "gemini-1.5-pro"
+}
+
 export class GeminiProvider extends BaseAIProvider {
   constructor(config?: Partial<AIProviderConfig>) {
     super({
@@ -13,11 +17,27 @@ export class GeminiProvider extends BaseAIProvider {
   }
 
   async analyze(input: AnalyzeInput): Promise<AIAnalysisResponse> {
+    if (!this.config.apiKey.trim()) {
+      throw new Error("GEMINI_API_KEY ist nicht gesetzt.")
+    }
+
     return this.withRetry(async () => {
       const geminiModule = await import("@google/generative-ai")
       const client = new geminiModule.GoogleGenerativeAI(this.config.apiKey)
-      const model = client.getGenerativeModel({ model: "gemini-1.5-pro" })
-      const response = await model.generateContent(`${input.prompt}\n\n${input.documentText}`)
+      // @google/generative-ai: generationConfig in ModelParams — Runtime unterstützt JSON-Modus
+      const model = client.getGenerativeModel({
+        model: geminiModelId(),
+        generationConfig: input.jsonMode
+          ? {
+              temperature: 0.2,
+              responseMimeType: "application/json"
+            }
+          : { temperature: 0.2 }
+      } as Parameters<typeof client.getGenerativeModel>[0])
+      const prompt = input.jsonMode
+        ? `${input.prompt}\n\n${input.documentText}\n\nAntworte nur mit JSON.`
+        : `${input.prompt}\n\n${input.documentText}`
+      const response = await model.generateContent(prompt)
       const outputText = response.response.text()
 
       return {
@@ -37,7 +57,7 @@ export class GeminiProvider extends BaseAIProvider {
       try {
         const geminiModule = await import("@google/generative-ai")
         const client = new geminiModule.GoogleGenerativeAI(this.config.apiKey)
-        const model = client.getGenerativeModel({ model: "gemini-1.5-pro" })
+        const model = client.getGenerativeModel({ model: geminiModelId() })
         const streamResult = await model.generateContentStream(`${input.prompt}\n\n${input.documentText}`)
 
         for await (const chunk of streamResult.stream) {

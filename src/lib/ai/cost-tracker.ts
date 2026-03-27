@@ -3,7 +3,8 @@ import { ModelType } from "@/types/ai"
 const pricingPer1kTokens: Record<ModelType, number> = {
   [ModelType.CLAUDE_SONNET_4]: 0.015,
   [ModelType.GEMINI_2_5_PRO]: 0.01,
-  [ModelType.GPT_4O_MINI]: 0.0015
+  [ModelType.GPT_4O_MINI]: 0.0015,
+  [ModelType.LLAMA_COMPAT]: 0.0005
 }
 
 interface AggregateKey {

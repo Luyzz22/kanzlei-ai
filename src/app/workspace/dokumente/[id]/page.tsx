@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import { DocumentCommentsPanel } from "@/components/documents/document-comments-panel"
 import { DocumentActivityTimeline } from "@/components/documents/document-activity-timeline"
+import { ContractAnalysisPanel } from "@/components/documents/contract-analysis-panel"
 import { DocumentReviewPanel } from "@/components/documents/document-review-panel"
 import { EmptyState } from "@/components/marketing/empty-state"
 import { InfoPanel } from "@/components/marketing/info-panel"
@@ -18,6 +19,7 @@ import {
   listDocumentReviewNotes,
   listReviewAssignableMembers
 } from "@/lib/documents/review-workbench-core"
+import { serializeWorkbenchAiContractAnalysis } from "@/lib/documents/workbench-core"
 import {
   getDocumentProcessingStatusLabel,
   getDocumentProcessingStatusTone,
@@ -167,8 +169,11 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
       )
     }
 
-    const { document, activities, fileAccess, analysis, reviewContext, reviewSummary } = workbench
+    const { document, activities, fileAccess, analysis, reviewContext, reviewSummary, aiContractAnalysis } = workbench
     const previewParagraphs = document.extractedTextPreview ? splitPreviewText(document.extractedTextPreview) : []
+    const serializedAi = serializeWorkbenchAiContractAnalysis(aiContractAnalysis)
+    const canStartContractAnalysis =
+      document.processingStatus === "VERARBEITET" && Boolean(document.extractedTextPreview?.trim())
 
     return (
       <PageShell width="wide" className="space-y-6">
@@ -342,6 +347,12 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
                 </div>
               </div>
             </InfoPanel>
+
+            <ContractAnalysisPanel
+              documentId={document.id}
+              canStartAnalysis={canStartContractAnalysis}
+              analysis={serializedAi}
+            />
 
             <InfoPanel title="Review- & Freigabekontext" tone="muted">
               <div className="grid gap-3 text-sm">

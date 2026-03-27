@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { trackUsage } from "@/lib/ai/cost-tracker"
 import { analyzeWithRouter } from "@/lib/ai/analyzer"
 import {
@@ -12,7 +13,6 @@ import {
   riskAssessmentPrompt
 } from "@/lib/ai/prompts"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
 import { AnalysisType, type AnalysisResult, type DocumentMetadata } from "@/types/ai"
 import { withTenant } from "@/lib/tenant-context"
 import { writeAuditEventTx } from "@/lib/audit-write"
@@ -41,14 +41,6 @@ function buildPrompt(analysisType: AnalysisType, documentText: string): string {
 
 function toAnalysisType(input: "contract" | "summary" | "risk" | "clause"): AnalysisType {
   return AnalysisType[input.toUpperCase() as keyof typeof AnalysisType]
-}
-
-async function resolveTenantIdForUser(userId: string): Promise<string | null> {
-  const membership = await prisma.tenantMember.findFirst({
-    where: { userId },
-    select: { tenantId: true }
-  })
-  return membership?.tenantId ?? null
 }
 
 function getClientIp(request: Request): string | null {
@@ -81,10 +73,14 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   // tenant lookup happens before RLS tx, because the lookup itself is tenant-bound
   // In production you'll typically resolve tenant from subdomain / org context.
-  const tenantId = await resolveTenantIdForUser(actorId)
-  if (!tenantId) {
-    return NextResponse.json({ error: "Kein Mandant gefunden" }, { status: 403 })
+  const tenantResolution = await resolveTenantContextForUser(actorId)
+  if (tenantResolution.status !== "single") {
+    return NextResponse.json(
+      { error: "Kein eindeutiger Mandantenkontext für diese Anfrage." },
+      { status: 403 }
+    )
   }
+  const tenantId = tenantResolution.tenantId
 
   const docId = parsed.data.documentId
   const analysisType = toAnalysisType(parsed.data.analysisType)
@@ -97,6 +93,17 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const prompt = buildPrompt(analysisType, parsed.data.documentText)
 
+  const documentInTenant = await withTenant(tenantId, async (tx) =>
+    tx.document.findFirst({
+      where: { id: docId, tenantId },
+      select: { id: true }
+    })
+  )
+
+  if (!documentInTenant) {
+    return NextResponse.json({ error: "Dokument im Mandanten nicht gefunden." }, { status: 404 })
+  }
+
   try {
     const result: AnalysisResult = await analyzeWithRouter(metadata, prompt, parsed.data.documentText)
 
@@ -104,27 +111,6 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     // All tenant-bound DB writes under RLS context
     await withTenant(tenantId, async (tx) => {
-      // Ensure document exists (stub only)
-      const existingDoc = await tx.document.findUnique({
-        where: { id: docId },
-        select: { id: true, tenantId: true }
-      })
-
-      if (existingDoc && existingDoc.tenantId !== tenantId) {
-        throw new Error("Dokument gehört zu anderem Mandanten")
-      }
-
-      if (!existingDoc) {
-        await tx.document.create({
-          data: {
-            id: docId,
-            tenantId,
-            uploadedById: actorId,
-            filename: `document-${docId}`
-          }
-        })
-      }
-
       // Audit requested
       await writeAuditEventTx(tx, {
 tenantId,
@@ -177,6 +163,13 @@ tenantId,
 
     return NextResponse.json(result, { headers: { "x-request-id": requestId } })
   } catch (error) {
+    if (error instanceof Error && error.name === "ProviderConfigurationError") {
+      return NextResponse.json(
+        { error: "Kein KI-Anbieter konfiguriert. Bitte API-Schlüssel hinterlegen." },
+        { status: 503, headers: { "x-request-id": requestId } }
+      )
+    }
+
     // best-effort failed audit (try, but don't override original failure)
     try {
       await withTenant(tenantId, async (tx) => {
