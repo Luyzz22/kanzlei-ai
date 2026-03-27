@@ -12,6 +12,8 @@ import { StatusBadge } from "@/components/marketing/status-badge"
 import { ProcessingTriggerForm } from "@/app/workspace/dokumente/[id]/processing-trigger-form"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
+import { canReviewContractAnalysisFindings } from "@/lib/documents/analysis-finding-review-policy"
+import { prisma } from "@/lib/prisma"
 import { listDocumentComments } from "@/lib/documents/comments-core"
 import { getDocumentWorkbenchData } from "@/lib/documents/workbench-core"
 import {
@@ -126,7 +128,7 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
       )
     }
 
-    const [commentsResult, notesResult, findingsResult, assignableMembersResult] = await Promise.all([
+    const [commentsResult, notesResult, findingsResult, assignableMembersResult, userRow, membership] = await Promise.all([
       listDocumentComments({
         tenantId: tenantContext.tenantId,
         actorId: session.user.id,
@@ -134,7 +136,15 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
       }),
       listDocumentReviewNotes(tenantContext.tenantId, session.user.id, params.id),
       listDocumentFindings(tenantContext.tenantId, session.user.id, params.id),
-      listReviewAssignableMembers(tenantContext.tenantId, session.user.id)
+      listReviewAssignableMembers(tenantContext.tenantId, session.user.id),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { role: true }
+      }),
+      prisma.tenantMember.findFirst({
+        where: { userId: session.user.id, tenantId: tenantContext.tenantId },
+        select: { role: true }
+      })
     ])
 
     if (!commentsResult.ok || !notesResult.ok || !findingsResult.ok || !assignableMembersResult.ok) {
@@ -174,6 +184,9 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
     const serializedAi = serializeWorkbenchAiContractAnalysis(aiContractAnalysis)
     const canStartContractAnalysis =
       document.processingStatus === "VERARBEITET" && Boolean(document.extractedTextPreview?.trim())
+    const canReviewFindings =
+      Boolean(userRow?.role && membership?.role) &&
+      canReviewContractAnalysisFindings(userRow!.role, membership!.role)
 
     return (
       <PageShell width="wide" className="space-y-6">
@@ -351,6 +364,7 @@ export default async function DokumentDetailPage({ params }: DokumentDetailPageP
             <ContractAnalysisPanel
               documentId={document.id}
               canStartAnalysis={canStartContractAnalysis}
+              canReviewFindings={canReviewFindings}
               analysis={serializedAi}
             />
 

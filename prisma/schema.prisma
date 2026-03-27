@@ -39,6 +39,7 @@ model User {
   reviewOwnedDocuments Document[] @relation("DocumentReviewOwner")
   analysisLogs      AnalysisLog[]
   analysisRuns      AnalysisRun[]
+  analysisFindingReviews AnalysisFindingReview[]
   auditEvents       AuditEvent[]
   updatedGovernanceSettings TenantGovernanceSettings[] @relation("TenantGovernanceSettingsUpdatedBy")
 }
@@ -128,6 +129,8 @@ model Tenant {
   analysisRuns AnalysisRun[]
   analysisFindings AnalysisFinding[]
   documentExtractions DocumentExtraction[]
+  analysisFindingReviews AnalysisFindingReview[]
+  promptReleases         PromptRelease[]
   governanceSettings TenantGovernanceSettings?
 }
 
@@ -210,6 +213,7 @@ model Document {
   analysisRuns        AnalysisRun[]
   aiAnalysisFindings  AnalysisFinding[]
   documentExtractions DocumentExtraction[]
+  analysisFindingReviews AnalysisFindingReview[]
   auditEvents  AuditEvent[]
 
   @@index([tenantId, createdAt])
@@ -360,8 +364,29 @@ enum AnalysisRunStatus {
 
 enum AnalysisReviewState {
   UNGEPRUEFT
+  ENTWURF
+  ANALYSIERT
   IN_PRUEFUNG
   FREIGEGEBEN
+  ZURUECKGEWIESEN
+  WIEDERHOLUNG_ANGEFORDERT
+}
+
+enum PromptDefinitionStatus {
+  DRAFT
+  ACTIVE
+  DEPRECATED
+}
+
+enum PromptTaskStage {
+  EXTRACTION
+  RISK_AND_GUIDANCE
+}
+
+enum FindingReviewDecision {
+  AKZEPTIERT
+  ABGELEHNT
+  ANGEPASST
 }
 
 enum AnalysisPipelineStageName {
@@ -375,7 +400,14 @@ model AnalysisRun {
   documentId                String
   userId                    String
   status                    AnalysisRunStatus      @default(QUEUED)
+  /// Legacy: synchron zu extractionPromptVersion bei neuen Läufen
   promptVersion             String                 @default("1") @db.VarChar(32)
+  promptBundleKey           String                 @default("contract_analysis.default") @db.VarChar(120)
+  extractionPromptKey       String                 @default("contract.extraction.default") @db.VarChar(120)
+  extractionPromptVersion   String                 @default("2025-03-27") @db.VarChar(32)
+  riskPromptKey             String                 @default("contract.risk_guidance.default") @db.VarChar(120)
+  riskPromptVersion         String                 @default("2025-03-27") @db.VarChar(32)
+  runSequence               Int                    @default(1)
   inputTextHash             String?                @db.VarChar(64)
   documentContentHash       String?                @db.VarChar(64)
   startedAt                 DateTime               @default(now())
@@ -404,10 +436,12 @@ model AnalysisRun {
   decisions AnalysisProviderDecision[]
   findings  AnalysisFinding[]
   extraction DocumentExtraction?
+  findingReviews AnalysisFindingReview[]
 
   analysisLogs AnalysisLog[]
 
   @@index([tenantId, documentId, startedAt])
+  @@index([tenantId, documentId, runSequence])
   @@index([tenantId, status, startedAt])
   @@index([documentId, startedAt])
 }
@@ -445,14 +479,110 @@ model AnalysisFinding {
   confidence    Float?
   sourceStage   AnalysisPipelineStageName?
   clauseRef     String?  @db.VarChar(200)
+  sourceSpan    String?  @db.Text
   createdAt     DateTime @default(now())
 
   tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   document    Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
   analysisRun AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  reviews     AnalysisFindingReview[]
 
   @@index([tenantId, documentId, createdAt])
   @@index([analysisRunId])
+}
+
+/// Mandantenbezogene juristische Bewertung eines KI-Findings (Human-in-the-Loop)
+model AnalysisFindingReview {
+  id                    String                 @id @default(cuid())
+  tenantId              String
+  documentId            String
+  analysisRunId         String
+  analysisFindingId     String
+  reviewerId            String
+  decision              FindingReviewDecision
+  comment               String?                @db.Text
+  modifiedTitle         String?                @db.VarChar(240)
+  modifiedDescription   String?                @db.Text
+  reviewedAt            DateTime               @default(now())
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document    Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  analysisRun AnalysisRun     @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  finding     AnalysisFinding @relation(fields: [analysisFindingId], references: [id], onDelete: Cascade)
+  reviewer    User            @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, analysisFindingId, reviewedAt])
+  @@index([analysisRunId])
+  @@index([reviewerId, reviewedAt])
+}
+
+/// Globale Prompt-Metadaten (kein Mandantenbezug; Zugriff nur Plattform-Admin)
+model PromptDefinition {
+  id                   String                 @id @default(cuid())
+  key                  String                 @db.VarChar(120)
+  version              String                 @db.VarChar(32)
+  purpose              String                 @db.Text
+  contractTypeScope    Json?
+  compatibleProviders  Json?
+  status               PromptDefinitionStatus @default(ACTIVE)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  releases PromptRelease[]
+
+  @@unique([key, version])
+  @@index([key, status])
+}
+
+/// Welche Prompt-Definition für eine Pipeline-Stufe aktiv ist (optional mandantenspezifisch)
+model PromptRelease {
+  id                 String          @id @default(cuid())
+  taskStage          PromptTaskStage
+  contractTypePattern String         @default("*") @db.VarChar(120)
+  promptDefinitionId String
+  tenantId           String?
+  active             Boolean         @default(true)
+  effectiveFrom      DateTime        @default(now())
+
+  promptDefinition PromptDefinition @relation(fields: [promptDefinitionId], references: [id], onDelete: Cascade)
+  tenant           Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([taskStage, active, contractTypePattern])
+  @@index([tenantId, taskStage, active])
+}
+
+/// Interne Eval-Läufe (kein RLS; nur Admin/CI)
+model EvalRun {
+  id             String   @id @default(cuid())
+  name           String   @db.VarChar(200)
+  evaluatorName  String   @default("local") @db.VarChar(64)
+  createdAt      DateTime @default(now())
+  completedAt    DateTime?
+  passed         Boolean  @default(false)
+  configSnapshot Json?
+  reportJson     Json?
+  summaryMarkdown String? @db.Text
+
+  results EvalResultRow[]
+
+  @@index([createdAt])
+}
+
+model EvalResultRow {
+  id              String   @id @default(cuid())
+  evalRunId       String
+  caseId          String   @db.VarChar(120)
+  providerLabel   String?  @db.VarChar(64)
+  modelLabel      String?  @db.VarChar(120)
+  promptVersion   String?  @db.VarChar(32)
+  metricsJson     Json
+  passed          Boolean  @default(false)
+  latencyMs       Int?
+  costEstimate    Float?
+
+  evalRun EvalRun @relation(fields: [evalRunId], references: [id], onDelete: Cascade)
+
+  @@index([evalRunId, caseId])
 }
 
 model DocumentExtraction {

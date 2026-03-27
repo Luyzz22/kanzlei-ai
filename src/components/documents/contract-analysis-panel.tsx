@@ -6,6 +6,7 @@ import {
   startContractAnalysisAction,
   type ContractAnalysisFormState
 } from "@/app/workspace/dokumente/[id]/actions"
+import { AnalysisFindingReviewForm } from "@/components/documents/analysis-finding-review-form"
 import { StatusBadge } from "@/components/marketing/status-badge"
 import type { WorkbenchAiContractAnalysisProps } from "@/types/ai-workbench"
 
@@ -60,6 +61,40 @@ function runStatusTone(status: WorkbenchAiContractAnalysisProps["run"]["status"]
   return "warning"
 }
 
+function analysisReviewStateLabel(s: WorkbenchAiContractAnalysisProps["run"]["reviewState"]): string {
+  switch (s) {
+    case "UNGEPRUEFT":
+      return "Ungeprüft"
+    case "ENTWURF":
+      return "Entwurf"
+    case "ANALYSIERT":
+      return "Analysiert"
+    case "IN_PRUEFUNG":
+      return "In Prüfung"
+    case "FREIGEGEBEN":
+      return "Freigegeben"
+    case "ZURUECKGEWIESEN":
+      return "Zurückgewiesen"
+    case "WIEDERHOLUNG_ANGEFORDERT":
+      return "Erneut analysieren"
+    default:
+      return s
+  }
+}
+
+function findingDecisionLabel(d: string): string {
+  switch (d) {
+    case "AKZEPTIERT":
+      return "Akzeptiert"
+    case "ABGELEHNT":
+      return "Abgelehnt"
+    case "ANGEPASST":
+      return "Angepasst"
+    default:
+      return d
+  }
+}
+
 function providerLabel(p: string | null): string {
   if (!p) return "—"
   switch (p) {
@@ -79,10 +114,16 @@ function providerLabel(p: string | null): string {
 type ContractAnalysisPanelProps = {
   documentId: string
   canStartAnalysis: boolean
+  canReviewFindings: boolean
   analysis: WorkbenchAiContractAnalysisProps | null
 }
 
-export function ContractAnalysisPanel({ documentId, canStartAnalysis, analysis }: ContractAnalysisPanelProps) {
+export function ContractAnalysisPanel({
+  documentId,
+  canStartAnalysis,
+  canReviewFindings,
+  analysis
+}: ContractAnalysisPanelProps) {
   const [state, formAction] = useFormState(startContractAnalysisAction, initialState)
 
   return (
@@ -128,6 +169,13 @@ export function ContractAnalysisPanel({ documentId, canStartAnalysis, analysis }
               </span>
             </p>
             <p>
+              <span className="text-xs uppercase tracking-wide text-slate-500">Lauf / Prüfstatus</span>
+              <br />
+              <span className="font-medium text-slate-900">
+                #{analysis.run.runSequence} · {analysisReviewStateLabel(analysis.run.reviewState)}
+              </span>
+            </p>
+            <p>
               <span className="text-xs uppercase tracking-wide text-slate-500">Risikoindikator (0–1)</span>
               <br />
               <span className="font-medium text-slate-900">
@@ -145,6 +193,14 @@ export function ContractAnalysisPanel({ documentId, canStartAnalysis, analysis }
               <span className="text-xs uppercase tracking-wide text-slate-500">Strukturierte Ausgabe</span>
               <br />
               <span className="font-medium text-slate-900">{analysis.run.structuredOutputValid ? "Validiert" : "Nicht valide"}</span>
+            </p>
+            <p className="sm:col-span-2">
+              <span className="text-xs uppercase tracking-wide text-slate-500">Prompts (Extraktion / Risiko)</span>
+              <br />
+              <span className="font-mono text-xs text-slate-800">
+                {analysis.run.extractionPromptKey}@{analysis.run.extractionPromptVersion} · {analysis.run.riskPromptKey}@
+                {analysis.run.riskPromptVersion}
+              </span>
             </p>
           </div>
 
@@ -182,6 +238,19 @@ export function ContractAnalysisPanel({ documentId, canStartAnalysis, analysis }
                     <p className="mt-1 text-slate-700">{f.description}</p>
                     {f.confidence != null ? (
                       <p className="mt-1 text-xs text-slate-500">Konfidenz: {f.confidence.toFixed(2)}</p>
+                    ) : null}
+                    {f.clauseRef ? (
+                      <p className="mt-1 text-xs text-slate-500">Klauselbezug: {f.clauseRef}</p>
+                    ) : null}
+                    {f.latestReview ? (
+                      <p className="mt-1 text-xs text-slate-600">
+                        Letzte Prüfung: {findingDecisionLabel(f.latestReview.decision)}
+                        {f.latestReview.comment ? ` — ${f.latestReview.comment}` : ""} ·{" "}
+                        {new Date(f.latestReview.reviewedAt).toLocaleString("de-DE")}
+                      </p>
+                    ) : null}
+                    {canReviewFindings && analysis.run.status === "COMPLETED" ? (
+                      <AnalysisFindingReviewForm documentId={documentId} findingId={f.id} />
                     ) : null}
                   </li>
                 ))}

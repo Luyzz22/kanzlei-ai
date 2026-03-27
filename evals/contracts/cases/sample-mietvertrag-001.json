@@ -1,0 +1,13 @@
+{
+  "id": "sample-mietvertrag-001",
+  "contractTypeHint": "Mietvertrag",
+  "documentText": "Mietvertrag zwischen Vermieter Müller und Mieter Schmidt. Kündigungsfrist drei Monate zum Quartalsende.",
+  "reviewerNotes": "Kurztext für Synthetic-Eval; EVAL_MOCK=true nutzt festes Referenz-JSON.",
+  "expected": {
+    "contractTypeIncludes": "Miet",
+    "minParties": 1,
+    "minLegalTopics": 1,
+    "minFindings": 1,
+    "findingTitleIncludes": ["Kündigung"]
+  }
+}

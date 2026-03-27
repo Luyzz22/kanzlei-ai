@@ -12,7 +12,9 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        # AWS Public ECR (Spiegel der offiziellen Library-Images) — umgeht Docker-Hub-Auth/Rate-Limits,
+        # die auf manchen Runnern zu „unauthorized: incorrect username or password“ führen.
+        image: public.ecr.aws/docker/library/postgres:16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -64,6 +66,11 @@ jobs:
 
       - name: Typecheck
         run: pnpm typecheck
+
+      - name: Contract evals (mock + Modell-Matrix, keine API-Keys)
+        env:
+          EVAL_MODEL_MATRIX: gpt-4o-mini,claude-sonnet-4,gemini-2.5-pro
+        run: pnpm eval:contracts
 
       - name: Build
         run: pnpm build

@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto"
 import {
   type AnalysisRun,
   AnalysisPipelineStageName,
+  AnalysisReviewState,
   AnalysisRunStatus,
   DocumentFindingSeverity,
   Prisma
@@ -16,6 +17,7 @@ import {
   runContractAnalysisPipeline,
   type ContractPipelineSuccess
 } from "@/lib/ai/analysis-pipeline"
+import { createTenantContractPromptResolver } from "@/lib/ai/prompt-governance.server"
 import { CONTRACT_ANALYSIS_PROMPT_VERSION } from "@/lib/ai/schemas/contract-analysis"
 import { writeAuditEventTx } from "@/lib/audit-write"
 import { withTenant } from "@/lib/tenant-context.server"
@@ -57,6 +59,13 @@ export type WorkbenchAiContractAnalysis = {
     | "errorCode"
     | "fallbackReason"
     | "validationErrorSummary"
+    | "reviewState"
+    | "runSequence"
+    | "promptBundleKey"
+    | "extractionPromptKey"
+    | "extractionPromptVersion"
+    | "riskPromptKey"
+    | "riskPromptVersion"
   >
   extraction: {
     contractType: string
@@ -71,6 +80,14 @@ export type WorkbenchAiContractAnalysis = {
     severity: DocumentFindingSeverity
     category: string
     confidence: number | null
+    clauseRef: string | null
+    sourceSpan: string | null
+    latestReview: {
+      decision: string
+      comment: string | null
+      reviewedAt: Date
+      reviewerId: string
+    } | null
   }>
   risk: {
     recommendedMeasures: string[]
@@ -99,12 +116,15 @@ export async function getWorkbenchAiContractAnalysis(
 
     const run = await tx.analysisRun.findFirst({
       where: { tenantId, documentId },
-      orderBy: { startedAt: "desc" },
+      orderBy: [{ runSequence: "desc" }, { startedAt: "desc" }],
       include: {
         extraction: true,
         findings: {
           orderBy: { createdAt: "asc" },
-          take: 50
+          take: 50,
+          include: {
+            reviews: { orderBy: { reviewedAt: "desc" }, take: 1 }
+          }
         }
       }
     })
@@ -129,7 +149,14 @@ export async function getWorkbenchAiContractAnalysis(
         structuredOutputValid: run.structuredOutputValid,
         errorCode: run.errorCode,
         fallbackReason: run.fallbackReason,
-        validationErrorSummary: run.validationErrorSummary
+        validationErrorSummary: run.validationErrorSummary,
+        reviewState: run.reviewState,
+        runSequence: run.runSequence,
+        promptBundleKey: run.promptBundleKey,
+        extractionPromptKey: run.extractionPromptKey,
+        extractionPromptVersion: run.extractionPromptVersion,
+        riskPromptKey: run.riskPromptKey,
+        riskPromptVersion: run.riskPromptVersion
       },
       extraction: run.extraction
         ? {
@@ -139,14 +166,27 @@ export async function getWorkbenchAiContractAnalysis(
             legalTopics: run.extraction.legalTopics
           }
         : null,
-      findings: run.findings.map((f) => ({
-        id: f.id,
-        title: f.title,
-        description: f.description,
-        severity: f.severity,
-        category: f.category,
-        confidence: f.confidence
-      })),
+      findings: run.findings.map((f) => {
+        const r = f.reviews[0]
+        return {
+          id: f.id,
+          title: f.title,
+          description: f.description,
+          severity: f.severity,
+          category: f.category,
+          confidence: f.confidence,
+          clauseRef: f.clauseRef,
+          sourceSpan: f.sourceSpan,
+          latestReview: r
+            ? {
+                decision: r.decision,
+                comment: r.comment,
+                reviewedAt: r.reviewedAt,
+                reviewerId: r.reviewerId
+              }
+            : null
+        }
+      }),
       risk: hasRiskPayload
         ? {
             recommendedMeasures: measures,
@@ -199,7 +239,7 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
 
     const doc = await tx.document.findFirst({
       where: { id: input.documentId, tenantId: input.tenantId },
-      select: { id: true, sha256: true, mimeType: true }
+      select: { id: true, sha256: true, mimeType: true, documentType: true }
     })
     if (!doc) return { ok: false as const, code: "NOT_FOUND" as const }
 
@@ -215,6 +255,12 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
       return { ok: false as const, code: "ALREADY_RUNNING" as const }
     }
 
+    const seqAgg = await tx.analysisRun.aggregate({
+      where: { tenantId: input.tenantId, documentId: input.documentId },
+      _max: { runSequence: true }
+    })
+    const nextSequence = (seqAgg._max.runSequence ?? 0) + 1
+
     await tx.analysisRun.create({
       data: {
         id: runId,
@@ -223,6 +269,7 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
         userId: input.actorId,
         status: AnalysisRunStatus.RUNNING,
         promptVersion: CONTRACT_ANALYSIS_PROMPT_VERSION,
+        runSequence: nextSequence,
         documentContentHash: input.documentSha256 ?? doc.sha256 ?? null
       }
     })
@@ -235,11 +282,12 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
       resourceId: runId,
       documentId: input.documentId,
       metadata: {
-        promptVersion: CONTRACT_ANALYSIS_PROMPT_VERSION
+        promptVersion: CONTRACT_ANALYSIS_PROMPT_VERSION,
+        runSequence: nextSequence
       } satisfies Prisma.InputJsonValue
     })
 
-    return { ok: true as const, mimeType: doc.mimeType }
+    return { ok: true as const, mimeType: doc.mimeType, documentType: doc.documentType }
   })
 
   if (!preflight.ok) {
@@ -262,9 +310,11 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
     preferLocalOrPrivate: process.env.AI_SENSITIVE_USE_LLAMA === "true"
   }
 
+  const promptResolver = createTenantContractPromptResolver(input.tenantId, preflight.documentType)
+
   let pipeline: ContractPipelineSuccess
   try {
-    pipeline = await runContractAnalysisPipeline(text, routerCtx)
+    pipeline = await runContractAnalysisPipeline(text, routerCtx, promptResolver)
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unbekannter Fehler"
     const errCode = e instanceof PipelineStageFailureError ? "PIPELINE_STAGE_FAILED" : "PIPELINE_FAILED"
@@ -315,7 +365,14 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
         durationMs,
         recommendedMeasures: pipeline.risk.recommendedMeasures as Prisma.InputJsonValue,
         negotiationHints: pipeline.risk.negotiationHints as Prisma.InputJsonValue,
-        explanationSummary: pipeline.risk.explanationSummary
+        explanationSummary: pipeline.risk.explanationSummary,
+        promptBundleKey: pipeline.promptMetadata.bundleKey,
+        extractionPromptKey: pipeline.promptMetadata.extractionKey,
+        extractionPromptVersion: pipeline.promptMetadata.extractionVersion,
+        riskPromptKey: pipeline.promptMetadata.riskKey,
+        riskPromptVersion: pipeline.promptMetadata.riskVersion,
+        promptVersion: pipeline.promptMetadata.extractionVersion,
+        reviewState: AnalysisReviewState.ANALYSIERT
       }
     })
 
@@ -347,7 +404,7 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
         term: pipeline.extraction.term as Prisma.InputJsonValue,
         legalTopics: pipeline.extraction.legalTopics as Prisma.InputJsonValue,
         confidence: pipeline.extraction.extractionConfidence ?? null,
-        promptVersion: CONTRACT_ANALYSIS_PROMPT_VERSION,
+        promptVersion: pipeline.promptMetadata.extractionVersion,
         contentHash: pipeline.inputTextHash
       }
     })
@@ -364,7 +421,8 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
           severity: severityFromLiteral(f.severity),
           confidence: f.confidence ?? null,
           sourceStage: AnalysisPipelineStageName.RISK_AND_GUIDANCE,
-          clauseRef: f.clauseRef?.slice(0, 200) ?? null
+          clauseRef: f.clauseRef?.slice(0, 200) ?? null,
+          sourceSpan: null
         }))
       })
     }
@@ -395,7 +453,12 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
         primaryModel: String(pipeline.primaryModel),
         totalTokens: pipeline.totalTokens,
         structuredOutputValid: true,
-        routerSummary: pipeline.routerSummary
+        routerSummary: pipeline.routerSummary,
+        promptBundleKey: pipeline.promptMetadata.bundleKey,
+        extractionPromptKey: pipeline.promptMetadata.extractionKey,
+        extractionPromptVersion: pipeline.promptMetadata.extractionVersion,
+        riskPromptKey: pipeline.promptMetadata.riskKey,
+        riskPromptVersion: pipeline.promptMetadata.riskVersion
       } satisfies Prisma.InputJsonValue
     })
   })
