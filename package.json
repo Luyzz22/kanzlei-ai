@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "DATABASE_URL=${DATABASE_URL:-postgresql://user:password@localhost:5432/kanzleiai} DIRECT_URL=${DIRECT_URL:-${DATABASE_URL:-postgresql://user:password@localhost:5432/kanzleiai}} prisma generate",
+    "prisma:migrate": "DIRECT_URL=${DIRECT_URL:-$DATABASE_URL} prisma migrate dev",
+    "prisma:validate": "DATABASE_URL=${DATABASE_URL:-postgresql://user:password@localhost:5432/kanzleiai} DIRECT_URL=${DIRECT_URL:-${DATABASE_URL:-postgresql://user:password@localhost:5432/kanzleiai}} prisma validate",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

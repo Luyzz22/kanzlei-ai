@@ -43,6 +43,7 @@ pnpm prisma migrate dev --name init
 Für Neon/Postgres mit Pooling gilt:
 - `DATABASE_URL` = Runtime/Pooling-Verbindung
 - `DIRECT_URL` = direkte Prisma-CLI-Verbindung (Migrate/Introspect)
+- Die Prisma-Skripte setzen für lokale Convenience automatisch `DIRECT_URL=$DATABASE_URL`, falls `DIRECT_URL` nicht explizit gesetzt ist.
 
 ## Hinweise
 
