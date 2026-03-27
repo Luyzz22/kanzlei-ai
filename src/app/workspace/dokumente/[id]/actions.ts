@@ -2,12 +2,16 @@
 
 import { revalidatePath } from "next/cache"
 
+import { FindingReviewDecision } from "@prisma/client"
+
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
+import { submitAnalysisFindingReview } from "@/lib/documents/analysis-finding-review-core"
 import { createDocumentComment } from "@/lib/documents/comments-core"
 import { processDocumentExtraction } from "@/lib/documents/processing-core"
 import { runPersistedContractAnalysis } from "@/lib/documents/analysis-run-core"
 import { getWorkspaceDocumentById } from "@/lib/documents/workspace-core"
+import { prisma } from "@/lib/prisma"
 import {
   assignDocumentReviewOwner,
   createDocumentFinding,
@@ -392,4 +396,66 @@ export async function updateReviewMetaAction(_: ReviewWorkbenchFormState, formDa
   revalidatePath(`/workspace/dokumente/${documentId}`)
   revalidatePath("/workspace/review-queue")
   return { status: "success", message: "Review-Verantwortung und Fälligkeit wurden aktualisiert." }
+}
+
+export type AnalysisFindingReviewFormState = ReviewWorkbenchFormState
+
+function parseFindingReviewDecision(raw: string): FindingReviewDecision | null {
+  if (raw === "AKZEPTIERT") return FindingReviewDecision.AKZEPTIERT
+  if (raw === "ABGELEHNT") return FindingReviewDecision.ABGELEHNT
+  if (raw === "ANGEPASST") return FindingReviewDecision.ANGEPASST
+  return null
+}
+
+export async function submitAnalysisFindingReviewAction(
+  _: AnalysisFindingReviewFormState,
+  formData: FormData
+): Promise<AnalysisFindingReviewFormState> {
+  const documentId = String(formData.get("documentId") ?? "").trim()
+  const findingId = String(formData.get("findingId") ?? "").trim()
+  const decisionRaw = String(formData.get("decision") ?? "").trim()
+  const comment = String(formData.get("comment") ?? "").trim() || null
+  const modifiedTitle = String(formData.get("modifiedTitle") ?? "").trim() || null
+  const modifiedDescription = String(formData.get("modifiedDescription") ?? "").trim() || null
+
+  if (!documentId || !findingId) return { status: "error", message: reviewInitialError }
+
+  const decision = parseFindingReviewDecision(decisionRaw)
+  if (!decision) return { status: "error", message: "Bitte eine gültige Entscheidung wählen." }
+
+  const context = await getActionContext()
+  if (!context.ok) return { status: "error", message: context.message }
+
+  const user = await prisma.user.findUnique({
+    where: { id: context.actorId },
+    select: { role: true }
+  })
+  const membership = await prisma.tenantMember.findFirst({
+    where: { userId: context.actorId, tenantId: context.tenantId },
+    select: { role: true }
+  })
+  if (!user?.role || !membership?.role) {
+    return { status: "error", message: "Benutzer- oder Mandantenrolle nicht ermittelt." }
+  }
+
+  const result = await submitAnalysisFindingReview({
+    tenantId: context.tenantId,
+    actorId: context.actorId,
+    actorPlatformRole: user.role,
+    actorTenantRole: membership.role,
+    documentId,
+    analysisFindingId: findingId,
+    decision,
+    comment,
+    modifiedTitle,
+    modifiedDescription
+  })
+
+  if (!result.ok) {
+    return { status: "error", message: result.message }
+  }
+
+  revalidatePath(`/workspace/dokumente/${documentId}`)
+  revalidatePath("/workspace/dokumente")
+  return { status: "success", message: "Finding-Bewertung wurde gespeichert." }
 }

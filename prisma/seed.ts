@@ -1,7 +1,81 @@
 import bcrypt from "bcryptjs"
-import { PrismaClient, Role, TenantRole } from "@prisma/client"
+import {
+  PrismaClient,
+  PromptDefinitionStatus,
+  PromptTaskStage,
+  Role,
+  TenantRole
+} from "@prisma/client"
 
 const prisma = new PrismaClient()
+
+/** Synchron zu src/lib/ai/schemas/contract-analysis.ts */
+const SEED_PROMPT_VERSION = "2025-03-27"
+
+async function seedPromptGovernanceBaseline(): Promise<void> {
+  const extraction = await prisma.promptDefinition.upsert({
+    where: { key_version: { key: "contract.extraction.default", version: SEED_PROMPT_VERSION } },
+    create: {
+      key: "contract.extraction.default",
+      version: SEED_PROMPT_VERSION,
+      purpose: "Strukturierte Vertragsextraktion (Seed-Baseline)",
+      status: PromptDefinitionStatus.ACTIVE
+    },
+    update: { status: PromptDefinitionStatus.ACTIVE }
+  })
+  const risk = await prisma.promptDefinition.upsert({
+    where: { key_version: { key: "contract.risk_guidance.default", version: SEED_PROMPT_VERSION } },
+    create: {
+      key: "contract.risk_guidance.default",
+      version: SEED_PROMPT_VERSION,
+      purpose: "Risiko- und Handlungsempfehlungen (Seed-Baseline)",
+      status: PromptDefinitionStatus.ACTIVE
+    },
+    update: { status: PromptDefinitionStatus.ACTIVE }
+  })
+
+  const hasExtRelease = await prisma.promptRelease.findFirst({
+    where: {
+      taskStage: PromptTaskStage.EXTRACTION,
+      tenantId: null,
+      contractTypePattern: "*",
+      promptDefinitionId: extraction.id,
+      active: true
+    }
+  })
+  if (!hasExtRelease) {
+    await prisma.promptRelease.create({
+      data: {
+        taskStage: PromptTaskStage.EXTRACTION,
+        contractTypePattern: "*",
+        promptDefinitionId: extraction.id,
+        tenantId: null,
+        active: true
+      }
+    })
+  }
+
+  const hasRiskRelease = await prisma.promptRelease.findFirst({
+    where: {
+      taskStage: PromptTaskStage.RISK_AND_GUIDANCE,
+      tenantId: null,
+      contractTypePattern: "*",
+      promptDefinitionId: risk.id,
+      active: true
+    }
+  })
+  if (!hasRiskRelease) {
+    await prisma.promptRelease.create({
+      data: {
+        taskStage: PromptTaskStage.RISK_AND_GUIDANCE,
+        contractTypePattern: "*",
+        promptDefinitionId: risk.id,
+        tenantId: null,
+        active: true
+      }
+    })
+  }
+}
 
 function requireEnv(name: string): string {
   const v = process.env[name]
@@ -48,6 +122,8 @@ async function seedAdminUser(): Promise<void> {
       update: { role: TenantRole.OWNER },
       create: { tenantId: tenant.id, userId: user.id, role: TenantRole.OWNER }
     })
+
+    await seedPromptGovernanceBaseline()
 
     console.log(`✅ Seed verarbeitet (Tenant=${tenant.slug}): ${user.email} (${user.role})`)
   } catch (error) {

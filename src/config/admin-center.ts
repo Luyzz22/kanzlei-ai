@@ -102,10 +102,11 @@ export const ADMIN_CENTER_SECTIONS: AdminCenterSection[] = [
     id: "ai-governance",
     title: "KI-Governance",
     summary:
-      "Steuerung von Modellnutzung, Prompt-Richtlinien und Nachweisen für EU-AI-Act-konforme Betriebsführung.",
-    availability: "enterprise_plan",
+      "Lesende Übersicht zu Prompt-Definitionen, Releases und persistierten Vertrags-Evals (globale Admin-Daten, kein Mandantenmix).",
+    availability: "verfügbar",
     owner: "Compliance",
-    nextMilestone: "Model-Register, Prompt-Governance und Human-in-the-Loop-Richtlinien"
+    href: "/dashboard/admin/prompt-governance",
+    nextMilestone: "Schreibende Freigaben für Prompt-Releases und Eval-Schwellen pro Umgebung"
   }
 ]
 

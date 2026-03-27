@@ -65,5 +65,10 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Contract evals (mock + Modell-Matrix, keine API-Keys)
+        env:
+          EVAL_MODEL_MATRIX: gpt-4o-mini,claude-sonnet-4,gemini-2.5-pro
+        run: pnpm eval:contracts
+
       - name: Build
         run: pnpm build

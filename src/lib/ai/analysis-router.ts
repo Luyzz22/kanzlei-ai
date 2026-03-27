@@ -15,6 +15,10 @@ export type RouterContext = {
   complexity?: "niedrig" | "mittel" | "hoch"
   mimeType?: string
   preferLocalOrPrivate?: boolean
+  /**
+   * Eval / Modellvergleich: erzwingt das Primärmodell je Pipeline-Stufe (Fallback-Kette bleibt über Verfügbarkeit).
+   */
+  evalPrimaryByStage?: Partial<Record<PipelineStage, ModelType>>
 }
 
 function uniqueModels(models: ModelType[]): ModelType[] {
@@ -102,7 +106,8 @@ export function getFallbackChainForStage(primary: ModelType, stage: PipelineStag
 }
 
 export function buildModelExecutionPlan(stage: PipelineStage, ctx: RouterContext): ModelType[] {
-  const primary = selectPrimaryModelForStage(stage, ctx)
+  const forced = ctx.evalPrimaryByStage?.[stage]
+  const primary = forced ?? selectPrimaryModelForStage(stage, ctx)
   const fallbacks = uniqueModels(getFallbackChainForStage(primary, stage)).filter((m) => m !== primary)
   const sortedFallbacks = sortModelsByProviderPriority(fallbacks)
   const chain = [primary, ...sortedFallbacks]

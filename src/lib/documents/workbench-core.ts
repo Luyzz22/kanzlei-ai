@@ -62,7 +62,14 @@ export function serializeWorkbenchAiContractAnalysis(
       structuredOutputValid: ai.run.structuredOutputValid,
       errorCode: ai.run.errorCode,
       fallbackReason: ai.run.fallbackReason,
-      validationErrorSummary: ai.run.validationErrorSummary
+      validationErrorSummary: ai.run.validationErrorSummary,
+      reviewState: ai.run.reviewState,
+      runSequence: ai.run.runSequence,
+      promptBundleKey: ai.run.promptBundleKey,
+      extractionPromptKey: ai.run.extractionPromptKey,
+      extractionPromptVersion: ai.run.extractionPromptVersion,
+      riskPromptKey: ai.run.riskPromptKey,
+      riskPromptVersion: ai.run.riskPromptVersion
     },
     extraction: ai.extraction,
     findings: ai.findings.map((f) => ({
@@ -71,7 +78,17 @@ export function serializeWorkbenchAiContractAnalysis(
       description: f.description,
       severity: f.severity,
       category: f.category,
-      confidence: f.confidence
+      confidence: f.confidence,
+      clauseRef: f.clauseRef,
+      sourceSpan: f.sourceSpan,
+      latestReview: f.latestReview
+        ? {
+            decision: f.latestReview.decision,
+            comment: f.latestReview.comment,
+            reviewedAt: f.latestReview.reviewedAt.toISOString(),
+            reviewerId: f.latestReview.reviewerId
+          }
+        : null
     })),
     risk: ai.risk
   }

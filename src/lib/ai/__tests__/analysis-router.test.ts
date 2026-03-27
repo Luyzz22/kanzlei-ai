@@ -11,6 +11,19 @@ import { AnalysisType, ModelType } from "@/types/ai"
 
 const baseCtx = (len: number): RouterContext => ({ documentLength: len })
 
+test("evalPrimaryByStage überschreibt das Primärmodell (Extraktion)", () => {
+  process.env.AI_ROUTER_ENABLED = "true"
+  process.env.OPENAI_API_KEY = "sk-oai"
+  process.env.ANTHROPIC_API_KEY = "sk-ant"
+  process.env.GEMINI_API_KEY = "gem"
+
+  const plan = buildModelExecutionPlan("EXTRACTION", {
+    documentLength: 3000,
+    evalPrimaryByStage: { EXTRACTION: ModelType.GEMINI_2_5_PRO }
+  })
+  assert.equal(plan[0], ModelType.GEMINI_2_5_PRO)
+})
+
 test("EXTRACTION: kurzes Dokument bevorzugt GPT-4o-mini wenn OpenAI konfiguriert", () => {
   process.env.AI_ROUTER_ENABLED = "true"
   process.env.OPENAI_API_KEY = "sk-test"

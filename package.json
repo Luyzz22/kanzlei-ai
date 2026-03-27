@@ -11,7 +11,9 @@
     "prisma:migrate": "DIRECT_URL=${DIRECT_URL:-$DATABASE_URL} prisma migrate dev",
     "prisma:validate": "DATABASE_URL=${DATABASE_URL:-postgresql://user:password@localhost:5432/kanzleiai} DIRECT_URL=${DIRECT_URL:-${DATABASE_URL:-postgresql://user:password@localhost:5432/kanzleiai}} prisma validate",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/lib/ai/__tests__/*.test.ts src/lib/documents/__tests__/*.test.ts"
+    "eval:contracts": "EVAL_MOCK=true tsx --tsconfig tsconfig.json scripts/run-contract-evals.ts",
+    "eval:contracts:persist": "EVAL_MOCK=true EVAL_PERSIST_DB=1 tsx --tsconfig tsconfig.json scripts/run-contract-evals.ts -- --persist",
+    "test": "tsx --test src/lib/ai/__tests__/*.test.ts src/lib/documents/__tests__/*.test.ts src/lib/evals/__tests__/contract-eval-runner.test.ts src/lib/evals/__tests__/eval-model-matrix.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

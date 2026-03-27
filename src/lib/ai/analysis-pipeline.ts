@@ -8,7 +8,14 @@ import {
   type PipelineStage,
   type RouterContext
 } from "@/lib/ai/analysis-router"
-import { extractionStagePrompt, riskAndGuidanceStagePrompt } from "@/lib/ai/analysis-prompts-pipeline"
+import {
+  buildExtractionPromptBody,
+  buildRiskAndGuidancePromptBody,
+  CONTRACT_EXTRACTION_PROMPT_KEY,
+  CONTRACT_PROMPT_BUNDLE_KEY,
+  CONTRACT_RISK_PROMPT_KEY,
+  CONTRACT_ANALYSIS_PROMPT_VERSION
+} from "@/lib/ai/prompt-registry/contract-defaults"
 import { calculateCost } from "@/lib/ai/cost-tracker"
 import { createProvider } from "@/lib/ai/providers"
 import {
@@ -20,6 +27,35 @@ import {
 } from "@/lib/ai/schemas/contract-analysis"
 import { ModelType } from "@/types/ai"
 import { AiProviderKind, AnalysisPipelineStageName } from "@prisma/client"
+
+export type ContractPromptResolver = {
+  resolveExtraction: (normalizedDocument: string) => Promise<{
+    key: string
+    version: string
+    text: string
+    source?: "database" | "registry_default"
+  }>
+  resolveRisk: (
+    normalizedDocument: string,
+    extractionSummary: string,
+    contractTypeLabel: string
+  ) => Promise<{
+    key: string
+    version: string
+    text: string
+    source?: "database" | "registry_default"
+  }>
+}
+
+export type ContractPipelinePromptMetadata = {
+  bundleKey: string
+  extractionKey: string
+  extractionVersion: string
+  extractionSource: "database" | "registry_default"
+  riskKey: string
+  riskVersion: string
+  riskSource: "database" | "registry_default"
+}
 
 export type StageAttemptLog = {
   stage: AnalysisPipelineStageName
@@ -48,6 +84,7 @@ export type ContractPipelineSuccess = {
   fallbackModelKeys: string[]
   inputTextHash: string
   aggregateConfidence: number | null
+  promptMetadata: ContractPipelinePromptMetadata
 }
 
 export class PipelineStageFailureError extends Error {
@@ -99,6 +136,28 @@ export function normalizeDocumentTextForAnalysis(raw: string, maxChars: number):
 
 export function hashTextSha256(text: string): string {
   return createHash("sha256").update(text, "utf8").digest("hex")
+}
+
+/** Registry-only resolver (keine DB) — für Tests und Offline-Evals. */
+export function createRegistryOnlyContractPromptResolver(): ContractPromptResolver {
+  return {
+    resolveExtraction: async (normalizedDocument: string) => ({
+      key: CONTRACT_EXTRACTION_PROMPT_KEY,
+      version: CONTRACT_ANALYSIS_PROMPT_VERSION,
+      text: buildExtractionPromptBody(normalizedDocument, CONTRACT_ANALYSIS_PROMPT_VERSION),
+      source: "registry_default"
+    }),
+    resolveRisk: async (normalizedDocument: string, extractionSummary: string) => ({
+      key: CONTRACT_RISK_PROMPT_KEY,
+      version: CONTRACT_ANALYSIS_PROMPT_VERSION,
+      text: buildRiskAndGuidancePromptBody(
+        normalizedDocument,
+        extractionSummary,
+        CONTRACT_ANALYSIS_PROMPT_VERSION
+      ),
+      source: "registry_default"
+    })
+  }
 }
 
 async function runJsonStage<T>(
@@ -220,7 +279,11 @@ async function runJsonStage<T>(
   throw new PipelineStageFailureError(prismaStage, "Alle Anbieterversuche für diese Pipeline-Stufe sind fehlgeschlagen.")
 }
 
-export async function runContractAnalysisPipeline(documentText: string, ctx: RouterContext): Promise<ContractPipelineSuccess> {
+export async function runContractAnalysisPipeline(
+  documentText: string,
+  ctx: RouterContext,
+  resolver: ContractPromptResolver
+): Promise<ContractPipelineSuccess> {
   const maxChars = Number.parseInt(process.env.AI_MAX_INPUT_CHARS ?? "120000", 10) || 120_000
   const normalized = normalizeDocumentTextForAnalysis(documentText, maxChars)
   const inputTextHash = hashTextSha256(normalized)
@@ -228,12 +291,14 @@ export async function runContractAnalysisPipeline(documentText: string, ctx: Rou
   const stageLogs: StageAttemptLog[] = []
   const fallbackModelKeys: string[] = []
 
+  const extractionResolved = await resolver.resolveExtraction(normalized)
+
   const extraction = await runJsonStage(
     AnalysisPipelineStageName.EXTRACTION,
     "EXTRACTION",
     extractionStageSchema,
     ctx,
-    extractionStagePrompt(normalized),
+    extractionResolved.text,
     normalized,
     stageLogs,
     fallbackModelKeys
@@ -245,12 +310,16 @@ export async function runContractAnalysisPipeline(documentText: string, ctx: Rou
     term: extraction.data.term
   })
 
+  const contractTypeLabel = extraction.data.contractType ?? ""
+
+  const riskResolved = await resolver.resolveRisk(normalized, extractionSummary, contractTypeLabel)
+
   const risk = await runJsonStage(
     AnalysisPipelineStageName.RISK_AND_GUIDANCE,
     "RISK_AND_GUIDANCE",
     riskAndGuidanceStageSchema,
     ctx,
-    riskAndGuidanceStagePrompt(normalized, extractionSummary),
+    riskResolved.text,
     normalized,
     stageLogs,
     fallbackModelKeys
@@ -275,6 +344,9 @@ export async function runContractAnalysisPipeline(documentText: string, ctx: Rou
   const aggregateConfidence =
     risk.data.aggregateConfidence ?? risk.data.riskScore01 ?? extraction.data.extractionConfidence ?? null
 
+  const extractionSource = extractionResolved.source ?? "registry_default"
+  const riskSource = riskResolved.source ?? "registry_default"
+
   return {
     extraction: extraction.data,
     risk: risk.data,
@@ -286,6 +358,15 @@ export async function runContractAnalysisPipeline(documentText: string, ctx: Rou
     routerSummary,
     fallbackModelKeys,
     inputTextHash,
-    aggregateConfidence
+    aggregateConfidence,
+    promptMetadata: {
+      bundleKey: CONTRACT_PROMPT_BUNDLE_KEY,
+      extractionKey: extractionResolved.key,
+      extractionVersion: extractionResolved.version,
+      extractionSource,
+      riskKey: riskResolved.key,
+      riskVersion: riskResolved.version,
+      riskSource
+    }
   }
 }

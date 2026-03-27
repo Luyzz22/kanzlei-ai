@@ -15,6 +15,7 @@ ALTER TABLE "AnalysisRun" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "AnalysisProviderDecision" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "AnalysisFinding" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "DocumentExtraction" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "AnalysisFindingReview" ENABLE ROW LEVEL SECURITY;
 
 -- Optional hardening: force RLS even for table owner (still bypassed by SUPERUSER)
 -- ALTER TABLE "Document" FORCE ROW LEVEL SECURITY;
@@ -72,5 +73,10 @@ CREATE POLICY analysisfinding_tenant_isolation ON "AnalysisFinding"
 
 DROP POLICY IF EXISTS documentextraction_tenant_isolation ON "DocumentExtraction";
 CREATE POLICY documentextraction_tenant_isolation ON "DocumentExtraction"
+  USING ("tenantId" = current_setting('app.tenant_id', true))
+  WITH CHECK ("tenantId" = current_setting('app.tenant_id', true));
+
+DROP POLICY IF EXISTS analysisfindingreview_tenant_isolation ON "AnalysisFindingReview";
+CREATE POLICY analysisfindingreview_tenant_isolation ON "AnalysisFindingReview"
   USING ("tenantId" = current_setting('app.tenant_id', true))
   WITH CHECK ("tenantId" = current_setting('app.tenant_id', true));
