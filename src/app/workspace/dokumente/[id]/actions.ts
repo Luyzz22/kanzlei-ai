@@ -6,6 +6,8 @@ import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
 import { createDocumentComment } from "@/lib/documents/comments-core"
 import { processDocumentExtraction } from "@/lib/documents/processing-core"
+import { runPersistedContractAnalysis } from "@/lib/documents/analysis-run-core"
+import { getWorkspaceDocumentById } from "@/lib/documents/workspace-core"
 import {
   assignDocumentReviewOwner,
   createDocumentFinding,
@@ -17,6 +19,80 @@ import {
 export type DocumentProcessingFormState = {
   status: "idle" | "success" | "error"
   message?: string
+}
+
+export type ContractAnalysisFormState = {
+  status: "idle" | "success" | "error"
+  message?: string
+}
+
+export async function startContractAnalysisAction(
+  _: ContractAnalysisFormState,
+  formData: FormData
+): Promise<ContractAnalysisFormState> {
+  const documentId = String(formData.get("documentId") ?? "").trim()
+  if (!documentId) {
+    return { status: "error", message: "Die Analyse konnte nicht gestartet werden." }
+  }
+
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { status: "error", message: "Bitte melden Sie sich an." }
+  }
+
+  const tenantContext = await resolveTenantContextForUser(session.user.id)
+  if (tenantContext.status === "none") {
+    return { status: "error", message: "Kein Mandantenkontext hinterlegt." }
+  }
+  if (tenantContext.status === "multiple") {
+    return { status: "error", message: "Kein eindeutiger Mandantenkontext." }
+  }
+
+  const doc = await getWorkspaceDocumentById(tenantContext.tenantId, documentId)
+  if (!doc) {
+    return { status: "error", message: "Dokument in diesem Arbeitsbereich nicht gefunden." }
+  }
+
+  if (doc.processingStatus !== "VERARBEITET") {
+    return {
+      status: "error",
+      message: "Die KI-Analyse setzt eine abgeschlossene Textextraktion voraus."
+    }
+  }
+
+  const text = doc.extractedTextPreview?.trim() ?? ""
+  if (!text) {
+    return { status: "error", message: "Keine Textgrundlage für die Analyse verfügbar." }
+  }
+
+  const result = await runPersistedContractAnalysis({
+    tenantId: tenantContext.tenantId,
+    documentId,
+    actorId: session.user.id,
+    documentText: text,
+    documentSha256: doc.sha256
+  })
+
+  if (!result.ok) {
+    if (result.code === "FORBIDDEN") {
+      return { status: "error", message: "Für diese Aktion fehlt die Berechtigung." }
+    }
+    if (result.code === "NO_PROVIDER") {
+      return { status: "error", message: result.message }
+    }
+    if (result.code === "ALREADY_RUNNING") {
+      return { status: "error", message: result.message }
+    }
+    return { status: "error", message: result.message }
+  }
+
+  revalidatePath(`/workspace/dokumente/${documentId}`)
+  revalidatePath("/workspace/dokumente")
+
+  return {
+    status: "success",
+    message: "KI-Vertragsanalyse abgeschlossen. Ergebnisse sind unten einsehbar — bitte fachlich prüfen (Human-in-the-Loop)."
+  }
 }
 
 export async function processDocumentNowAction(

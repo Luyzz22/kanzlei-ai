@@ -23,6 +23,7 @@ export type WorkspaceDocumentDetail = WorkspaceDocumentItem & {
   filename: string
   mimeType: string | null
   sizeBytes: number | null
+  sha256: string | null
   storageKey: string | null
   processedAt: Date | null
   processingError: string | null
@@ -115,6 +116,7 @@ export async function getWorkspaceDocumentById(tenantId: string, documentId: str
         filename: true,
         mimeType: true,
         sizeBytes: true,
+        sha256: true,
         storageKey: true,
         processedAt: true,
         processingError: true,
@@ -145,6 +147,7 @@ export async function getWorkspaceDocumentById(tenantId: string, documentId: str
       filename: document.filename,
       mimeType: document.mimeType,
       sizeBytes: document.sizeBytes,
+      sha256: document.sha256,
       storageKey: document.storageKey,
       processedAt: document.processedAt,
       processingError: document.processingError,

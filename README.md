@@ -34,6 +34,15 @@ pnpm dev
 Lokale URL: `http://localhost:3001` (`NEXTAUTH_URL=http://localhost:3001`).
 Produktion: `https://www.kanzlei-ai.com`.
 
+## KI-Vertragsanalyse (Multi-Provider)
+
+Die Workbench (`/workspace/dokumente/[id]`) kann eine **mandantenbezogene Vertragsanalyse** ausführen: zweistufige Pipeline (strukturierte Extraktion → Risiko- und Handlungsempfehlungen) mit **Zod-validierten** Ergebnissen, Speicherung in `AnalysisRun`, `AnalysisProviderDecision`, `AnalysisFinding`, `DocumentExtraction` sowie Audit-Events (`analysis.pipeline.*`).
+
+- **Anbieter:** OpenAI, Anthropic (Claude), Google Gemini, optional Llama über **OpenAI-kompatible** HTTP-API (`LLAMA_API_BASE` + `LLAMA_API_KEY`). Es werden nur Anbieter genutzt, für die ein Key gesetzt ist.
+- **Routing:** Kurze Texte / Extraktion → bevorzugt OpenAI (schema-freundlich); lange Texte → eher Gemini; Klausel- und Risikoteil → eher Claude. `AI_PROVIDER_PRIORITY` sortiert nur die **Fallback-Kette**, das Primärmodell bleibt führend.
+- **Konfiguration:** siehe `.env.example` (`OPENAI_*`, `ANTHROPIC_*`, `GEMINI_*`, `LLAMA_*`, `AI_ROUTER_ENABLED`, …).
+- **Tests:** `pnpm test` (Router, Schema-Validierung, Provider-Verfügbarkeit).
+
 ## Prisma
 
 ```bash

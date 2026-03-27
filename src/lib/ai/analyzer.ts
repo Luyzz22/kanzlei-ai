@@ -4,9 +4,11 @@ import { getCached, setCached } from "@/lib/ai/cache"
 import { calculateCost } from "@/lib/ai/cost-tracker"
 import { logModelMetric } from "@/lib/ai/metrics"
 import {
-  getFallbackChain,
+  assertAnyProviderConfigured,
+  getFilteredExecutionChain,
   getSelectionReason,
   logModelSelection,
+  ProviderConfigurationError,
   selectOptimalModel
 } from "@/lib/ai/model-router"
 import { createProvider } from "@/lib/ai/providers"
@@ -29,7 +31,13 @@ export async function analyzeWithRouter(
   const startedAt = Date.now()
   const primaryModel = selectOptimalModel(metadata)
   logModelSelection(metadata, primaryModel)
-  const chain = [primaryModel, ...getFallbackChain(primaryModel)]
+  assertAnyProviderConfigured()
+  const chain = getFilteredExecutionChain(metadata)
+  if (chain.length === 0) {
+    throw new ProviderConfigurationError(
+      "Kein KI-Anbieter mit gültigem API-Schlüssel verfügbar. Bitte mindestens einen Anbieter konfigurieren."
+    )
+  }
   const fallbackUsed: AnalysisResult["fallbackUsed"] = []
 
   for (const model of chain) {

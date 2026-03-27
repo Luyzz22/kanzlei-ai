@@ -19,6 +19,10 @@ function isChatCompletionStream(value: unknown): value is AsyncIterable<ChatComp
   )
 }
 
+function chatModelId(): string {
+  return process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-4o-mini"
+}
+
 export class OpenAIProvider extends BaseAIProvider {
   constructor(config?: Partial<AIProviderConfig>) {
     super({
@@ -30,13 +34,18 @@ export class OpenAIProvider extends BaseAIProvider {
   }
 
   async analyze(input: AnalyzeInput): Promise<AIAnalysisResponse> {
+    if (!this.config.apiKey.trim()) {
+      throw new Error("OPENAI_API_KEY ist nicht gesetzt.")
+    }
+
     return this.withRetry(async () => {
       const client = new OpenAI({ apiKey: this.config.apiKey })
 
       const response = (await client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: chatModelId(),
         temperature: 0.2,
-        messages: [{ role: "user", content: `${input.prompt}\n\n${input.documentText}` }]
+        messages: [{ role: "user", content: `${input.prompt}\n\n${input.documentText}` }],
+        ...(input.jsonMode ? { response_format: { type: "json_object" as const } } : {})
       })) as ChatCompletion
 
       const outputText: string = extractOpenAIContent(response)
@@ -55,7 +64,7 @@ export class OpenAIProvider extends BaseAIProvider {
     const client = new OpenAI({ apiKey: this.config.apiKey })
 
     const streamResponse = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: chatModelId(),
       stream: true,
       temperature: 0.2,
       messages: [{ role: "user", content: `${input.prompt}\n\n${input.documentText}` }]

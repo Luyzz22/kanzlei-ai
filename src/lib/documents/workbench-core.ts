@@ -4,6 +4,11 @@ import { type DocumentIntakeStatus } from "@prisma/client"
 
 import { listDocumentActivities, type DocumentActivityItem } from "@/lib/documents/document-activity-core"
 import { getDocumentFileAccessContext } from "@/lib/documents/file-access-core"
+import {
+  getWorkbenchAiContractAnalysis,
+  type WorkbenchAiContractAnalysis
+} from "@/lib/documents/analysis-run-core"
+import type { WorkbenchAiContractAnalysisProps } from "@/types/ai-workbench"
 import { getDocumentReviewSummary, type DocumentReviewSummary } from "@/lib/documents/review-workbench-core"
 import { getWorkspaceDocumentById, type WorkspaceDocumentDetail } from "@/lib/documents/workspace-core"
 
@@ -35,6 +40,40 @@ export type DocumentWorkbenchData = {
     metadata: StructuredAnalysisSection[]
     clauseTopics: StructuredAnalysisTopic[]
     guidance: string[]
+  }
+  aiContractAnalysis: WorkbenchAiContractAnalysis | null
+}
+
+export function serializeWorkbenchAiContractAnalysis(
+  ai: WorkbenchAiContractAnalysis | null
+): WorkbenchAiContractAnalysisProps | null {
+  if (!ai) return null
+  return {
+    run: {
+      id: ai.run.id,
+      status: ai.run.status,
+      startedAt: ai.run.startedAt.toISOString(),
+      completedAt: ai.run.completedAt?.toISOString() ?? null,
+      primaryProvider: ai.run.primaryProvider,
+      primaryModel: ai.run.primaryModel,
+      routerSummary: ai.run.routerSummary,
+      riskScore01: ai.run.riskScore01,
+      aggregateConfidence: ai.run.aggregateConfidence,
+      structuredOutputValid: ai.run.structuredOutputValid,
+      errorCode: ai.run.errorCode,
+      fallbackReason: ai.run.fallbackReason,
+      validationErrorSummary: ai.run.validationErrorSummary
+    },
+    extraction: ai.extraction,
+    findings: ai.findings.map((f) => ({
+      id: f.id,
+      title: f.title,
+      description: f.description,
+      severity: f.severity,
+      category: f.category,
+      confidence: f.confidence
+    })),
+    risk: ai.risk
   }
 }
 
@@ -136,7 +175,8 @@ function buildStructuredAnalysis(document: WorkspaceDocumentDetail) {
   const guidance = [
     "Die strukturierte Analyse basiert ausschließlich auf der aktuell verfügbaren Textgrundlage.",
     "Nicht eindeutig erkennbare Inhalte werden bewusst als unsicher markiert.",
-    "Die Einordnung dient der Orientierung und ersetzt keine juristische Bewertung."
+    "Die Einordnung dient der Orientierung und ersetzt keine juristische Bewertung.",
+    "Optional: mandantenbezogene KI-Vertragsanalyse mit gespeicherten, validierten Ergebnissen — stets fachlich prüfen (Human-in-the-Loop)."
   ]
 
   return {
@@ -167,7 +207,7 @@ export async function getDocumentWorkbenchData(tenantId: string, actorId: string
     return null
   }
 
-  const [activities, fileAccess, reviewSummaryResult] = await Promise.all([
+  const [activities, fileAccess, reviewSummaryResult, aiContractAnalysis] = await Promise.all([
     listDocumentActivities({
       tenantId,
       documentId: document.id,
@@ -175,7 +215,8 @@ export async function getDocumentWorkbenchData(tenantId: string, actorId: string
       uploadedByLabel: document.uploadedByLabel
     }),
     getDocumentFileAccessContext(tenantId, document.id),
-    getDocumentReviewSummary(tenantId, actorId, document.id)
+    getDocumentReviewSummary(tenantId, actorId, document.id),
+    getWorkbenchAiContractAnalysis(tenantId, actorId, document.id)
   ])
 
   if (!reviewSummaryResult.ok) {
@@ -188,6 +229,7 @@ export async function getDocumentWorkbenchData(tenantId: string, actorId: string
     activities,
     reviewContext: buildReviewContext(document, activities),
     reviewSummary: reviewSummaryResult.summary,
-    analysis: buildStructuredAnalysis(document)
+    analysis: buildStructuredAnalysis(document),
+    aiContractAnalysis
   }
 }

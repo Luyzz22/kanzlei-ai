@@ -7,6 +7,10 @@ function extractClaudeText(content: Array<{ text?: string }>): string {
   return firstBlock?.text ?? ""
 }
 
+function claudeModelId(): string {
+  return process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-3-5-sonnet-latest"
+}
+
 export class ClaudeProvider extends BaseAIProvider {
   constructor(config?: Partial<AIProviderConfig>) {
     super({
@@ -18,16 +22,24 @@ export class ClaudeProvider extends BaseAIProvider {
   }
 
   async analyze(input: AnalyzeInput): Promise<AIAnalysisResponse> {
+    if (!this.config.apiKey.trim()) {
+      throw new Error("ANTHROPIC_API_KEY ist nicht gesetzt.")
+    }
+
     return this.withRetry(async () => {
       const anthropicModule = await import("@anthropic-ai/sdk")
       const Anthropic = anthropicModule.default
       const client = new Anthropic({ apiKey: this.config.apiKey })
 
+      const userContent = input.jsonMode
+        ? `${input.prompt}\n\n${input.documentText}\n\nAntworte ausschließlich mit einem gültigen JSON-Objekt ohne Markdown oder Erklärtext.`
+        : `${input.prompt}\n\n${input.documentText}`
+
       const response = await client.messages.create({
-        model: "claude-3-5-sonnet-latest",
+        model: claudeModelId(),
         max_tokens: 4096,
         temperature: 0.2,
-        messages: [{ role: "user", content: `${input.prompt}\n\n${input.documentText}` }]
+        messages: [{ role: "user", content: userContent }]
       })
 
       const outputText = extractClaudeText(response.content)
