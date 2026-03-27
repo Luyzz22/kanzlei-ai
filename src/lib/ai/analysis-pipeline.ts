@@ -196,7 +196,7 @@ async function runJsonStage<T>(
       primaryLogged = true
 
       return { data: validated.data, model, tokens: tokensUsed }
-    } catch (e) {
+    } catch {
       errorCode = "PROVIDER_ERROR"
       stageLogs.push({
         stage: prismaStage,
