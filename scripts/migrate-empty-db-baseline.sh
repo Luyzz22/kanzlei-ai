@@ -2,8 +2,9 @@
 set -euo pipefail
 
 # Runs the "empty DB baseline" flow:
-# - mark all migrations before *_baseline_schema as applied
+# - mark all migrations before the baseline folder as applied
 # - run prisma migrate deploy (should apply baseline only)
+# Baseline folder name must end with _baseline_schema or _dev_baseline.
 # No destructive operations (no reset / no drops).
 
 ROOT="$(git rev-parse --show-toplevel)"
@@ -15,16 +16,16 @@ if [ ! -d "$MIG_DIR" ]; then
   exit 1
 fi
 
-BASELINE="$(ls "$MIG_DIR" | grep -E '_baseline_schema$' | sort | tail -n 1 || true)"
+BASELINE="$(ls "$MIG_DIR" | grep -E '_baseline_schema$|_dev_baseline$' | sort | tail -n 1 || true)"
 if [ -z "$BASELINE" ]; then
-  echo "ERROR: baseline migration (*_baseline_schema) not found in $MIG_DIR"
+  echo "ERROR: baseline migration (*_baseline_schema or *_dev_baseline) not found in $MIG_DIR"
   exit 1
 fi
 
 echo "baseline=$BASELINE"
 
 # Mark all migrations before baseline as applied.
-# Prisma expects folder names like 20260306001427_baseline_schema, etc.
+# Prisma expects folder names like 20260306001427_baseline_schema or 20260327000100_dev_baseline.
 for m in $(ls "$MIG_DIR" | grep -E '^[0-9]{14}_' | sort); do
   if [ "$m" = "$BASELINE" ]; then
     break
