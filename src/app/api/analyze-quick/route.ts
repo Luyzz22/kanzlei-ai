@@ -2,40 +2,16 @@ export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
 
-import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth"
 import { analyzeWithRouter } from "@/lib/ai/analyzer"
 import { contractAnalysisPrompt } from "@/lib/ai/prompts"
 import { AnalysisType, type DocumentMetadata } from "@/types/ai"
 
-async function getSessionUser() {
-  const cookieStore = cookies()
-  
-  // NextAuth v5 database session: look for session token in cookies
-  const tokenCookie = 
-    cookieStore.get("__Secure-next-auth.session-token") ||
-    cookieStore.get("next-auth.session-token")
-  
-  if (!tokenCookie?.value) return null
-  
-  try {
-    const session = await prisma.session.findUnique({
-      where: { sessionToken: tokenCookie.value },
-      include: { user: { select: { id: true, email: true, name: true } } }
-    })
-    
-    if (!session || session.expires < new Date()) return null
-    return session.user
-  } catch {
-    return null
-  }
-}
-
 export async function POST(request: Request): Promise<NextResponse> {
-  const user = await getSessionUser()
-  
-  if (!user) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
   }
 
