@@ -38,9 +38,9 @@ export const authConfig: NextAuthConfig = {
   secret: process.env.NEXTAUTH_SECRET,
   debug: true,
   session: {
-    strategy: "database",
-    maxAge: 60 * 30,
-    updateAge: 60 * 5
+    strategy: "jwt",
+    maxAge: 60 * 60 * 24,
+    updateAge: 60 * 60
   },
   pages: {
     signIn: "/login"
@@ -142,10 +142,10 @@ export const authConfig: NextAuthConfig = {
       return token
     },
 
-    session: async ({ session, user }) => {
-      if (session.user) {
-        session.user.id = user.id
-        session.user.role = (user as { role: Role }).role ?? Role.ASSISTENT
+    session: async ({ session, token }) => {
+      if (session.user && token) {
+        session.user.id = token.sub ?? ""
+        session.user.role = (token.role as Role) ?? Role.ASSISTENT
       }
       return session
     }
