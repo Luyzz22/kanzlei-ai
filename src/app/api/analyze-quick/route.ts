@@ -8,14 +8,12 @@ import { analyzeWithRouter } from "@/lib/ai/analyzer"
 import { contractAnalysisPrompt } from "@/lib/ai/prompts"
 import { AnalysisType, type DocumentMetadata } from "@/types/ai"
 
-export async function POST(request: Request): Promise<NextResponse> {
-  const session = await auth()
-
-  if (!session?.user?.id) {
+export const POST = auth(async function POST(req) {
+  if (!req.auth?.user?.id) {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
   }
 
-  const formData = await request.formData()
+  const formData = await req.formData()
   const file = formData.get("file") as File | null
   const textDirect = formData.get("text") as string | null
 
@@ -58,7 +56,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
   }
 
-  // Truncate if extremely long
   if (documentText.length > 120000) {
     documentText = documentText.slice(0, 120000)
   }
@@ -91,4 +88,4 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: 503 }
     )
   }
-}
+}) as unknown as (req: Request) => Promise<NextResponse>
