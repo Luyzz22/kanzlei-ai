@@ -25,7 +25,7 @@ export function ConsentBanner() {
       <p className="text-[13px] leading-relaxed text-gray-600">
         Wir verwenden technisch notwendige Cookies für Sicherheit und Login sowie optionale Analyse-Cookies.
       </p>
-      <p className="mt-3 rounded-xl border border-[#003856]/10 bg-[#003856]/[0.03] p-3.5 text-[12px] leading-relaxed text-gray-600">
+      <p className="mt-3 rounded-xl border border-gold-200 bg-gold-50 p-3.5 text-[12px] leading-relaxed text-gray-600">
         KanzleiAI setzt KI-gestützte Funktionen ein. Die erzeugten Inhalte ersetzen keine Rechtsberatung. Eine fachliche Prüfung bleibt erforderlich.{" "}
         <Link href="/ki-transparenz" className="font-medium text-[#003856] underline underline-offset-2">
           Mehr erfahren

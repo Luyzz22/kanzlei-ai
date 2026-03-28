@@ -45,7 +45,7 @@ export function SiteHeader() {
     : "U"
 
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200/60 bg-white/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-gray-200/60 bg-[#FAFAF7]/85 backdrop-blur-xl">
       <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
         {/* Logo */}
         <Link href={isLoggedIn ? "/dashboard" : "/"} className="flex items-center gap-2.5 py-4">

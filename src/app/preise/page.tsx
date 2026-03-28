@@ -92,12 +92,12 @@ export default function PreisePage() {
                 key={tier.name}
                 className={`relative flex flex-col rounded-2xl border p-7 ${
                   tier.highlighted
-                    ? "border-[#003856] bg-white shadow-elevated ring-1 ring-[#003856]/10"
+                    ? "border-gold-400 bg-white shadow-elevated ring-1 ring-gold-300/30"
                     : "border-gray-100 bg-white"
                 }`}
               >
                 {tier.highlighted && (
-                  <div className="absolute -top-3 left-6 rounded-full bg-[#003856] px-3 py-1 text-[11px] font-semibold text-white">
+                  <div className="absolute -top-3 left-6 rounded-full bg-gold-700 px-3 py-1 text-[11px] font-semibold text-white">
                     Empfohlen
                   </div>
                 )}
@@ -116,7 +116,7 @@ export default function PreisePage() {
                 <ul className="mt-6 flex-1 space-y-3">
                   {tier.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2.5 text-[13px] text-gray-600">
-                      <svg className="mt-0.5 h-4 w-4 shrink-0 text-[#003856]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="mt-0.5 h-4 w-4 shrink-0 text-gold-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                       </svg>
                       {feature}
@@ -145,7 +145,7 @@ export default function PreisePage() {
       </section>
 
       {/* FAQ */}
-      <section className="border-t border-gray-100 bg-gray-50/30 py-20">
+      <section className="border-t border-gray-200 bg-gray-50 py-20">
         <div className="mx-auto max-w-3xl px-5 sm:px-8">
           <p className="text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-[#003856]">FAQ</p>
           <h2 className="mt-3 text-center text-[1.75rem] font-semibold tracking-tight text-gray-950">

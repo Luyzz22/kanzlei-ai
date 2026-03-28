@@ -12,7 +12,7 @@ type CtaPanelProps = {
 
 export function CtaPanel({ title, description, primaryLabel, primaryHref, secondaryLabel, secondaryHref }: CtaPanelProps) {
   return (
-    <section className="rounded-2xl border border-gray-100 bg-gray-50/30 p-6 sm:p-8 text-center">
+    <section className="rounded-2xl border border-gray-200 bg-gray-50 p-6 sm:p-8 text-center">
       <h2 className="text-[20px] font-semibold tracking-tight text-gray-950">{title}</h2>
       <p className="mx-auto mt-3 max-w-2xl text-[14px] leading-relaxed text-gray-500">{description}</p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">

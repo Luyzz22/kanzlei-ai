@@ -10,7 +10,7 @@ type PageHeroProps = {
 export function PageHero({ eyebrow, title, description, children }: PageHeroProps) {
   return (
     <section className="relative overflow-hidden border-b border-gray-100 bg-white pb-16 pt-16 sm:pb-20 sm:pt-20">
-      <div className="pointer-events-none absolute -right-32 -top-32 h-[400px] w-[400px] rounded-full bg-gradient-to-br from-[#003856]/[0.03] to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute -right-32 -top-32 h-[400px] w-[400px] rounded-full bg-gradient-to-br from-gold-200/30 to-transparent blur-3xl" />
       <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
         <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center">
           <div>

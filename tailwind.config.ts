@@ -31,6 +31,32 @@ const config: Config = {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))"
         },
+        /* Override Tailwind gray with warm stone tones */
+        gray: {
+          50:  "#FAF9F6",
+          100: "#F5F4F0",
+          200: "#E8E6E1",
+          300: "#D8D6CF",
+          400: "#A09D95",
+          500: "#78756D",
+          600: "#57554F",
+          700: "#3D3B37",
+          800: "#2A2926",
+          900: "#1C1B19",
+          950: "#111110",
+        },
+        gold: {
+          50:  "#FBF7EE",
+          100: "#F5EDDA",
+          200: "#E8D9B5",
+          300: "#D4B978",
+          400: "#C8A85A",
+          500: "#B8944A",
+          600: "#9A7A3C",
+          700: "#8B7340",
+          800: "#5C4D2D",
+          900: "#3D331E",
+        },
         sbs: {
           blue: {
             DEFAULT: "#003856",
@@ -39,15 +65,10 @@ const config: Config = {
             50: "#e8f4fa",
             100: "#c5e2f0",
             200: "#8ec5e0",
-            300: "#5aa8cc",
-            400: "#2d8bb8",
-            500: "#006e9f",
             600: "#003856",
             700: "#002a42",
-            800: "#001e30",
-            900: "#00131f"
+            900: "#00131f",
           },
-          yellow: "#FFB900"
         }
       },
       fontFamily: {
@@ -65,7 +86,6 @@ const config: Config = {
         "soft": "0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
         "card": "0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)",
         "elevated": "0 4px 16px -2px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04)",
-        "header": "0 1px 0 0 rgb(0 0 0 / 0.06)",
       },
       animation: {
         "fade-in": "fadeIn 0.6s ease-out forwards",

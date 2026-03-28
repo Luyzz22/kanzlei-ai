@@ -27,7 +27,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="mx-auto grid min-h-[calc(100vh-65px)] w-full max-w-7xl gap-0 px-5 py-6 sm:px-8 lg:grid-cols-[240px_1fr] lg:px-10">
-      <aside className="hidden rounded-l-2xl border border-gray-100 bg-gray-50/50 p-4 lg:block">
+      <aside className="hidden rounded-l-2xl border border-gray-200 bg-gray-50 p-4 lg:block">
         {navItems.map((group) => (
           <div key={group.group} className="mb-5">
             <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-400">{group.group}</p>
@@ -40,7 +40,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     href={item.href}
                     className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
                       isActive
-                        ? "bg-[#003856]/[0.06] text-[#003856]"
+                        ? "bg-gold-100 text-gold-700"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                     }`}
                   >

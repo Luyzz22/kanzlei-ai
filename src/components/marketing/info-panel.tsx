@@ -9,7 +9,7 @@ type InfoPanelProps = {
 const toneClasses = {
   default: "border-gray-100 bg-white",
   muted: "border-gray-100 bg-gray-50/50",
-  accent: "border-[#003856]/10 bg-[#003856]/[0.02]",
+  accent: "border-gold-100 bg-gold-50/50",
   dark: "border-gray-800 bg-gray-950 text-gray-100",
 }
 

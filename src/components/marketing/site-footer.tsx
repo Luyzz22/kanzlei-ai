@@ -41,7 +41,7 @@ const footerGroups = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-gray-200">
+    <footer className="border-t border-gray-200 bg-[#FAFAF7]">
       {/* Main Footer */}
       <div className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 lg:px-10">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">

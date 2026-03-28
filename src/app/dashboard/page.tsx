@@ -47,8 +47,8 @@ export default function DashboardPage() {
               href={action.href}
               className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-4 transition-all hover:border-gray-200 hover:shadow-card"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#003856]/[0.06]">
-                <svg className="h-4 w-4 text-[#003856]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-100">
+                <svg className="h-4 w-4 text-gold-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                 </svg>
               </div>

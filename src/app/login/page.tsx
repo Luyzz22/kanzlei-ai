@@ -78,7 +78,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ihre@kanzlei.de"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-400 transition-colors focus:border-[#003856] focus:outline-none focus:ring-2 focus:ring-[#003856]/10"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-400 transition-colors focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200"
             />
           </div>
 
@@ -87,7 +87,7 @@ export default function LoginPage() {
               <label htmlFor="password" className="text-[13px] font-medium text-gray-700">
                 Passwort
               </label>
-              <Link href="/password-reset" className="text-[12px] font-medium text-[#003856] hover:text-[#00507a]">
+              <Link href="/password-reset" className="text-[12px] font-medium text-gold-700 hover:text-gold-600">
                 Vergessen?
               </Link>
             </div>
@@ -98,7 +98,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-400 transition-colors focus:border-[#003856] focus:outline-none focus:ring-2 focus:ring-[#003856]/10"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-400 transition-colors focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200"
             />
           </div>
 
@@ -131,7 +131,7 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-[12px] text-gray-400">
           Noch kein Konto?{" "}
-          <Link href="/enterprise-kontakt" className="font-medium text-[#003856] hover:text-[#00507a]">
+          <Link href="/enterprise-kontakt" className="font-medium text-gold-700 hover:text-gold-600">
             Demo anfragen
           </Link>
         </p>

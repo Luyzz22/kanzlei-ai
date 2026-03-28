@@ -91,7 +91,7 @@ export default function ProduktPage() {
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {kernmodule.map((modul) => (
               <div key={modul.title} className="group rounded-2xl border border-gray-100 bg-white p-6 transition-all hover:border-gray-200 hover:shadow-card">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#003856]/[0.06] text-[#003856]">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold-100 text-gold-700">
                   {modul.icon}
                 </div>
                 <h3 className="mt-4 text-[15px] font-semibold text-gray-900">{modul.title}</h3>
@@ -104,7 +104,7 @@ export default function ProduktPage() {
       </section>
 
       {/* Tech Stack */}
-      <section className="border-y border-gray-100 bg-gray-50/30 py-16">
+      <section className="border-y border-gray-200 bg-gray-50 py-16">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#003856]">Technologie</p>
           <h2 className="mt-3 text-[1.75rem] font-semibold tracking-tight text-gray-950">Enterprise-grade Tech Stack</h2>

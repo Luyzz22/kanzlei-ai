@@ -6,69 +6,53 @@
   /* SBS Deutschland Brand */
   --sbs-blue: #003856;
   --sbs-blue-dark: #002a42;
-  --sbs-blue-light: #00507a;
-  --sbs-blue-50: #e8f4fa;
-  --sbs-blue-100: #c5e2f0;
-  --sbs-blue-200: #8ec5e0;
-  --sbs-yellow: #FFB900;
+  --sbs-gold: #C8985A;
+  --sbs-gold-light: #FBF7EE;
 
-  /* Semantic colors */
-  --background: 0 0% 100%;
-  --foreground: 210 20% 10%;
+  /* Semantic — warm stone base */
+  --background: 40 20% 98%;
+  --foreground: 40 10% 10%;
   --primary: 201 100% 17%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 210 20% 97%;
-  --secondary-foreground: 210 20% 10%;
-  --muted: 210 14% 96%;
-  --muted-foreground: 210 10% 46%;
-  --accent: 201 70% 95%;
-  --accent-foreground: 201 100% 17%;
-  --border: 210 16% 91%;
-  --input: 210 16% 91%;
+  --secondary: 40 14% 96%;
+  --secondary-foreground: 40 10% 10%;
+  --muted: 40 10% 95%;
+  --muted-foreground: 40 6% 46%;
+  --accent: 38 50% 95%;
+  --accent-foreground: 38 40% 30%;
+  --border: 40 10% 90%;
+  --input: 40 10% 90%;
   --ring: 201 100% 17%;
-
-  /* Surfaces */
-  --surface-primary: #ffffff;
-  --surface-secondary: #f8fafb;
-  --surface-tertiary: #f1f5f7;
-  --surface-elevated: #ffffff;
 }
 
 .dark {
-  --background: 210 20% 6%;
-  --foreground: 210 14% 93%;
+  --background: 40 6% 7%;
+  --foreground: 40 10% 92%;
   --primary: 201 80% 60%;
-  --primary-foreground: 210 20% 6%;
-  --secondary: 210 16% 14%;
-  --secondary-foreground: 210 14% 93%;
-  --muted: 210 14% 14%;
-  --muted-foreground: 210 10% 60%;
-  --accent: 201 50% 14%;
-  --accent-foreground: 201 80% 60%;
-  --border: 210 14% 18%;
-  --input: 210 14% 18%;
+  --primary-foreground: 40 6% 7%;
+  --secondary: 40 6% 14%;
+  --secondary-foreground: 40 10% 92%;
+  --muted: 40 6% 14%;
+  --muted-foreground: 40 6% 58%;
+  --accent: 38 20% 14%;
+  --accent-foreground: 38 40% 70%;
+  --border: 40 6% 18%;
+  --input: 40 6% 18%;
   --ring: 201 80% 60%;
-
-  --surface-primary: #0f1419;
-  --surface-secondary: #161c22;
-  --surface-tertiary: #1c242c;
-  --surface-elevated: #1c242c;
 }
 
 body {
-  @apply bg-white text-foreground antialiased;
+  @apply bg-[#FAFAF7] text-foreground antialiased;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Apple-style smooth scrolling */
 html {
   scroll-behavior: smooth;
 }
 
-/* Selection color */
 ::selection {
-  background-color: var(--sbs-blue-100);
-  color: var(--sbs-blue);
+  background-color: #F0E6CC;
+  color: #3D331E;
 }
