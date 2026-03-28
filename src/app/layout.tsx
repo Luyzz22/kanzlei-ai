@@ -4,6 +4,7 @@ import "./globals.css"
 import { ConsentBanner } from "@/components/gdpr/consent-banner"
 import { SiteFooter } from "@/components/marketing/site-footer"
 import { SiteHeader } from "@/components/marketing/site-header"
+import { SessionProvider } from "@/components/layout/session-provider"
 import { ThemeProvider } from "@/components/layout/theme-provider"
 
 export const metadata: Metadata = {
@@ -20,25 +21,22 @@ export const metadata: Metadata = {
     title: "KanzleiAI — KI-Vertragsanalyse für juristische Teams",
     description: "Verträge prüfen. Risiken erkennen. Entscheidungen dokumentieren. DSGVO-konform, Multi-Provider KI, auditfähig.",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  icons: {
-    icon: "/favicon.ico",
-  },
+  robots: { index: true, follow: true },
+  icons: { icon: "/favicon.ico" },
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="de" suppressHydrationWarning>
       <body className="min-h-screen bg-white text-gray-900 antialiased">
-        <ThemeProvider>
-          <SiteHeader />
-          {children}
-          <SiteFooter />
-          <ConsentBanner />
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider>
+            <SiteHeader />
+            {children}
+            <SiteFooter />
+            <ConsentBanner />
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   )
