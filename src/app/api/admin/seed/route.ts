@@ -75,87 +75,94 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
     })
 
-    // Seed prompt governance baseline
-    const extraction = await prisma.promptDefinition.upsert({
-      where: {
-        key_version: {
+    // Seed prompt governance baseline (optional — tables may not exist yet)
+    let promptStatus = "skipped"
+    try {
+      const extraction = await prisma.promptDefinition.upsert({
+        where: {
+          key_version: {
+            key: "contract.extraction.default",
+            version: SEED_PROMPT_VERSION
+          }
+        },
+        create: {
           key: "contract.extraction.default",
-          version: SEED_PROMPT_VERSION
-        }
-      },
-      create: {
-        key: "contract.extraction.default",
-        version: SEED_PROMPT_VERSION,
-        purpose: "Strukturierte Vertragsextraktion (Seed-Baseline)",
-        status: PromptDefinitionStatus.ACTIVE
-      },
-      update: { status: PromptDefinitionStatus.ACTIVE }
-    })
+          version: SEED_PROMPT_VERSION,
+          purpose: "Strukturierte Vertragsextraktion (Seed-Baseline)",
+          status: PromptDefinitionStatus.ACTIVE
+        },
+        update: { status: PromptDefinitionStatus.ACTIVE }
+      })
 
-    const risk = await prisma.promptDefinition.upsert({
-      where: {
-        key_version: {
+      const risk = await prisma.promptDefinition.upsert({
+        where: {
+          key_version: {
+            key: "contract.risk_guidance.default",
+            version: SEED_PROMPT_VERSION
+          }
+        },
+        create: {
           key: "contract.risk_guidance.default",
-          version: SEED_PROMPT_VERSION
-        }
-      },
-      create: {
-        key: "contract.risk_guidance.default",
-        version: SEED_PROMPT_VERSION,
-        purpose: "Risiko- und Handlungsempfehlungen (Seed-Baseline)",
-        status: PromptDefinitionStatus.ACTIVE
-      },
-      update: { status: PromptDefinitionStatus.ACTIVE }
-    })
+          version: SEED_PROMPT_VERSION,
+          purpose: "Risiko- und Handlungsempfehlungen (Seed-Baseline)",
+          status: PromptDefinitionStatus.ACTIVE
+        },
+        update: { status: PromptDefinitionStatus.ACTIVE }
+      })
 
-    // Create prompt releases
-    const hasExtRelease = await prisma.promptRelease.findFirst({
-      where: {
-        taskStage: PromptTaskStage.EXTRACTION,
-        tenantId: null,
-        contractTypePattern: "*",
-        promptDefinitionId: extraction.id,
-        active: true
-      }
-    })
-    if (!hasExtRelease) {
-      await prisma.promptRelease.create({
-        data: {
+      // Create prompt releases
+      const hasExtRelease = await prisma.promptRelease.findFirst({
+        where: {
           taskStage: PromptTaskStage.EXTRACTION,
+          tenantId: null,
           contractTypePattern: "*",
           promptDefinitionId: extraction.id,
-          tenantId: null,
           active: true
         }
       })
-    }
-
-    const hasRiskRelease = await prisma.promptRelease.findFirst({
-      where: {
-        taskStage: PromptTaskStage.RISK_AND_GUIDANCE,
-        tenantId: null,
-        contractTypePattern: "*",
-        promptDefinitionId: risk.id,
-        active: true
+      if (!hasExtRelease) {
+        await prisma.promptRelease.create({
+          data: {
+            taskStage: PromptTaskStage.EXTRACTION,
+            contractTypePattern: "*",
+            promptDefinitionId: extraction.id,
+            tenantId: null,
+            active: true
+          }
+        })
       }
-    })
-    if (!hasRiskRelease) {
-      await prisma.promptRelease.create({
-        data: {
+
+      const hasRiskRelease = await prisma.promptRelease.findFirst({
+        where: {
           taskStage: PromptTaskStage.RISK_AND_GUIDANCE,
+          tenantId: null,
           contractTypePattern: "*",
           promptDefinitionId: risk.id,
-          tenantId: null,
           active: true
         }
       })
+      if (!hasRiskRelease) {
+        await prisma.promptRelease.create({
+          data: {
+            taskStage: PromptTaskStage.RISK_AND_GUIDANCE,
+            contractTypePattern: "*",
+            promptDefinitionId: risk.id,
+            tenantId: null,
+            active: true
+          }
+        })
+      }
+      promptStatus = "seeded"
+    } catch (promptError) {
+      console.warn("[SEED] Prompt governance tables not available yet:", promptError)
+      promptStatus = "tables_not_ready"
     }
 
     return NextResponse.json({
       status: "seeded",
       user: { id: user.id, email: user.email, role: user.role },
       tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name },
-      promptGovernance: "baseline seeded"
+      promptGovernance: promptStatus
     })
   } catch (error) {
     console.error("[SEED] Error:", error)
