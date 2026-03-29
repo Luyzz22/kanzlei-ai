@@ -29,6 +29,7 @@ const appNav: NavItem[] = [
   { label: "Workspace", href: "/workspace/dokumente" },
   { label: "Upload", href: "/workspace/upload" },
   { label: "Analyse", href: "/workspace/analyse" },
+  { label: "Copilot", href: "/workspace/copilot" },
   { label: "Review", href: "/workspace/review-queue" },
 ]
 
