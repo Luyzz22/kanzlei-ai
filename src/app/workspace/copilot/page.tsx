@@ -28,8 +28,40 @@ export default function CopilotPage() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [streamingText, setStreamingText] = useState("")
+  const [contractContext, setContractContext] = useState<string | null>(null)
+  const [contractName, setContractName] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // Load contract context from sessionStorage (set by Schnellanalyse)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const stored = sessionStorage.getItem("kanzlei-copilot-context")
+    if (!stored) return
+    try {
+      const ctx = JSON.parse(stored)
+      const parts: string[] = []
+      if (ctx.contractText) parts.push(`VERTRAGSTEXT:\n${ctx.contractText}`)
+      if (ctx.analysis?.summary) parts.push(`ZUSAMMENFASSUNG:\n${ctx.analysis.summary}`)
+      if (ctx.analysis?.riskScore) parts.push(`RISIKO-SCORE: ${ctx.analysis.riskScore}/100`)
+      if (ctx.analysis?.extractedData) parts.push(`EXTRAHIERTE DATEN:\n${JSON.stringify(ctx.analysis.extractedData, null, 2)}`)
+      if (ctx.analysis?.findings?.length) {
+        const findingsText = ctx.analysis.findings.map((f: {title: string; severity: string; explanation: string; quote?: string}) =>
+          `- [${f.severity.toUpperCase()}] ${f.title}: ${f.explanation}${f.quote ? ` (Zitat: "${f.quote}")` : ""}`
+        ).join("\n")
+        parts.push(`IDENTIFIZIERTE RISIKEN:\n${findingsText}`)
+      }
+      if (ctx.analysis?.recommendedActions?.length) {
+        parts.push(`HANDLUNGSEMPFEHLUNGEN:\n${ctx.analysis.recommendedActions.map((a: string, i: number) => `${i+1}. ${a}`).join("\n")}`)
+      }
+      if (parts.length > 0) {
+        setContractContext(parts.join("\n\n"))
+        // Extract contract name from extractedData
+        const name = ctx.analysis?.extractedData?.Produkt || ctx.analysis?.extractedData?.Anbieter || "Geladener Vertrag"
+        setContractName(String(name))
+      }
+    } catch {}
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -50,7 +82,8 @@ export default function CopilotPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: updatedMessages.map(m => ({ role: m.role, content: m.content }))
+          messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
+          contractContext: contractContext || undefined
         })
       })
 
@@ -123,6 +156,12 @@ export default function CopilotPage() {
             <h1 className="text-[17px] font-semibold text-gray-950">Contract Copilot</h1>
             <p className="text-[12px] text-gray-500">Powered by Claude Sonnet 4 · Vertragsexperte für DACH-Recht</p>
           </div>
+          {contractName && (
+            <div className="ml-auto flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="text-[12px] font-medium text-emerald-700">📄 {contractName}</span>
+            </div>
+          )}
         </div>
       </div>
 
