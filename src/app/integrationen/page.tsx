@@ -1,156 +1,184 @@
-import { CtaPanel } from "@/components/marketing/cta-panel"
-import { FeatureCard } from "@/components/marketing/feature-card"
-import { InfoPanel } from "@/components/marketing/info-panel"
-import { ProcessFlow } from "@/components/marketing/process-flow"
-import { PageHero } from "@/components/marketing/page-hero"
-import { PageShell } from "@/components/marketing/page-shell"
-import { StatusBadge } from "@/components/marketing/status-badge"
+import Link from "next/link"
 
-const integrationskategorien = [
+const integrations = [
   {
-    title: "Dokumentenquellen",
-    description:
-      "Typische Anbindungsfelder für den strukturierten Dokumenteneingang, damit Vorgänge im richtigen Organisationskontext erfasst werden.",
-    meta: "Vorgesehene Anbindungskategorie"
+    category: "Dokumentenquellen",
+    emoji: "📂",
+    items: [
+      { name: "Microsoft SharePoint", emoji: "📁", status: "geplant", desc: "Verträge direkt aus SharePoint-Bibliotheken importieren" },
+      { name: "Google Drive", emoji: "📎", status: "geplant", desc: "PDF-Import aus Google Drive Ordnern" },
+      { name: "E-Mail / IMAP", emoji: "📧", status: "geplant", desc: "Verträge als E-Mail-Anhänge automatisch erfassen" },
+      { name: "Drag & Drop Upload", emoji: "📤", status: "live", desc: "PDF-Upload direkt in der Anwendung" },
+    ]
   },
   {
-    title: "Identität und Zugriff",
-    description:
-      "Einbindung in bestehende Rollen- und Zugriffsmodelle zur kontrollierten Zusammenarbeit zwischen Fachbereichen und Administration.",
-    meta: "Rollen- und Governance-Bezug"
+    category: "Identität & Zugriff",
+    emoji: "🔑",
+    items: [
+      { name: "Microsoft Entra ID", emoji: "🏢", status: "vorbereitet", desc: "SSO und automatische Rollenzuweisung via OIDC" },
+      { name: "Google Workspace", emoji: "🔐", status: "live", desc: "OAuth-Login mit Google-Konten" },
+      { name: "SCIM v2", emoji: "👥", status: "vorbereitet", desc: "Automatisierte Benutzerbereitstellung und -deaktivierung" },
+      { name: "Credentials", emoji: "🔒", status: "live", desc: "E-Mail/Passwort-Login mit bcrypt-Hashing" },
+    ]
   },
   {
-    title: "Administrations- und Governance-Anbindung",
-    description:
-      "Prozessorientierte Übergabe von Zuständigkeiten, Prüfschritten und Nachweisanforderungen entlang interner Kontrollpfade.",
-    meta: "Kontrollierte Einbindung"
+    category: "KI-Provider",
+    emoji: "🤖",
+    items: [
+      { name: "Claude (Anthropic)", emoji: "🧠", status: "live", desc: "Primärmodell für Vertragsanalyse und Copilot — Claude Sonnet 4" },
+      { name: "GPT-4o (OpenAI)", emoji: "⚡", status: "live", desc: "Fallback-Modell für Analyse und Extraktion" },
+      { name: "Gemini 2.5 (Google)", emoji: "💎", status: "live", desc: "Spezialist für lange Dokumente und visuelles Parsing" },
+      { name: "Llama (Self-hosted)", emoji: "🦙", status: "geplant", desc: "EU-only Verarbeitung für sensible Mandantendaten" },
+    ]
   },
   {
-    title: "Export, Nachweise und Weiterverarbeitung",
-    description:
-      "Ergebnisse, Prüfstände und Dokumentationsartefakte können für nachgelagerte Abstimmungen im Legal- und Compliance-Kontext aufbereitet werden.",
-    meta: "Weiterverarbeitung im Unternehmenskontext"
+    category: "Export & Downstream",
+    emoji: "📊",
+    items: [
+      { name: "PDF-Report", emoji: "📄", status: "geplant", desc: "Strukturierter Analysebericht als PDF-Export" },
+      { name: "DATEV", emoji: "🧾", status: "geplant", desc: "Integration mit DATEV Unternehmen Online" },
+      { name: "JSON/CSV Export", emoji: "📋", status: "geplant", desc: "Maschinenlesbare Datenexporte" },
+      { name: "Webhook / n8n", emoji: "🔗", status: "geplant", desc: "Event-basierte Weiterleitung an Automatisierungsplattformen" },
+    ]
   },
-  {
-    title: "Zukünftige Enterprise-Integrationen",
-    description:
-      "Weitere Anbindungsfelder werden nach Priorität, Governance-Anforderungen und kundenspezifischem Einsatzprofil geplant.",
-    meta: "Roadmap-orientierter Ausbau"
-  }
 ]
 
-const workflowBeispiele = [
-  {
-    title: "Vertragsdokument im Eingang",
-    description:
-      "Ein Dokument wird übernommen, organisatorisch zugeordnet und für die juristische Prüfung in einen strukturierten Bearbeitungskontext überführt."
-  },
-  {
-    title: "Datenschutzdokumente in der Review-Queue",
-    description:
-      "Neue Unterlagen werden gebündelt priorisiert, mit Review-Hinweisen versehen und in den Freigabekontext der zuständigen Rollen übergeben."
-  },
-  {
-    title: "Governance-bezogene Abstimmung",
-    description:
-      "Administrations- und Governance-Rollen dokumentieren Prüfschritte nachvollziehbar, bevor Ergebnisse intern weitergegeben werden."
-  },
-  {
-    title: "Nachweise für Folgeprozesse",
-    description:
-      "Relevante Bearbeitungsstände werden strukturiert bereitgestellt, um interne Kontrollen und externe Rückfragen konsistent zu unterstützen."
-  }
-]
+function getStatusStyle(status: string) {
+  if (status === "live") return "bg-emerald-100 text-emerald-700"
+  if (status === "vorbereitet") return "bg-amber-100 text-amber-700"
+  return "bg-gray-100 text-gray-500"
+}
+
+function getStatusLabel(status: string) {
+  if (status === "live") return "Live"
+  if (status === "vorbereitet") return "Vorbereitet"
+  return "Geplant"
+}
 
 export default function IntegrationenPage() {
   return (
-    <PageShell>
-      <PageHero
-        eyebrow="Integrationen"
-        title="Integrationsfähigkeit für kontrollierte Einbindung in bestehende Systemlandschaften"
-        description="KanzleiAI ist auf die strukturierte Einbindung in Dokumenten-, Governance- und Administrationsprozesse ausgelegt. Die Seite richtet sich an IT, Legal, Compliance und Beschaffung, die Integrationsrahmen belastbar einordnen möchten."
-      />
-
-      <InfoPanel title="Integrationslogik entlang des Prozessflusses" tone="muted">
-        <ProcessFlow
-          steps={[
-            {
-              title: "Dokumenteneingang und Intake",
-              description:
-                "Eingänge werden erfasst und in einen belastbaren Bearbeitungskontext überführt, statt isoliert in Einzelschritten verarbeitet zu werden."
-            },
-            {
-              title: "Organisatorische Zuordnung",
-              description:
-                "Dokumente werden Rollen, Teams und Organisationskontexten zugeordnet, damit Zuständigkeiten klar abgebildet bleiben."
-            },
-            {
-              title: "Prüfung, Review und Governance",
-              description:
-                "Juristische und organisatorische Prüfschritte werden nachvollziehbar geführt und für Freigaben dokumentiert."
-            },
-            {
-              title: "Ausgabe und Weiterverarbeitung",
-              description:
-                "Ergebnisse und Nachweise werden für Folgeprozesse im Legal-, Compliance- und Administrationskontext bereitgestellt."
-            }
-          ]}
-        />
-      </InfoPanel>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {integrationskategorien.map((kategorie) => (
-          <FeatureCard
-            key={kategorie.title}
-            title={kategorie.title}
-            description={kategorie.description}
-            meta={kategorie.meta}
-          />
-        ))}
+    <main>
+      {/* Hero */}
+      <section className="bg-[#FAFAF7] py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-4 py-1.5">
+              <span className="text-[14px]">🔗</span>
+              <span className="text-[12px] font-medium text-gold-700">Ökosystem</span>
+            </div>
+            <h1 className="text-display text-gray-950">Integrationen</h1>
+            <p className="mt-4 text-[17px] leading-relaxed text-gray-500">
+              KanzleiAI fügt sich nahtlos in bestehende Kanzlei- und Unternehmensinfrastruktur ein — von Dokumentenquellen über Identitätsmanagement bis zu KI-Providern.
+            </p>
+          </div>
+        </div>
       </section>
 
-      <InfoPanel title="Reifegradmodell für Integrationskontexte">
-        <div className="flex flex-wrap gap-2">
-          <StatusBadge label="Verfügbar" tone="success" />
-          <StatusBadge label="Vorbereitet" tone="info" />
-          <StatusBadge label="Kundenspezifische Anbindung" tone="warning" />
-          <StatusBadge label="In Planung" tone="neutral" />
+      {/* Stats Strip */}
+      <section className="border-y border-gray-200 bg-gold-50/40">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px sm:grid-cols-4 lg:px-10">
+          <div className="bg-white px-6 py-6 text-center sm:py-7">
+            <p className="text-[24px] font-semibold text-gray-900">3</p>
+            <p className="text-[12px] text-gray-500">KI-Provider aktiv</p>
+          </div>
+          <div className="bg-white px-6 py-6 text-center sm:py-7">
+            <p className="text-[24px] font-semibold text-gray-900">16+</p>
+            <p className="text-[12px] text-gray-500">Integrationen</p>
+          </div>
+          <div className="bg-white px-6 py-6 text-center sm:py-7">
+            <p className="text-[24px] font-semibold text-gray-900">SSO</p>
+            <p className="text-[12px] text-gray-500">Enterprise-ready</p>
+          </div>
+          <div className="bg-white px-6 py-6 text-center sm:py-7">
+            <p className="text-[24px] font-semibold text-gray-900">API</p>
+            <p className="text-[12px] text-gray-500">REST + Webhooks</p>
+          </div>
         </div>
-        <ul className="mt-4 list-disc space-y-2 pl-5">
-          <li>
-            Die Einordnung erfolgt je Anwendungsfall, Organisationskontext und Governance-Anforderung; sie ist keine pauschale Live-Zusage für alle Integrationsszenarien.
-          </li>
-          <li>
-            Integrationsfelder werden bewusst konservativ beschrieben, um Beschaffungs-, IT- und Compliance-Prüfungen eine belastbare Grundlage zu geben.
-          </li>
-        </ul>
-      </InfoPanel>
+      </section>
 
-      <InfoPanel title="Integrationsprinzipien und Architekturleitlinien" tone="dark">
-        <ul className="list-disc space-y-2 pl-5 text-slate-200">
-          <li>Kontrollierte Einbindung statt unstrukturierter Punkt-zu-Punkt-Verknüpfung.</li>
-          <li>Verarbeitung im Organisations- und Rollenkontext mit Governance-Bezug.</li>
-          <li>Nachvollziehbarkeit von Prüfschritten, Freigaben und Nachweisen.</li>
-          <li>Schrittweiser Ausbau entlang priorisierter Enterprise-Anforderungen.</li>
-        </ul>
-      </InfoPanel>
-
-      <InfoPanel title="Konzeptionelle Workflow-Beispiele">
-        <div className="grid gap-4 md:grid-cols-2">
-          {workflowBeispiele.map((workflow) => (
-            <FeatureCard key={workflow.title} title={workflow.title} description={workflow.description} tone="muted" />
-          ))}
+      {/* Integration Categories */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <div className="space-y-16">
+            {integrations.map((cat) => (
+              <div key={cat.category}>
+                <div className="mb-6 flex items-center gap-2">
+                  <span className="text-[22px]">{cat.emoji}</span>
+                  <h2 className="text-[20px] font-semibold text-gray-950">{cat.category}</h2>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {cat.items.map((item) => (
+                    <div key={item.name} className="rounded-2xl border border-gray-100 bg-white p-5 transition-all hover:border-gray-200 hover:shadow-card">
+                      <div className="flex items-start justify-between">
+                        <span className="text-[24px]">{item.emoji}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${getStatusStyle(item.status)}`}>
+                          {getStatusLabel(item.status)}
+                        </span>
+                      </div>
+                      <h3 className="mt-3 text-[14px] font-semibold text-gray-900">{item.name}</h3>
+                      <p className="mt-1 text-[12px] leading-relaxed text-gray-500">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </InfoPanel>
+      </section>
 
-      <CtaPanel
-        title="Integrationsrahmen strukturiert abstimmen"
-        description="Für konkrete Anforderungen aus Beschaffung, IT, Legal und Compliance unterstützen wir eine geordnete Einordnung von Scope, Reifegrad und nächstem Umsetzungsschritt."
-        primaryLabel="Enterprise-Kontakt"
-        primaryHref="/enterprise-kontakt"
-        secondaryLabel="Trust Center"
-        secondaryHref="/trust-center"
-      />
-    </PageShell>
+      {/* API Section */}
+      <section className="border-t border-gray-200 bg-gray-50 py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🛠️ Für Entwickler</p>
+              <h2 className="mt-3 text-display-sm text-gray-950">REST API & Webhooks</h2>
+              <p className="mt-4 text-[15px] leading-relaxed text-gray-500">
+                Integrieren Sie KanzleiAI in Ihre bestehenden Workflows. Unsere API ermöglicht programmatischen Zugriff auf Vertragsanalyse, Dokumentenverwaltung und Audit-Protokolle.
+              </p>
+              <ul className="mt-6 space-y-3">
+                {["RESTful API mit OpenAPI-Spezifikation", "Webhook-Events für Echtzeit-Benachrichtigungen", "API-Key + JWT-Authentifizierung", "Rate Limiting und Usage Metering"].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-[13px] text-gray-600">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gold-100 text-[10px] text-gold-700">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-gray-200 bg-white p-5">
+              <div className="flex items-center gap-2 text-[12px] text-gray-400">
+                <span className="h-3 w-3 rounded-full bg-emerald-400" />
+                POST /api/analyze-quick
+              </div>
+              <pre className="mt-3 overflow-x-auto rounded-xl bg-gray-900 p-4 text-[12px] leading-relaxed text-gray-300"><code>{`curl -X POST \\
+  https://kanzlei-ai.com/api/analyze-quick \\
+  -H "Authorization: Bearer <token>" \\
+  -F "file=@vertrag.pdf"
+
+{
+  "status": "success",
+  "riskScore": 78,
+  "findings": [...],
+  "modelUsed": "claude-sonnet-4"
+}`}</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-4xl px-5 text-center">
+          <span className="text-[28px]">🔗</span>
+          <h2 className="mt-3 text-display-sm text-gray-950">Integration gewünscht?</h2>
+          <p className="mx-auto mt-4 max-w-xl text-[16px] leading-relaxed text-gray-500">
+            Sprechen Sie mit uns über Ihre Infrastruktur. Wir unterstützen bei der Anbindung an Ihre bestehenden Systeme.
+          </p>
+          <div className="mt-8">
+            <Link href="/enterprise-kontakt" className="rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42]">Enterprise-Kontakt aufnehmen</Link>
+          </div>
+        </div>
+      </section>
+    </main>
   )
 }
