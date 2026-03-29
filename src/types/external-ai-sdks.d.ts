@@ -4,9 +4,19 @@ declare module "@anthropic-ai/sdk" {
     output_tokens?: number
   }
 
+  interface ContentBlockDelta {
+    type: "content_block_delta"
+    delta: { text: string }
+  }
+
   interface MessageResponse {
     content: Array<{ text?: string }>
     usage?: MessageUsage
+  }
+
+  interface MessageStream {
+    [Symbol.asyncIterator](): AsyncIterator<ContentBlockDelta | { type: string }>
+    finalMessage(): Promise<MessageResponse>
   }
 
   export default class Anthropic {
@@ -18,6 +28,13 @@ declare module "@anthropic-ai/sdk" {
         temperature?: number
         messages: Array<{ role: "user" | "assistant"; content: string }>
       }): Promise<MessageResponse>
+      stream(input: {
+        model: string
+        max_tokens: number
+        temperature?: number
+        system?: string
+        messages: Array<{ role: "user" | "assistant"; content: string }>
+      }): Promise<MessageStream>
     }
   }
 }
@@ -44,8 +61,9 @@ declare module "openai" {
         create(input: {
           model: string
           temperature?: number
+          max_tokens?: number
           stream?: boolean
-          messages: Array<{ role: "user" | "assistant"; content: string }>
+          messages: Array<{ role: "system" | "user" | "assistant"; content: string }>
         }): Promise<
           | OpenAI.Chat.Completions.ChatCompletion
           | AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>
