@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef } from "react"
-import Link from "next/link"
 
 type Finding = {
   title: string
@@ -332,12 +331,27 @@ export default function AnalysePage() {
 
           {/* Actions */}
           <div className="flex gap-3">
+            <button
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  const copilotContext = {
+                    contractText: result.textPreview,
+                    fullTextLength: result.textLength,
+                    analysis: parsed,
+                    modelUsed: result.modelUsed,
+                    timestamp: new Date().toISOString()
+                  }
+                  sessionStorage.setItem("kanzlei-copilot-context", JSON.stringify(copilotContext))
+                  window.location.href = "/workspace/copilot"
+                }
+              }}
+              className="flex-1 rounded-full bg-[#003856] py-3 text-[14px] font-medium text-white hover:bg-[#002a42]"
+            >
+              🤖 Fragen zum Vertrag stellen
+            </button>
             <button onClick={() => { setResult(null); setFile(null); setText("") }} className="flex-1 rounded-full border border-gray-200 bg-white py-3 text-[14px] font-medium text-gray-700 hover:bg-gray-50">
               📤 Neuen Vertrag analysieren
             </button>
-            <Link href="/dashboard" className="flex-1 rounded-full bg-[#003856] py-3 text-center text-[14px] font-medium text-white hover:bg-[#002a42]">
-              Dashboard
-            </Link>
           </div>
         </div>
       )}
