@@ -1,106 +1,92 @@
-import Link from "next/link"
+"use client"
 
-import { CtaPanel } from "@/components/marketing/cta-panel"
-import { FeatureCard } from "@/components/marketing/feature-card"
-import { InfoPanel } from "@/components/marketing/info-panel"
-import { ProcessFlow } from "@/components/marketing/process-flow"
-import { PageHero } from "@/components/marketing/page-hero"
-import { PageShell } from "@/components/marketing/page-shell"
-
-const anfragekategorien = [
-  "Produktdemo und fachlicher Einsatzkontext",
-  "Sicherheits- und Compliance-Fragen",
-  "Beschaffung und Einkauf",
-  "Integrations- und Admin-Anforderungen",
-  "Vertrags- und Datenschutzfragen"
-]
+import { useState } from "react"
 
 export default function EnterpriseKontaktPage() {
+  const [submitted, setSubmitted] = useState(false)
+
   return (
-    <PageShell>
-      <PageHero
-        eyebrow="Enterprise-Kontakt"
-        title="Einstieg für Enterprise-Anfragen und Beschaffung"
-        description="Dieser Bereich ist für strukturierte Anfragen aus Kanzleien, Rechtsabteilungen und Beschaffungsfunktionen ausgelegt. Ziel ist eine saubere Klärung von Scope, Governance und Anforderungen."
-      />
+    <main>
+      <section className="bg-[#FAFAF7] py-20 sm:py-28">
+        <div className="mx-auto max-w-3xl px-5 sm:px-8">
+          <div className="text-center">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-4 py-1.5">
+              <span className="text-[14px]">📞</span>
+              <span className="text-[12px] font-medium text-gold-700">Enterprise</span>
+            </div>
+            <h1 className="text-display text-gray-950">Demo anfragen</h1>
+            <p className="mt-4 text-[17px] leading-relaxed text-gray-500">
+              Erfahren Sie in 30 Minuten, wie KanzleiAI Ihre Vertragsprüfung transformiert. Unverbindlich, individuell auf Ihren Arbeitskontext zugeschnitten.
+            </p>
+          </div>
 
-      <InfoPanel title="Anfragekategorien" tone="muted">
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {anfragekategorien.map((kategorie) => (
-            <li key={kategorie} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-              {kategorie}
-            </li>
-          ))}
-        </ul>
-      </InfoPanel>
-
-      <InfoPanel title="Typischer Ablauf der Erstabstimmung">
-        <ProcessFlow
-          steps={[
-            {
-              title: "Erstgespräch",
-              description: "Ziele, Einsatzbereich und beteiligte Stakeholder werden in einem strukturierten Ersttermin aufgenommen."
-            },
-            {
-              title: "Scope und Anforderungen",
-              description: "Fachliche, organisatorische und technische Rahmenbedingungen werden für den Einsatzkontext konkretisiert."
-            },
-            {
-              title: "Trust- und Compliance-Review",
-              description: "Sicherheits-, Datenschutz- und Governance-Fragen werden anhand verfügbarer Nachweise eingeordnet."
-            },
-            {
-              title: "Angebot und weitere Abstimmung",
-              description: "Auf dieser Grundlage folgen Angebotsrahmen, Beschaffungsklärung und die nächsten gemeinsamen Schritte."
-            }
-          ]}
-        />
-      </InfoPanel>
-
-      <section className="grid gap-4 md:grid-cols-2">
-        <FeatureCard
-          title="Kontaktvorbereitung"
-          description="Bitte halten Sie Informationen zu Teamgröße, Rollenmodell, benötigten Integrationen und Governance-Anforderungen bereit."
-          meta="Read-only Vorbereitung"
-        />
-        <FeatureCard
-          title="Kontaktpfade"
-          description="Verbindliche Kontakt- und Anbieterangaben finden Sie im Impressum. Für Sicherheits- und Nachweisthemen nutzen Sie bitte zusätzlich Trust Center und Sicherheitsbereich."
-          meta="Keine Formular-Submission"
-        />
-      </section>
-
-      <InfoPanel title="Weiterführende Verweise" tone="accent">
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/impressum"
-            className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
-          >
-            Impressum
-          </Link>
-          <Link
-            href="/trust-center"
-            className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
-          >
-            Trust Center
-          </Link>
-          <Link
-            href="/sicherheit-compliance"
-            className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
-          >
-            Sicherheit & Compliance
-          </Link>
+          {!submitted ? (
+            <div className="mt-12 rounded-2xl border border-gray-200 bg-white p-8">
+              <div className="space-y-5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="text-[13px] font-medium text-gray-700">Vorname *</span>
+                    <input type="text" required className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
+                  </label>
+                  <label className="block">
+                    <span className="text-[13px] font-medium text-gray-700">Nachname *</span>
+                    <input type="text" required className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="text-[13px] font-medium text-gray-700">Geschäftliche E-Mail *</span>
+                  <input type="email" required className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
+                </label>
+                <label className="block">
+                  <span className="text-[13px] font-medium text-gray-700">Organisation *</span>
+                  <input type="text" required className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
+                </label>
+                <label className="block">
+                  <span className="text-[13px] font-medium text-gray-700">Rolle</span>
+                  <select className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200">
+                    <option value="">Bitte wählen</option>
+                    <option>Partner / Inhaber</option>
+                    <option>Rechtsanwalt / Jurist</option>
+                    <option>Leitung Rechtsabteilung</option>
+                    <option>IT / Digitalisierung</option>
+                    <option>Compliance / Datenschutz</option>
+                    <option>Geschäftsführung</option>
+                    <option>Andere</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-[13px] font-medium text-gray-700">Anzahl Nutzer (geschätzt)</span>
+                  <select className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200">
+                    <option value="">Bitte wählen</option>
+                    <option>1-5</option>
+                    <option>6-20</option>
+                    <option>21-50</option>
+                    <option>51-200</option>
+                    <option>200+</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-[13px] font-medium text-gray-700">Nachricht (optional)</span>
+                  <textarea rows={3} className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" placeholder="Welche Vertragstypen prüfen Sie? Gibt es spezifische Anforderungen?" />
+                </label>
+                <button
+                  onClick={() => setSubmitted(true)}
+                  className="w-full rounded-full bg-[#003856] py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42] active:scale-[0.98]"
+                >
+                  Demo vereinbaren
+                </button>
+                <p className="text-center text-[11px] text-gray-400">Wir antworten innerhalb von 24 Stunden. Keine automatischen E-Mails.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-12 rounded-2xl border border-emerald-200 bg-emerald-50 p-10 text-center">
+              <span className="text-[40px]">✅</span>
+              <h2 className="mt-4 text-[20px] font-semibold text-emerald-900">Anfrage erhalten</h2>
+              <p className="mt-2 text-[15px] text-emerald-700">Wir melden uns innerhalb von 24 Stunden bei Ihnen. Vielen Dank für Ihr Interesse an KanzleiAI.</p>
+            </div>
+          )}
         </div>
-      </InfoPanel>
-
-      <CtaPanel
-        title="Zum Überblick über Lösungen und Produktbereiche"
-        description="Falls Sie zunächst den fachlichen Kontext prüfen möchten, finden Sie strukturierte Einstiegsseiten zu Produkt, Lösungen und Trust-Themen."
-        primaryLabel="Produkt ansehen"
-        primaryHref="/produkt"
-        secondaryLabel="Lösungen für Kanzleien"
-        secondaryHref="/loesungen/kanzleien"
-      />
-    </PageShell>
+      </section>
+    </main>
   )
 }
