@@ -20,7 +20,7 @@ function isChatCompletionStream(value: unknown): value is AsyncIterable<ChatComp
 }
 
 function chatModelId(): string {
-  return process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-4o-mini"
+  return process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-4o"
 }
 
 export class OpenAIProvider extends BaseAIProvider {
