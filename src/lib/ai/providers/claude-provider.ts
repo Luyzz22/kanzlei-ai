@@ -8,7 +8,7 @@ function extractClaudeText(content: Array<{ text?: string }>): string {
 }
 
 function claudeModelId(): string {
-  return process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-3-5-sonnet-latest"
+  return process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-sonnet-4-20250514"
 }
 
 export class ClaudeProvider extends BaseAIProvider {
