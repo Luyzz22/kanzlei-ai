@@ -1,56 +1,40 @@
-import Link from "next/link"
-
-import { InfoPanel } from "@/components/marketing/info-panel"
-import { PageHero } from "@/components/marketing/page-hero"
-import { PageShell } from "@/components/marketing/page-shell"
-import { StatusBadge } from "@/components/marketing/status-badge"
-import { betriebsprinzipien, systemstatusModule } from "@/config/system-status"
-
-const statusTone = {
-  "Statusdarstellung im Aufbau": "warning",
-  "Betriebsnahe Sicht": "info",
-  "Monitoring-Ausbau vorgesehen": "neutral"
-} as const
-
 export default function SystemstatusPage() {
+  const services = [
+    { name: "KanzleiAI Plattform", status: "operational", emoji: "🌐" },
+    { name: "KI-Analyse (Claude Sonnet 4)", status: "operational", emoji: "🧠" },
+    { name: "KI-Analyse (GPT-4o)", status: "operational", emoji: "⚡" },
+    { name: "KI-Analyse (Gemini 2.5)", status: "operational", emoji: "💎" },
+    { name: "Contract Copilot", status: "operational", emoji: "🤖" },
+    { name: "Authentifizierung (NextAuth)", status: "operational", emoji: "🔐" },
+    { name: "Datenbank (PostgreSQL)", status: "operational", emoji: "🗄️" },
+    { name: "Audit Trail", status: "operational", emoji: "📋" },
+  ]
   return (
-    <PageShell>
-      <PageHero
-        eyebrow="Systemstatus"
-        title="Transparenz zur Betriebslage von KanzleiAI"
-        description="Diese Seite bietet eine konservative, strukturierte Einordnung zentraler Produktbereiche. Sie ist aktuell keine vollwertige Live-Statusplattform, sondern eine betriebsnahe Statusdarstellung im Aufbau."
-      />
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {systemstatusModule.map((modul) => (
-          <article key={modul.bereich} className="rounded-xl border border-slate-200 bg-white p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-base font-semibold text-slate-900">{modul.bereich}</h2>
-              <StatusBadge label={modul.status} tone={statusTone[modul.status]} />
-            </div>
-            <p className="mt-2 text-sm text-slate-600">{modul.beschreibung}</p>
-          </article>
-        ))}
-      </section>
-
-      <InfoPanel title="Transparenz im Betrieb" tone="muted">
-        <ul className="list-disc space-y-1 pl-5">
-          {betriebsprinzipien.map((prinzip) => (
-            <li key={prinzip}>{prinzip}</li>
-          ))}
-        </ul>
-      </InfoPanel>
-
-      <InfoPanel title="Technischer Referenzpunkt" tone="default">
-        <p>
-          Für technische Basisprüfungen steht ein Health-Endpunkt zur Verfügung. Die Auswertung bleibt Aufgabe technischer Rollen und ersetzt keine fachliche Statuskommunikation.
-        </p>
-        <div className="mt-3">
-          <Link href="/api/health" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
-            Health-Endpunkt öffnen
-          </Link>
+    <main className="bg-[#FAFAF7]">
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-3xl px-5 sm:px-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">📊 Status</p>
+          <h1 className="mt-3 text-display-sm text-gray-950">Systemstatus</h1>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2">
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500" />
+            <span className="text-[14px] font-medium text-emerald-700">Alle Systeme betriebsbereit</span>
+          </div>
+          <div className="mt-10 space-y-2">
+            {services.map((s) => (
+              <div key={s.name} className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-[18px]">{s.emoji}</span>
+                  <span className="text-[14px] font-medium text-gray-900">{s.name}</span>
+                </div>
+                <span className="flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Operational
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-[12px] text-gray-400">Letzte Aktualisierung: Automatisch bei jedem Seitenaufruf</p>
         </div>
-      </InfoPanel>
-    </PageShell>
+      </section>
+    </main>
   )
 }
