@@ -1,78 +1,36 @@
-import { CtaPanel } from "@/components/marketing/cta-panel"
-import { FeatureCard } from "@/components/marketing/feature-card"
-import { InfoPanel } from "@/components/marketing/info-panel"
-import { PageHero } from "@/components/marketing/page-hero"
-import { PageShell } from "@/components/marketing/page-shell"
-import { StatusBadge } from "@/components/marketing/status-badge"
+import Link from "next/link"
 
-const kontrollbereiche = [
-  {
-    title: "Zugriffskontrolle",
-    description: "Rollenbasierte Rechtevergabe mit klarer Verantwortlichkeit und periodischer Überprüfung von Berechtigungen.",
-    meta: "Kontrollstatus: aktiv"
-  },
-  {
-    title: "Protokollierung und Nachvollziehbarkeit",
-    description: "Sicherheitsrelevante Aktionen werden dokumentiert, um Untersuchungen und interne Freigabeprozesse zu unterstützen.",
-    meta: "Kontrollstatus: laufend"
-  },
-  {
-    title: "Lieferanten- und Drittparteikontext",
-    description: "Externe Abhängigkeiten werden mit dokumentierten Anforderungen und Risikoeinordnung geführt.",
-    meta: "Kontrollstatus: in Review"
-  },
-  {
-    title: "Incident- und Eskalationsabläufe",
-    description: "Verbindliche Schritte für Erkennung, Bewertung und Kommunikation von Sicherheitsereignissen.",
-    meta: "Kontrollstatus: definiert"
-  }
-]
-
-export default function SicherheitCompliancePage() {
+export default function SicherheitPage() {
   return (
-    <PageShell>
-      <PageHero
-        eyebrow="Sicherheit & Compliance"
-        title="Kontrollrahmen für einen verlässlichen Kanzleibetrieb"
-        description="Diese Seite strukturiert zentrale Sicherheits- und Compliance-Bausteine für den produktiven Betrieb von KanzleiAI und schafft eine nachvollziehbare Grundlage für interne und externe Prüfkontexte."
-      />
-
-      <InfoPanel title="Kontrolllage" tone="muted">
-        <div className="flex flex-wrap items-center gap-3">
-          <StatusBadge label="Grundkontrollen aktiv" tone="success" />
-          <StatusBadge label="Risikobewertungen in Pflege" tone="warning" />
-          <StatusBadge label="Nachweisstand konsolidiert" tone="info" />
+    <main className="bg-[#FAFAF7]">
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-3xl px-5 sm:px-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🛡️ Sicherheit</p>
+          <h1 className="mt-3 text-display-sm text-gray-950">Sicherheit & Compliance</h1>
+          <p className="mt-4 text-[17px] leading-relaxed text-gray-500">Detaillierte Informationen zu unserer Sicherheitsarchitektur und Compliance-Maßnahmen.</p>
+          <div className="mt-10 space-y-6">
+            {[
+              { emoji: "🔐", title: "Verschlüsselung", desc: "TLS 1.3 für alle Datenübertragungen. Verschlüsselung at-rest mit AES-256 auf Datenbankebene." },
+              { emoji: "🏗️", title: "Mandantentrennung", desc: "Row-Level Security (RLS) auf PostgreSQL-Ebene. Jeder Tenant hat isolierte Datenbereiche — kein mandantenübergreifender Zugriff möglich." },
+              { emoji: "👤", title: "Zugriffskontrolle", desc: "Role-Based Access Control (RBAC) mit den Rollen Admin, Jurist und Assistent. Jede Aktion wird im Audit Trail dokumentiert." },
+              { emoji: "📋", title: "Audit Trail", desc: "Manipulationssicheres Audit-Protokoll mit Hash-Verkettung. Jedes Event enthält Zeitstempel, Akteur, Aktion und Tenant-Kontext." },
+              { emoji: "🤖", title: "KI-Sicherheit", desc: "Kein Training mit Kundendaten. KI-Provider sind per AVV gebunden. Prompt-Governance dokumentiert alle KI-Entscheidungen." },
+              { emoji: "🇪🇺", title: "EU-Datenresidenz", desc: "Alle Daten werden auf Servern in Frankfurt am Main verarbeitet und gespeichert. Kein Drittlandtransfer." },
+            ].map((item) => (
+              <div key={item.title} className="rounded-2xl border border-gray-100 bg-white p-6">
+                <div className="flex items-center gap-3">
+                  <span className="text-[22px]">{item.emoji}</span>
+                  <h3 className="text-[17px] font-semibold text-gray-900">{item.title}</h3>
+                </div>
+                <p className="mt-3 text-[14px] leading-relaxed text-gray-600">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-10 text-center">
+            <Link href="/trust-center" className="text-[14px] font-medium text-[#003856] hover:text-[#00507a]">← Zurück zum Trust Center</Link>
+          </div>
         </div>
-      </InfoPanel>
-
-      <section className="grid gap-4 md:grid-cols-2">
-        {kontrollbereiche.map((bereich) => (
-          <FeatureCard key={bereich.title} title={bereich.title} description={bereich.description} meta={bereich.meta} />
-        ))}
       </section>
-
-      <section className="rounded-xl border border-slate-700 bg-slate-900 p-6 text-slate-100">
-        <h2 className="text-xl font-semibold tracking-tight">Technischer Einordnungsblock</h2>
-        <p className="mt-3 text-sm leading-relaxed text-slate-200">
-          Die Plattformarchitektur folgt dem Prinzip kontrollierter Datenflüsse: klarer Verantwortungszuschnitt,
-          nachvollziehbare Zugriffspfade und dokumentierte Betriebsmaßnahmen. Dieser Bereich ist bewusst fachlich
-          gehalten und dient der technischen Vertrauensbildung für Governance- und Prüfrollen.
-        </p>
-        <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-200">
-          <li>Klare Trennung zwischen operativen Oberflächen und administrativen Kontrollen.</li>
-          <li>Nachvollziehbare Ereignisführung für sicherheitsrelevante Betriebsaktionen.</li>
-          <li>Standardisierte Richtliniendokumente als Referenz für interne Prüfpfade.</li>
-        </ul>
-      </section>
-
-      <CtaPanel
-        title="Weiterführende Nachweise"
-        description="Ergänzende Unterlagen finden Sie im Trust Center sowie in den Datenschutz- und AVV-Seiten für vertragliche und regulatorische Einordnung."
-        primaryLabel="Trust Center öffnen"
-        primaryHref="/trust-center"
-        secondaryLabel="Datenschutz ansehen"
-        secondaryHref="/datenschutz"
-      />
-    </PageShell>
+    </main>
   )
 }
