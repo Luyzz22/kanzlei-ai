@@ -9,6 +9,7 @@ const stats = [
 
 const quickActions = [
   { label: "⚡ Schnellanalyse", href: "/workspace/analyse", desc: "PDF hochladen, KI analysiert sofort Risiken" },
+  { label: "🤖 Contract Copilot", href: "/workspace/copilot", desc: "KI-Assistent für Vertragsfragen und Risikoanalyse" },
   { label: "Vertrag hochladen", href: "/workspace/upload", desc: "Dokument im Workspace erfassen" },
   { label: "Dokumente", href: "/workspace/dokumente", desc: "Alle Verträge und Dokumente einsehen" },
   { label: "Review-Queue", href: "/workspace/review-queue", desc: "Offene Prüfvorgänge bearbeiten" },
