@@ -1,12 +1,47 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 
 type Message = {
   role: "user" | "assistant"
   content: string
   model?: string
   tokens?: number
+}
+
+function renderMarkdown(text: string): string {
+  return text
+    // Code blocks (```...```)
+    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="my-3 overflow-x-auto rounded-lg bg-gray-900 p-3 text-[12px] leading-relaxed text-gray-300"><code>$2</code></pre>')
+    // Inline code (`...`)
+    .replace(/`([^`]+)`/g, '<code class="rounded bg-gray-100 px-1.5 py-0.5 text-[12px] font-mono text-gray-800">$1</code>')
+    // Headers
+    .replace(/^### (.+)$/gm, '<h3 class="mt-4 mb-2 text-[14px] font-semibold text-gray-900">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 class="mt-5 mb-2 text-[15px] font-semibold text-gray-900">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 class="mt-5 mb-2 text-[16px] font-bold text-gray-900">$1</h1>')
+    // Bold + italic
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong class="font-semibold text-gray-900"><em>$1</em></strong>')
+    // Bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+    // Italic
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // Unordered lists
+    .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc text-[13px] leading-relaxed">$1</li>')
+    // Ordered lists
+    .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 list-decimal text-[13px] leading-relaxed">$1</li>')
+    // Wrap consecutive <li> in <ul>
+    .replace(/((?:<li[^>]*>.*<\/li>\n?)+)/g, '<ul class="my-2 space-y-1">$1</ul>')
+    // Horizontal rule
+    .replace(/^---$/gm, '<hr class="my-4 border-gray-200" />')
+    // Paragraphs (double newline)
+    .replace(/\n\n/g, '</p><p class="mt-2">')
+    // Single newlines inside paragraphs
+    .replace(/\n/g, '<br/>')
+}
+
+function MarkdownContent({ content, className }: { content: string; className?: string }) {
+  const html = useMemo(() => renderMarkdown(content), [content])
+  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 const quickActions = [
@@ -223,9 +258,11 @@ export default function CopilotPage() {
                     ? "bg-[#003856] text-white"
                     : "border border-gray-100 bg-white"
                 }`}>
-                  <div className={`whitespace-pre-wrap text-[14px] leading-relaxed ${msg.role === "user" ? "text-white" : "text-gray-700"}`}>
-                    {msg.content}
-                  </div>
+                  {msg.role === "user" ? (
+                    <div className="whitespace-pre-wrap text-[14px] leading-relaxed text-white">{msg.content}</div>
+                  ) : (
+                    <MarkdownContent content={msg.content} className="text-[14px] leading-relaxed text-gray-700" />
+                  )}
                   {msg.role === "assistant" && msg.model && (
                     <p className="mt-2 text-[11px] text-gray-400">
                       {msg.model}{msg.tokens ? ` · ${msg.tokens.toLocaleString()} Tokens` : ""}
@@ -243,7 +280,7 @@ export default function CopilotPage() {
               <div className="flex gap-3">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#003856] text-[14px] text-white">🤖</div>
                 <div className="max-w-[80%] rounded-2xl border border-gray-100 bg-white px-4 py-3">
-                  <div className="whitespace-pre-wrap text-[14px] leading-relaxed text-gray-700">{streamingText}<span className="animate-pulse">▊</span></div>
+                  <div className="text-[14px] leading-relaxed text-gray-700"><MarkdownContent content={streamingText} className="inline" /><span className="animate-pulse">▊</span></div>
                 </div>
               </div>
             )}
