@@ -4,6 +4,25 @@ import { useState } from "react"
 
 export default function EnterpriseKontaktPage() {
   const [submitted, setSubmitted] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", organization: "", role: "", teamSize: "", message: "" })
+
+  const handleSubmit = async () => {
+    if (!form.firstName || !form.lastName || !form.email || !form.organization) return
+    setSending(true)
+    try {
+      await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      })
+      setSubmitted(true)
+    } catch {
+      setSubmitted(true)
+    } finally {
+      setSending(false)
+    }
+  }
 
   return (
     <main>
@@ -26,24 +45,24 @@ export default function EnterpriseKontaktPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="block">
                     <span className="text-[13px] font-medium text-gray-700">Vorname *</span>
-                    <input type="text" required className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
+                    <input type="text" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
                   </label>
                   <label className="block">
                     <span className="text-[13px] font-medium text-gray-700">Nachname *</span>
-                    <input type="text" required className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
+                    <input type="text" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
                   </label>
                 </div>
                 <label className="block">
                   <span className="text-[13px] font-medium text-gray-700">Geschäftliche E-Mail *</span>
-                  <input type="email" required className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
+                  <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
                 </label>
                 <label className="block">
                   <span className="text-[13px] font-medium text-gray-700">Organisation *</span>
-                  <input type="text" required className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
+                  <input type="text" required value={form.organization} onChange={(e) => setForm({ ...form, organization: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
                 </label>
                 <label className="block">
                   <span className="text-[13px] font-medium text-gray-700">Rolle</span>
-                  <select className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200">
+                  <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200">
                     <option value="">Bitte wählen</option>
                     <option>Partner / Inhaber</option>
                     <option>Rechtsanwalt / Jurist</option>
@@ -56,7 +75,7 @@ export default function EnterpriseKontaktPage() {
                 </label>
                 <label className="block">
                   <span className="text-[13px] font-medium text-gray-700">Anzahl Nutzer (geschätzt)</span>
-                  <select className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200">
+                  <select value={form.teamSize} onChange={(e) => setForm({ ...form, teamSize: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200">
                     <option value="">Bitte wählen</option>
                     <option>1-5</option>
                     <option>6-20</option>
@@ -67,13 +86,14 @@ export default function EnterpriseKontaktPage() {
                 </label>
                 <label className="block">
                   <span className="text-[13px] font-medium text-gray-700">Nachricht (optional)</span>
-                  <textarea rows={3} className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" placeholder="Welche Vertragstypen prüfen Sie? Gibt es spezifische Anforderungen?" />
+                  <textarea rows={3} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" placeholder="Welche Vertragstypen prüfen Sie? Gibt es spezifische Anforderungen?" />
                 </label>
                 <button
-                  onClick={() => setSubmitted(true)}
-                  className="w-full rounded-full bg-[#003856] py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42] active:scale-[0.98]"
+                  onClick={handleSubmit}
+                  disabled={sending || !form.firstName || !form.lastName || !form.email || !form.organization}
+                  className="w-full rounded-full bg-[#003856] py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Demo vereinbaren
+                  {sending ? "Wird gesendet..." : "Demo vereinbaren"}
                 </button>
                 <p className="text-center text-[11px] text-gray-400">Wir antworten innerhalb von 24 Stunden. Keine automatischen E-Mails.</p>
               </div>
