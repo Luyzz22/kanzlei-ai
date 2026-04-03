@@ -1,5 +1,8 @@
 import Link from "next/link"
+import type { Metadata } from "next"
 
+
+export const metadata: Metadata = { title: "Für Kanzleien", description: "Mandantenverträge in Sekunden prüfen mit KI-Copilot." }
 export default function KanzleienPage() {
   return (
     <main>
