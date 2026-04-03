@@ -1,5 +1,8 @@
 import Link from "next/link"
+import type { Metadata } from "next"
 
+
+export const metadata: Metadata = { title: "Auftragsverarbeitungsvereinbarung", description: "AVV gemäß Art. 28 DSGVO für KanzleiAI." }
 export default function AVVPage() {
   return (
     <main className="bg-[#FAFAF7]">
