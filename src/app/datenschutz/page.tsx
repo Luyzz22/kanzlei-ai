@@ -1,3 +1,6 @@
+import type { Metadata } from "next"
+
+export const metadata: Metadata = { title: "Datenschutzerklärung", description: "Datenschutzerklärung der SBS Deutschland GmbH & Co. KG für KanzleiAI." }
 export default function DatenschutzPage() {
   return (
     <main className="bg-[#FAFAF7]">
