@@ -1,5 +1,8 @@
 import Link from "next/link"
+import type { Metadata } from "next"
 
+
+export const metadata: Metadata = { title: "Dokumenten-Workspace", description: "Alle Verträge und Dokumente im Workspace." }
 export default function DokumentePage() {
   return (
     <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
