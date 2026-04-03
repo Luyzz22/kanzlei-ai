@@ -1,4 +1,5 @@
 import Link from "next/link"
+import type { Metadata } from "next"
 
 const tiers = [
   {
@@ -34,6 +35,8 @@ const faq = [
   { q: "Können wir den Plan später wechseln?", a: "Jederzeit. Up- und Downgrades sind monatlich möglich, ohne Bindung." },
 ]
 
+
+export const metadata: Metadata = { title: "Preise — Transparente Pläne", description: "Transparente Preise für KI-Vertragsanalyse. Starter, Business und Enterprise." }
 export default function PreisePage() {
   return (
     <main>
