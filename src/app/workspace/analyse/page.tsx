@@ -381,6 +381,15 @@ export default function AnalysePage() {
             <button onClick={exportPDF} className="rounded-full border border-gray-200 bg-white px-5 py-3 text-[14px] font-medium text-gray-700 hover:bg-gray-50">
               📄 PDF
             </button>
+            <button onClick={() => {
+              if (!parsed) return
+              const blob = new Blob([JSON.stringify(parsed, null, 2)], { type: "application/json" })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement("a"); a.href = url; a.download = `analyse-${Date.now()}.json`; a.click()
+              URL.revokeObjectURL(url)
+            }} className="rounded-full border border-gray-200 bg-white px-5 py-3 text-[14px] font-medium text-gray-700 hover:bg-gray-50">
+              📋 JSON
+            </button>
             <button onClick={() => { setResult(null); setFile(null); setText("") }} className="rounded-full border border-gray-200 bg-white px-5 py-3 text-[14px] font-medium text-gray-700 hover:bg-gray-50">
               📤 Neu
             </button>
