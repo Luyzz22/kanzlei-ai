@@ -1,3 +1,6 @@
+import type { Metadata } from "next"
+
+export const metadata: Metadata = { title: "Review & Freigabe", description: "Strukturierte Prüf- und Freigabeprozesse." }
 export default function ReviewQueuePage() {
   return (
     <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
