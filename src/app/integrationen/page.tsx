@@ -1,4 +1,5 @@
 import Link from "next/link"
+import type { Metadata } from "next"
 
 const integrations = [
   {
@@ -55,6 +56,8 @@ function getStatusLabel(status: string) {
   return "Geplant"
 }
 
+
+export const metadata: Metadata = { title: "Integrationen — Ökosystem", description: "16+ Integrationen: Dokumentenquellen, SSO, KI-Provider und Export." }
 export default function IntegrationenPage() {
   return (
     <main>
