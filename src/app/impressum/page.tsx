@@ -1,3 +1,6 @@
+import type { Metadata } from "next"
+
+export const metadata: Metadata = { title: "Impressum", description: "Impressum der SBS Deutschland GmbH & Co. KG." }
 export default function ImpressumPage() {
   return (
     <main className="bg-[#FAFAF7]">
