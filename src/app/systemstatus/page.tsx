@@ -1,3 +1,6 @@
+import type { Metadata } from "next"
+
+export const metadata: Metadata = { title: "Systemstatus", description: "Echtzeit-Status aller KanzleiAI-Systeme und KI-Provider." }
 export default function SystemstatusPage() {
   const services = [
     { name: "KanzleiAI Plattform", status: "operational", emoji: "🌐" },
