@@ -1,3 +1,6 @@
+import type { Metadata } from "next"
+
+export const metadata: Metadata = { title: "Audit-Protokoll", description: "Manipulationssichere Audit-Protokollierung." }
 export default function AuditPage() {
   return (
     <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
