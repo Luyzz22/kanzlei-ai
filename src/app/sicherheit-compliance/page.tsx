@@ -1,5 +1,8 @@
 import Link from "next/link"
+import type { Metadata } from "next"
 
+
+export const metadata: Metadata = { title: "Sicherheit & Compliance", description: "Verschlüsselung, Mandantentrennung, RBAC und Audit Trail." }
 export default function SicherheitPage() {
   return (
     <main className="bg-[#FAFAF7]">
