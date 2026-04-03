@@ -1,9 +1,11 @@
-import Link from "next/link"
-import type { Metadata } from "next"
+"use client"
+
+import { useState } from "react"
 
 const tiers = [
   {
     name: "Starter",
+    plan: "starter",
     price: "490",
     period: "/ Monat",
     description: "Für kleine Teams mit fokussierten Prüfprozessen.",
@@ -12,6 +14,7 @@ const tiers = [
   },
   {
     name: "Business",
+    plan: "business",
     price: "1.290",
     period: "/ Monat",
     description: "Für wachsende Teams mit erweitertem Governance-Bedarf.",
@@ -20,6 +23,7 @@ const tiers = [
   },
   {
     name: "Enterprise",
+    plan: "enterprise",
     price: "Individuell",
     period: "",
     description: "Für organisationsweite Nutzung mit vollen Compliance-Anforderungen.",
@@ -35,9 +39,37 @@ const faq = [
   { q: "Können wir den Plan später wechseln?", a: "Jederzeit. Up- und Downgrades sind monatlich möglich, ohne Bindung." },
 ]
 
-
-export const metadata: Metadata = { title: "Preise — Transparente Pläne", description: "Transparente Preise für KI-Vertragsanalyse. Starter, Business und Enterprise." }
 export default function PreisePage() {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+
+  const handleCheckout = async (plan: string) => {
+    if (plan === "enterprise") {
+      window.location.href = "/enterprise-kontakt"
+      return
+    }
+    setLoadingPlan(plan)
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan })
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else if (data.redirect) {
+        window.location.href = data.redirect
+      } else {
+        // Stripe not configured — fallback to demo
+        window.location.href = "/enterprise-kontakt"
+      }
+    } catch {
+      window.location.href = "/enterprise-kontakt"
+    } finally {
+      setLoadingPlan(null)
+    }
+  }
+
   return (
     <main>
       <section className="bg-[#FAFAF7] py-20 sm:py-28">
@@ -79,9 +111,17 @@ export default function PreisePage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/enterprise-kontakt" className={`mt-8 block rounded-full py-3 text-center text-[14px] font-medium transition-all active:scale-[0.98] ${tier.highlighted ? "bg-[#003856] text-white hover:bg-[#002a42]" : "border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"}`}>
-                  {tier.name === "Enterprise" ? "Enterprise-Kontakt" : "Demo anfragen"}
-                </Link>
+                <button
+                  onClick={() => handleCheckout(tier.plan)}
+                  disabled={loadingPlan === tier.plan}
+                  className={`mt-8 block w-full rounded-full py-3 text-center text-[14px] font-medium transition-all active:scale-[0.98] disabled:opacity-60 ${
+                    tier.highlighted
+                      ? "bg-[#003856] text-white hover:bg-[#002a42]"
+                      : "border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  {loadingPlan === tier.plan ? "Wird geladen..." : tier.plan === "enterprise" ? "Enterprise-Kontakt" : "Plan wählen"}
+                </button>
               </div>
             ))}
           </div>
