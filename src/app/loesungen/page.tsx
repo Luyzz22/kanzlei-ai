@@ -1,5 +1,8 @@
 import Link from "next/link"
+import type { Metadata } from "next"
 
+
+export const metadata: Metadata = { title: "Lösungen", description: "KI-Vertragsanalyse für Kanzleien und Rechtsabteilungen." }
 export default function LoesungenPage() {
   return (
     <main>
