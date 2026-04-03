@@ -1,3 +1,6 @@
+import type { Metadata } from "next"
+
+export const metadata: Metadata = { title: "Release Notes", description: "Changelog und neue Features von KanzleiAI." }
 export default function ReleaseNotesPage() {
   const releases = [
     {
