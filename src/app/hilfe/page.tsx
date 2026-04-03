@@ -1,4 +1,5 @@
 import Link from "next/link"
+import type { Metadata } from "next"
 
 const topics = [
   { emoji: "📤", title: "Vertrag hochladen", desc: "PDF oder TXT hochladen und KI-Analyse starten. Drag & Drop oder Dateiauswahl." },
@@ -9,6 +10,8 @@ const topics = [
   { emoji: "📋", title: "Audit Trail", desc: "Alle Aktionen werden manipulationssicher protokolliert — für Compliance und Nachweise." },
 ]
 
+
+export const metadata: Metadata = { title: "Hilfe & Dokumentation", description: "Dokumentation und Hilfe für KanzleiAI." }
 export default function HilfePage() {
   return (
     <main className="bg-[#FAFAF7]">
