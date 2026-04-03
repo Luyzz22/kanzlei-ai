@@ -15,7 +15,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex rounded-md bg-[#003856] px-4 py-2 text-sm font-medium text-white hover:bg-[#002a42] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {pending ? "Dokumenteingang wird angelegt …" : "Dokumenteingang anlegen"}
     </button>
@@ -26,10 +26,10 @@ export function UploadIntakeForm() {
   const [state, formAction] = useFormState(createIntakeAction, initialState)
 
   return (
-    <form action={formAction} className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+    <form action={formAction} className="space-y-5 rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight text-slate-950">Dokumenteingang erfassen</h2>
-        <p className="mt-2 text-sm text-slate-600">
+        <h2 className="text-lg font-semibold tracking-tight text-gray-950">Dokumenteingang erfassen</h2>
+        <p className="mt-2 text-sm text-gray-500">
           Der Eingang wird tenant-gebunden gespeichert. Eine optionale Eingangsdatei wird sicher abgelegt und über
           einen internen Storage-Key dem Dokument zugeordnet.
         </p>
@@ -37,25 +37,25 @@ export function UploadIntakeForm() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-800">Dokumenttitel</span>
+          <span className="text-sm font-medium text-gray-700">Dokumenttitel</span>
           <input
             name="title"
             type="text"
             required
             maxLength={160}
-            className="h-10 rounded-md border border-slate-300 px-3 text-sm text-slate-800"
+            className="h-10 rounded-md border border-gold-400 px-3 text-sm text-gray-700"
           />
           {state.fieldErrors?.title ? <span className="text-xs text-rose-700">{state.fieldErrors.title}</span> : null}
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-800">Dokumenttyp</span>
+          <span className="text-sm font-medium text-gray-700">Dokumenttyp</span>
           <input
             name="documentType"
             type="text"
             required
             maxLength={80}
-            className="h-10 rounded-md border border-slate-300 px-3 text-sm text-slate-800"
+            className="h-10 rounded-md border border-gold-400 px-3 text-sm text-gray-700"
           />
           {state.fieldErrors?.documentType ? (
             <span className="text-xs text-rose-700">{state.fieldErrors.documentType}</span>
@@ -63,13 +63,13 @@ export function UploadIntakeForm() {
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-800">Organisation / Mandant</span>
+          <span className="text-sm font-medium text-gray-700">Organisation / Mandant</span>
           <input
             name="organizationName"
             type="text"
             required
             maxLength={120}
-            className="h-10 rounded-md border border-slate-300 px-3 text-sm text-slate-800"
+            className="h-10 rounded-md border border-gold-400 px-3 text-sm text-gray-700"
           />
           {state.fieldErrors?.organizationName ? (
             <span className="text-xs text-rose-700">{state.fieldErrors.organizationName}</span>
@@ -77,14 +77,14 @@ export function UploadIntakeForm() {
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-800">Datei</span>
+          <span className="text-sm font-medium text-gray-700">Datei</span>
           <input
             name="file"
             type="file"
             accept=".pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-            className="h-10 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-2 file:py-1"
+            className="h-10 rounded-md border border-gold-400 px-3 py-2 text-sm text-gray-600 file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-2 file:py-1"
           />
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-gray-500">
             Optional. Erlaubte Formate: PDF, DOC, DOCX, TXT · maximal 25 MB
           </span>
           {state.fieldErrors?.file ? <span className="text-xs text-rose-700">{state.fieldErrors.file}</span> : null}
@@ -92,12 +92,12 @@ export function UploadIntakeForm() {
       </div>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-slate-800">Kurzbeschreibung / Kontext (optional)</span>
+        <span className="text-sm font-medium text-gray-700">Kurzbeschreibung / Kontext (optional)</span>
         <textarea
           name="description"
           rows={4}
           maxLength={1200}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-800"
+          className="rounded-md border border-gold-400 px-3 py-2 text-sm text-gray-700"
         />
         {state.fieldErrors?.description ? (
           <span className="text-xs text-rose-700">{state.fieldErrors.description}</span>
