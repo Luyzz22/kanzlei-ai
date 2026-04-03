@@ -1,4 +1,5 @@
 import Link from "next/link"
+import type { Metadata } from "next"
 
 const trustDomains = [
   {
@@ -42,6 +43,8 @@ const faqs = [
   { q: "Wie werden KI-Entscheidungen nachvollziehbar gemacht?", a: "Jede Analyse wird mit Modellname, Provider, Token-Verbrauch, Verarbeitungszeit und dem vollständigen Prompt im Audit Trail dokumentiert." },
 ]
 
+
+export const metadata: Metadata = { title: "Trust Center — Datenschutz & Sicherheit", description: "Datenschutz, Sicherheit, Compliance und KI-Governance bei KanzleiAI." }
 export default function TrustCenterPage() {
   return (
     <main>
