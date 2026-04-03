@@ -1,4 +1,5 @@
 import Link from "next/link"
+import type { Metadata } from "next"
 
 const kernmodule = [
   { emoji: "📂", title: "Dokumenten-Workspace", desc: "Zentrale Arbeitsoberfläche für Verträge und Dokumente mit klarer Struktur für Intake, Bearbeitung und Ablage.", meta: "Organisation" },
@@ -18,6 +19,8 @@ const techStack = [
   { label: "Compliance", value: "DSGVO, AVV, Audit Trail", emoji: "📋" },
 ]
 
+
+export const metadata: Metadata = { title: "Produkt — Kernmodule", description: "KI-Vertragsanalyse mit Enterprise-Governance. Sechs Kernmodule für juristische Teams." }
 export default function ProduktPage() {
   return (
     <main>
