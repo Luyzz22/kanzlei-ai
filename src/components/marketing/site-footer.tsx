@@ -7,6 +7,7 @@ const footerGroups = [
       { label: "Produkt-Übersicht", href: "/produkt" },
       { label: "Integrationen", href: "/integrationen" },
       { label: "Preise", href: "/preise" },
+      { label: "Vertragstypen", href: "/vertragstypen" },
       { label: "Release Notes", href: "/release-notes" },
     ]
   },
