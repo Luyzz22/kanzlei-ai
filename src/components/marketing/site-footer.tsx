@@ -25,6 +25,7 @@ const footerGroups = [
       { label: "Sicherheit", href: "/sicherheit-compliance" },
       { label: "KI-Transparenz", href: "/ki-transparenz" },
       { label: "Systemstatus", href: "/systemstatus" },
+      { label: "Developer / API", href: "/developer" },
     ]
   },
   {
