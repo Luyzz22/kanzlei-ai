@@ -291,6 +291,23 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Stats */}
+      <section className="border-y border-gray-200 bg-white py-12">
+        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-8 px-5 sm:grid-cols-4 sm:px-8">
+          {[
+            { value: "< 3s", label: "Analyse-Antwortzeit" },
+            { value: "8", label: "Vertragstypen (DE-Recht)" },
+            { value: "3", label: "KI-Provider aktiv" },
+            { value: "4", label: "Export-Formate" },
+          ].map((stat) => (
+            <div key={stat.label} className="text-center">
+              <p className="text-[28px] font-semibold text-[#003856]">{stat.value}</p>
+              <p className="mt-1 text-[12px] text-gray-500">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-4xl px-5 text-center sm:px-8">
