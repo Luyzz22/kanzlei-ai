@@ -36,14 +36,15 @@ function mapAdminFromEntraRoles(roles: unknown): boolean {
 export const authConfig: NextAuthConfig = {
   adapter,
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true,
+  debug: process.env.NODE_ENV === "development",
   session: {
     strategy: "jwt",
     maxAge: 60 * 60 * 24,
     updateAge: 60 * 60
   },
   pages: {
-    signIn: "/login"
+    signIn: "/login",
+    error: "/login",
   },
   providers: [
     // Google (optional)
