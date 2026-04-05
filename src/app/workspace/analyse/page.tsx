@@ -83,6 +83,7 @@ export default function AnalysePage() {
   const [text, setText] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [contractType, setContractType] = useState("")
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const parsed = result ? parseAnalysis(result.analysis) : null
@@ -211,6 +212,22 @@ export default function AnalysePage() {
           {/* Text Input */}
           <textarea value={text} onChange={(e) => { setText(e.target.value); if (e.target.value) setFile(null) }} placeholder="Vertragstext hier einfügen..." rows={8} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-400 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
 
+          {/* Contract Type Selector */}
+          <div>
+            <label className="mb-1.5 block text-[13px] font-medium text-gray-700">Vertragstyp (optional)</label>
+            <select value={contractType} onChange={(e) => setContractType(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200">
+              <option value="">Automatisch erkennen</option>
+              <option value="Arbeitsvertrag">Arbeitsvertrag</option>
+              <option value="SaaS-Vertrag">SaaS-Vertrag</option>
+              <option value="NDA">NDA / Geheimhaltungsvereinbarung</option>
+              <option value="Dienstleistungsvertrag">Dienstleistungsvertrag</option>
+              <option value="Lieferantenvertrag">Lieferantenvertrag</option>
+              <option value="Mietvertrag">Mietvertrag</option>
+              <option value="Kaufvertrag">Kaufvertrag</option>
+              <option value="Lizenzvertrag">Lizenzvertrag</option>
+            </select>
+          </div>
+
           {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">⚠️ {error}</div>}
 
           <button onClick={handleAnalyze} disabled={loading || (!file && !text.trim())} className="w-full rounded-full bg-[#003856] py-3.5 text-[15px] font-medium text-white transition-all hover:bg-[#002a42] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50">
@@ -223,8 +240,8 @@ export default function AnalysePage() {
           </button>
 
           <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <p className="text-[13px] font-medium text-gray-700">💡 Unterstützte Vertragstypen</p>
-            <p className="mt-1 text-[12px] text-gray-500">Arbeitsverträge, SaaS-Verträge, NDAs, Lieferantenverträge, Dienstleistungsverträge, Mietverträge, Kaufverträge — alle nach deutschem Recht.</p>
+            <p className="text-[13px] font-medium text-gray-700">💡 8 Vertragstypen nach deutschem Recht</p>
+            <p className="mt-1 text-[12px] text-gray-500">Arbeitsverträge, SaaS, NDAs, Lieferanten, Dienstleistung, Miet-, Kauf- und Lizenzverträge. <a href="/vertragstypen" className="font-medium text-[#003856] hover:text-[#00507a]">Alle Vertragstypen ansehen →</a></p>
           </div>
         </div>
       ) : (
