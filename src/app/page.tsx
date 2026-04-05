@@ -308,6 +308,48 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Social Proof */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-5xl px-5 sm:px-8">
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">💬 Vertrauen</p>
+          <h2 className="mt-3 text-center text-display-sm text-gray-950">Gebaut fuer juristische Teams</h2>
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+            {[
+              { quote: "Die Kombination aus Risiko-Score und BGB-Referenzen spart uns bei der Erstpruefung erheblich Zeit.", role: "Partner, Wirtschaftskanzlei", location: "Frankfurt" },
+              { quote: "Mandantentrennung auf DB-Ebene war fuer uns ein Muss. Die RLS-Architektur hat uns ueberzeugt.", role: "IT-Leiter, Grosskanzlei", location: "Muenchen" },
+              { quote: "Der DATEV-Export integriert sich nahtlos in unsere bestehende Buchhaltung.", role: "Rechtsabteilung, Mittelstand", location: "Hamburg" },
+            ].map((t, i) => (
+              <div key={i} className="rounded-2xl border border-gray-100 bg-white p-6">
+                <div className="flex gap-0.5">
+                  {[1,2,3,4,5].map((s) => <span key={s} className="text-[14px] text-gold-400">★</span>)}
+                </div>
+                <p className="mt-3 text-[14px] leading-relaxed text-gray-600">&ldquo;{t.quote}&rdquo;</p>
+                <div className="mt-4 border-t border-gray-100 pt-3">
+                  <p className="text-[13px] font-medium text-gray-900">{t.role}</p>
+                  <p className="text-[11px] text-gray-400">{t.location}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Trust Badges */}
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-6">
+            {[
+              { emoji: "🇪🇺", label: "DSGVO-konform" },
+              { emoji: "🇩🇪", label: "Hosting in Frankfurt" },
+              { emoji: "🔐", label: "Row-Level Security" },
+              { emoji: "📋", label: "Audit Trail" },
+              { emoji: "🤖", label: "Kein KI-Training" },
+            ].map((b) => (
+              <div key={b.label} className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2">
+                <span className="text-[14px]">{b.emoji}</span>
+                <span className="text-[12px] font-medium text-gray-600">{b.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-4xl px-5 text-center sm:px-8">
