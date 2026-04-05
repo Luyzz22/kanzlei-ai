@@ -136,6 +136,9 @@ export default function AnalysePage() {
         setLoading(false)
         return
       }
+      if (contractType) {
+        formData.append("contractType", contractType)
+      }
 
       const res = await fetch("/api/analyze-quick", { method: "POST", body: formData })
       const data = await res.json()
