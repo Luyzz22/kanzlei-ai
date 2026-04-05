@@ -1,121 +1,19 @@
-import Link from "next/link"
+import type { Metadata } from "next"
 
-import { DocumentEvidencePackageView } from "@/components/documents/document-evidence-package-view"
-import { InfoPanel } from "@/components/marketing/info-panel"
-import { PageShell } from "@/components/marketing/page-shell"
-import { SectionIntro } from "@/components/marketing/section-intro"
-import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
-import { auth } from "@/lib/auth"
-import { getDocumentEvidencePackageData } from "@/lib/documents/document-evidence-package-core"
+export const metadata: Metadata = { title: "Nachweise" }
 
-type DokumentEvidencePageProps = {
-  params: {
-    id: string
-  }
-}
-
-export default async function DokumentEvidencePage({ params }: DokumentEvidencePageProps) {
-  const session = await auth()
-
-  if (!session?.user?.id) {
-    return (
-      <PageShell width="wide" className="space-y-6">
-        <SectionIntro
-          eyebrow="Workspace · Nachweispaket"
-          title="Nachweispaket nicht verfügbar"
-          description="Bitte melden Sie sich an, um die tenant-gebundene Nachweisansicht zu öffnen."
-        />
-        <Link href="/login" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
-          Zur Anmeldung
-        </Link>
-      </PageShell>
-    )
-  }
-
-  const tenantContext = await resolveTenantContextForUser(session.user.id)
-
-  if (tenantContext.status === "none") {
-    return (
-      <PageShell width="wide" className="space-y-6">
-        <SectionIntro
-          eyebrow="Workspace · Nachweispaket"
-          title="Kein Mandantenkontext verfügbar"
-          description="Für dieses Konto ist aktuell kein eindeutiger Mandantenkontext hinterlegt."
-        />
-      </PageShell>
-    )
-  }
-
-  if (tenantContext.status === "multiple") {
-    return (
-      <PageShell width="wide" className="space-y-6">
-        <SectionIntro
-          eyebrow="Workspace · Nachweispaket"
-          title="Mandantenkontext nicht eindeutig"
-          description="Diese Ansicht erfordert einen eindeutigen Mandantenkontext. Die gesteuerte Auswahl folgt in einem späteren Ausbau."
-        />
-      </PageShell>
-    )
-  }
-
-  try {
-    const evidencePackage = await getDocumentEvidencePackageData(tenantContext.tenantId, session.user.id, params.id)
-
-    if (!evidencePackage) {
-      return (
-        <PageShell width="wide" className="space-y-6">
-          <SectionIntro
-            eyebrow="Workspace · Nachweispaket"
-            title="Dokument nicht gefunden"
-            description="Das angeforderte Dokument ist in diesem Arbeitsbereich nicht verfügbar."
-          />
-          <InfoPanel title="Hinweis" tone="muted">
-            Die Exportansicht konnte aktuell nicht geladen werden.
-          </InfoPanel>
-        </PageShell>
-      )
-    }
-
-    return (
-      <PageShell width="wide" className="space-y-6 evidence-print-page">
-        <DocumentEvidencePackageView evidencePackage={evidencePackage} />
-
-        <style>
-          {`@media print {
-            header, nav, footer {
-              display: none !important;
-            }
-
-            .evidence-print-page {
-              width: 100% !important;
-              margin: 0 !important;
-              padding: 0 !important;
-            }
-
-            .evidence-print-card,
-            .evidence-print-root section,
-            .evidence-print-root article {
-              break-inside: avoid;
-              page-break-inside: avoid;
-              box-shadow: none !important;
-            }
-
-            .evidence-print-actions {
-              display: none !important;
-            }
-          }`}
-        </style>
-      </PageShell>
-    )
-  } catch {
-    return (
-      <PageShell width="wide" className="space-y-6">
-        <SectionIntro
-          eyebrow="Workspace · Nachweispaket"
-          title="Exportansicht derzeit nicht verfügbar"
-          description="Die Exportansicht konnte aktuell nicht geladen werden. Bitte versuchen Sie es erneut."
-        />
-      </PageShell>
-    )
-  }
+export default function Page() {
+  return (
+    <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🔍 Administration</p>
+      <h1 className="mt-2 text-[1.75rem] font-semibold tracking-tight text-gray-950">Nachweise</h1>
+      <p className="mt-2 text-[14px] text-gray-500">Audit-Trail und Nachweisdokumentation für diesen Vertrag.</p>
+      <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-12 text-center">
+        <span className="text-[40px]">🔍</span>
+        <h2 className="mt-4 text-[17px] font-semibold text-gray-900">Nachweis-Dokumentation</h2>
+        <p className="mx-auto mt-2 max-w-md text-[14px] text-gray-500">Diese Funktion wird im naechsten Release verfuegbar sein. Enterprise-Kunden erhalten priorisierten Zugang.</p>
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-[12px] font-semibold text-amber-700">In Entwicklung</div>
+      </div>
+    </div>
+  )
 }
