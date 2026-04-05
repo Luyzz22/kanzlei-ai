@@ -62,6 +62,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     documentText = documentText.slice(0, 120000)
   }
 
+  const contractType = formData.get("contractType") as string | null
+
   const metadata: DocumentMetadata = {
     documentId: `quick-${Date.now()}`,
     analysisType: AnalysisType.CONTRACT,
@@ -69,7 +71,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     hasVisualElements: false
   }
 
-  const prompt = contractAnalysisPrompt({ documentText, language: "de" })
+  const contextHint = contractType ? `\n\nHinweis: Der Nutzer hat angegeben, dass es sich um einen "${contractType}" handelt. Berücksichtige dies bei der Analyse und den spezifischen Prüfkriterien.\n` : ""
+  const prompt = contractAnalysisPrompt({ documentText: documentText + contextHint, language: "de" })
 
   try {
     const result = await analyzeWithRouter(metadata, prompt, documentText)
