@@ -1,67 +1,58 @@
 import Link from "next/link"
+import type { Metadata } from "next"
 
-import { FeatureCard } from "@/components/marketing/feature-card"
-import { InfoPanel } from "@/components/marketing/info-panel"
-import { PageHero } from "@/components/marketing/page-hero"
-import { PageShell } from "@/components/marketing/page-shell"
-import { StatusBadge } from "@/components/marketing/status-badge"
-import { supportKategorien } from "@/config/support"
-
-const einordnungTone = {
-  "Betriebsnah": "info",
-  Organisatorisch: "neutral",
-  "Compliance-relevant": "warning"
-} as const
+export const metadata: Metadata = { title: "Support", description: "Kontakt und technischer Support fuer KanzleiAI." }
 
 export default function SupportPage() {
   return (
-    <PageShell>
-      <PageHero
-        eyebrow="Support"
-        title="Support-Einstieg für operative und organisatorische Anliegen"
-        description="Support ist sinnvoll bei konkreten Betriebsproblemen, Zugriffsfragen oder nachweisrelevanten Rückfragen. Für allgemeine Produktorientierung und Selbsthilfe ist primär der Hilfebereich vorgesehen."
-      />
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {supportKategorien.map((kategorie) => (
-          <article key={kategorie.titel} className="rounded-xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold text-slate-900">{kategorie.titel}</h2>
-              <StatusBadge label={kategorie.einordnung} tone={einordnungTone[kategorie.einordnung]} />
-            </div>
-            <p className="mt-2 text-sm text-slate-600">{kategorie.zweck}</p>
-            <FeatureCard
-              title="Typische Anwendungsfälle"
-              description={`• ${kategorie.anwendungsfaelle.join("\n• ")}`}
-              tone="muted"
-            />
-          </article>
-        ))}
+    <main>
+      <section className="bg-[#FAFAF7] py-20 sm:py-28">
+        <div className="mx-auto max-w-3xl px-5 sm:px-8 text-center">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-4 py-1.5">
+            <span className="text-[14px]">🎧</span>
+            <span className="text-[12px] font-medium text-gold-700">Support</span>
+          </div>
+          <h1 className="text-display text-gray-950">Wie koennen wir helfen?</h1>
+          <p className="mt-4 text-[17px] text-gray-500">Unser Team unterstuetzt Sie bei technischen Fragen, Integrationen und Onboarding.</p>
+        </div>
       </section>
 
-      <InfoPanel title="Kontakt- und Eskalationswege (read-only Darstellung)" tone="default">
-        <div className="space-y-3">
-          <p>
-            Für konkrete Kontaktaufnahme nutzen Sie den belastbaren Kontaktweg im Impressum. Dieser PR implementiert bewusst keine Formularübermittlung und kein Ticket-Handling.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/impressum" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
-              Zum Impressum und Kontaktweg
-            </Link>
-            <Link href="/hilfe" className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
-              Zur Hilfe
-            </Link>
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-3xl px-5 sm:px-8">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6">
+              <span className="text-[28px]">📧</span>
+              <h3 className="mt-3 text-[17px] font-semibold text-gray-900">E-Mail-Support</h3>
+              <p className="mt-2 text-[14px] text-gray-500">Technische Fragen, Bug-Reports und Feature-Requests. Antwort innerhalb von 24 Stunden.</p>
+              <Link href="mailto:ki@sbsdeutschland.de" className="mt-4 inline-block text-[14px] font-medium text-[#003856] hover:text-[#00507a]">ki@sbsdeutschland.de →</Link>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-6">
+              <span className="text-[28px]">📞</span>
+              <h3 className="mt-3 text-[17px] font-semibold text-gray-900">Enterprise-Support</h3>
+              <p className="mt-2 text-[14px] text-gray-500">Dedizierter Ansprechpartner, SLA-basierter Support und Onboarding-Begleitung fuer Business- und Enterprise-Kunden.</p>
+              <Link href="/enterprise-kontakt" className="mt-4 inline-block text-[14px] font-medium text-[#003856] hover:text-[#00507a]">Kontakt aufnehmen →</Link>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-6">
+              <span className="text-[28px]">📖</span>
+              <h3 className="mt-3 text-[17px] font-semibold text-gray-900">Dokumentation</h3>
+              <p className="mt-2 text-[14px] text-gray-500">Erste Schritte, Funktionsuebersicht, FAQ und Anleitungen.</p>
+              <Link href="/hilfe" className="mt-4 inline-block text-[14px] font-medium text-[#003856] hover:text-[#00507a]">Hilfe & Dokumentation →</Link>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-6">
+              <span className="text-[28px]">📡</span>
+              <h3 className="mt-3 text-[17px] font-semibold text-gray-900">Systemstatus</h3>
+              <p className="mt-2 text-[14px] text-gray-500">Live-Status aller Services: Datenbank, KI-Provider, API-Endpunkte.</p>
+              <Link href="/systemstatus" className="mt-4 inline-block text-[14px] font-medium text-[#003856] hover:text-[#00507a]">Status pruefen →</Link>
+            </div>
+          </div>
+
+          <div className="mt-10 rounded-2xl border border-gold-200 bg-gold-50 p-6 text-center">
+            <span className="text-[28px]">🕐</span>
+            <h3 className="mt-3 text-[17px] font-semibold text-gray-900">Support-Zeiten</h3>
+            <p className="mt-2 text-[14px] text-gray-600">Mo-Fr 09:00-18:00 CET · E-Mail-Antwort innerhalb 24h · Enterprise: SLA-basiert</p>
           </div>
         </div>
-      </InfoPanel>
-
-      <InfoPanel title="Hinweis zum aktuellen Implementierungsumfang" tone="accent">
-        <ul className="list-disc space-y-1 pl-5">
-          <li>Ticketing, Priorisierung und SLA-nahe Supportlogik folgen in späterem Ausbau.</li>
-          <li>Diese Seite dient als strukturierte, read-only Einordnung von Support-Anliegen.</li>
-          <li>Es werden keine Supportdaten verarbeitet oder gespeichert.</li>
-        </ul>
-      </InfoPanel>
-    </PageShell>
+      </section>
+    </main>
   )
 }
