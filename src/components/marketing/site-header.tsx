@@ -129,6 +129,7 @@ export function SiteHeader() {
                       <Link href="/dashboard" className="block rounded-lg px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>Dashboard</Link>
                       <Link href="/workspace/dokumente" className="block rounded-lg px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>Dokumente</Link>
                       <Link href="/workspace/upload" className="block rounded-lg px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>Upload</Link>
+                      <Link href="/dashboard/profil" className="block rounded-lg px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>Mein Profil</Link>
                     </div>
 
                     <div className="mt-1 border-t border-gray-100 pt-1 space-y-0.5">
