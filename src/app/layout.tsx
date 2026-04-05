@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/marketing/site-footer"
 import { SiteHeader } from "@/components/marketing/site-header"
 import { SessionProvider } from "@/components/layout/session-provider"
 import { ThemeProvider } from "@/components/layout/theme-provider"
+import { OrganizationJsonLd, SoftwareJsonLd } from "@/components/seo/json-ld"
 
 export const metadata: Metadata = {
   title: {
@@ -35,6 +36,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             {children}
             <SiteFooter />
             <ConsentBanner />
+            <OrganizationJsonLd />
+            <SoftwareJsonLd />
           </ThemeProvider>
         </SessionProvider>
       </body>
