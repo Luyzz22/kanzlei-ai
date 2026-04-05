@@ -11,7 +11,14 @@ type NavItem = {
 }
 
 const publicNav: NavItem[] = [
-  { label: "Produkt", href: "/produkt" },
+  {
+    label: "Produkt",
+    children: [
+      { label: "Produkt-Übersicht", href: "/produkt", desc: "6 Kernmodule, Tech-Stack, Sicherheit" },
+      { label: "Vertragstypen", href: "/vertragstypen", desc: "8 Typen mit BGB-Referenzen" },
+      { label: "Developer / API", href: "/developer", desc: "REST API, Webhooks, Integrationen" },
+    ]
+  },
   {
     label: "Lösungen",
     children: [
@@ -20,7 +27,6 @@ const publicNav: NavItem[] = [
     ]
   },
   { label: "Preise", href: "/preise" },
-  { label: "Integrationen", href: "/integrationen" },
   { label: "Trust Center", href: "/trust-center" },
 ]
 
