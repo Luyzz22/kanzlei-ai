@@ -7,6 +7,7 @@ const publicPrefixes = [
   "/register",
   "/password-reset",
   "/vertragstypen",
+  "/loesungen/einkauf",
   "/produkt",
   "/preise",
   "/loesungen",
