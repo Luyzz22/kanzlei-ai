@@ -6,6 +6,90 @@ import { auth } from "@/lib/auth"
 import { analyzeWithRouter } from "@/lib/ai/analyzer"
 import { AnalysisType, type DocumentMetadata } from "@/types/ai"
 
+// ---------------------------------------------------------------------------
+// Typed comparison analysis helpers
+// ---------------------------------------------------------------------------
+
+type ParsedAnalysis = {
+  summary: string
+  overallRisk: number
+  matchPercentage: number
+  findings: unknown[]
+  missingInA: unknown[]
+  missingInB: unknown[]
+  recommendations: unknown[]
+}
+
+function createFallbackAnalysis(summary: string): ParsedAnalysis {
+  return {
+    summary,
+    overallRisk: 50,
+    matchPercentage: 50,
+    findings: [],
+    missingInA: [],
+    missingInB: [],
+    recommendations: []
+  }
+}
+
+/**
+ * Converts an arbitrary value into a string suitable for JSON parsing.
+ * Handles all runtime shapes that `AnalysisResult.analysis` may carry.
+ */
+function extractAnalysisText(value: unknown): string {
+  if (typeof value === "string") return value
+  if (value === null || value === undefined) return ""
+  if (typeof value === "object") return JSON.stringify(value)
+  return String(value)
+}
+
+/**
+ * Normalises an AI response value into a strongly-typed `ParsedAnalysis`.
+ *
+ * 1. If the value is already a plain object with the expected shape, it is
+ *    normalised directly (avoids needless stringify → parse round-trip).
+ * 2. Otherwise the value is converted to a string, Markdown code fences are
+ *    stripped, and `JSON.parse` is attempted.
+ * 3. On any failure a safe fallback object is returned so the caller always
+ *    receives a valid `ParsedAnalysis`.
+ */
+function parseAnalysis(value: unknown): ParsedAnalysis {
+  // Fast path: value is already a suitable object (e.g. provider returned parsed JSON)
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "summary" in value &&
+    "overallRisk" in value
+  ) {
+    const obj = value as Record<string, unknown>
+    return {
+      summary: typeof obj.summary === "string" ? obj.summary : String(obj.summary ?? ""),
+      overallRisk: typeof obj.overallRisk === "number" ? obj.overallRisk : 50,
+      matchPercentage: typeof obj.matchPercentage === "number" ? obj.matchPercentage : 50,
+      findings: Array.isArray(obj.findings) ? obj.findings : [],
+      missingInA: Array.isArray(obj.missingInA) ? obj.missingInA : [],
+      missingInB: Array.isArray(obj.missingInB) ? obj.missingInB : [],
+      recommendations: Array.isArray(obj.recommendations) ? obj.recommendations : []
+    }
+  }
+
+  // Slow path: coerce to string, strip code fences, parse JSON
+  const text = extractAnalysisText(value)
+  if (text.length === 0) return createFallbackAnalysis("")
+
+  try {
+    const clean = text
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
+      .trim()
+    const parsed: unknown = JSON.parse(clean)
+    // Recurse through the fast-path to normalise the parsed result
+    return parseAnalysis(parsed)
+  } catch {
+    return createFallbackAnalysis(text)
+  }
+}
+
 const comparisonSchema = JSON.stringify({
   type: "object",
   properties: {
@@ -99,13 +183,7 @@ ${comparisonSchema}`
 
   try {
     const result = await analyzeWithRouter(metadata, prompt, docA + "\n---\n" + docB)
-    let parsed = null
-    try {
-      const clean = result.analysis.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
-      parsed = JSON.parse(clean)
-    } catch {
-      parsed = { summary: result.analysis, overallRisk: 50, matchPercentage: 50, findings: [], missingInA: [], missingInB: [], recommendations: [] }
-    }
+    const parsed = parseAnalysis(result.analysis)
     return NextResponse.json({ parsed, modelUsed: result.modelUsed, tokensUsed: result.tokensUsed })
   } catch (e) {
     return NextResponse.json({ error: "Vergleich fehlgeschlagen.", details: e instanceof Error ? e.message : "unknown" }, { status: 500 })
