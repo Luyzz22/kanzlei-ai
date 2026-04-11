@@ -7,15 +7,28 @@ type Finding = {
   severity: string
   explanation: string
   quote?: string
+  suggestedRevision?: string
+}
+
+type Deadlines = {
+  noticePeriodDays?: number
+  autoRenewal?: boolean
+  renewalTermMonths?: number
+  contractStartDate?: string
+  contractEndDate?: string
+  nextCancellationDate?: string
+  warrantyPeriodMonths?: number
 }
 
 type StructuredAnalysis = {
   analysisType?: string
+  detectedLanguage?: string
   summary?: string
   findings?: Finding[]
   recommendedActions?: string[]
   extractedData?: Record<string, string | number | boolean>
   riskScore?: number
+  deadlines?: Deadlines
 }
 
 type AnalysisResult = {
@@ -220,14 +233,30 @@ export default function AnalysePage() {
             <label className="mb-1.5 block text-[13px] font-medium text-gray-700">Vertragstyp (optional)</label>
             <select value={contractType} onChange={(e) => setContractType(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200">
               <option value="">Automatisch erkennen</option>
-              <option value="Arbeitsvertrag">Arbeitsvertrag</option>
-              <option value="SaaS-Vertrag">SaaS-Vertrag</option>
-              <option value="NDA">NDA / Geheimhaltungsvereinbarung</option>
-              <option value="Dienstleistungsvertrag">Dienstleistungsvertrag</option>
-              <option value="Lieferantenvertrag">Lieferantenvertrag</option>
-              <option value="Mietvertrag">Mietvertrag</option>
-              <option value="Kaufvertrag">Kaufvertrag</option>
-              <option value="Lizenzvertrag">Lizenzvertrag</option>
+              <optgroup label="Deutsch">
+                <option value="Arbeitsvertrag">Arbeitsvertrag</option>
+                <option value="SaaS-Vertrag">SaaS-Vertrag</option>
+                <option value="NDA">NDA / Geheimhaltungsvereinbarung</option>
+                <option value="Dienstleistungsvertrag">Dienstleistungsvertrag</option>
+                <option value="Lieferantenvertrag">Lieferantenvertrag</option>
+                <option value="Mietvertrag">Mietvertrag</option>
+                <option value="Kaufvertrag">Kaufvertrag</option>
+                <option value="Lizenzvertrag">Lizenzvertrag</option>
+                <option value="Rahmenvertrag">Rahmenvertrag</option>
+              </optgroup>
+              <optgroup label="English">
+                <option value="Supplier Agreement (EN)">Supplier Agreement</option>
+                <option value="NDA (English)">NDA (English)</option>
+                <option value="Service Agreement (EN)">Service Agreement</option>
+                <option value="Master Service Agreement (EN)">Master Service Agreement</option>
+                <option value="Purchase Agreement (EN)">Purchase Agreement</option>
+                <option value="License Agreement (EN)">License Agreement</option>
+                <option value="SaaS Agreement (EN)">SaaS Agreement</option>
+              </optgroup>
+              <optgroup label="Einkauf & Beschaffung">
+                <option value="AGB-Abgleich">AGB vs. AEB Abgleich</option>
+                <option value="Lieferanten-Rahmenvertrag">Lieferanten-Rahmenvertrag</option>
+              </optgroup>
             </select>
           </div>
 
@@ -309,6 +338,53 @@ export default function AnalysePage() {
             </div>
           )}
 
+          {/* Deadlines / Fristen */}
+          {parsed?.deadlines && (parsed.deadlines.noticePeriodDays || parsed.deadlines.autoRenewal || parsed.deadlines.contractEndDate) && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <h2 className="flex items-center gap-2 text-[14px] font-semibold text-gray-900">
+                <span className="text-[16px]">📅</span> Fristen & Termine
+              </h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {parsed.deadlines.noticePeriodDays !== undefined && (
+                  <div className={`rounded-xl border p-3 ${parsed.deadlines.noticePeriodDays < 30 ? "border-red-200 bg-red-50" : parsed.deadlines.noticePeriodDays < 90 ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"}`}>
+                    <p className="text-[11px] font-medium text-gray-500">Kuendigungsfrist</p>
+                    <p className="mt-0.5 text-[16px] font-semibold text-gray-900">{parsed.deadlines.noticePeriodDays} Tage</p>
+                  </div>
+                )}
+                {parsed.deadlines.autoRenewal !== undefined && (
+                  <div className={`rounded-xl border p-3 ${parsed.deadlines.autoRenewal ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"}`}>
+                    <p className="text-[11px] font-medium text-gray-500">Auto-Verlaengerung</p>
+                    <p className="mt-0.5 text-[16px] font-semibold text-gray-900">{parsed.deadlines.autoRenewal ? `Ja${parsed.deadlines.renewalTermMonths ? ` (${parsed.deadlines.renewalTermMonths} Monate)` : ""}` : "Nein"}</p>
+                  </div>
+                )}
+                {parsed.deadlines.contractStartDate && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-3">
+                    <p className="text-[11px] font-medium text-gray-500">Vertragsbeginn</p>
+                    <p className="mt-0.5 text-[14px] font-semibold text-gray-900">{parsed.deadlines.contractStartDate}</p>
+                  </div>
+                )}
+                {parsed.deadlines.contractEndDate && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-3">
+                    <p className="text-[11px] font-medium text-gray-500">Vertragsende</p>
+                    <p className="mt-0.5 text-[14px] font-semibold text-gray-900">{parsed.deadlines.contractEndDate}</p>
+                  </div>
+                )}
+                {parsed.deadlines.nextCancellationDate && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-3">
+                    <p className="text-[11px] font-medium text-gray-500">Naechster Kuendigungstermin</p>
+                    <p className="mt-0.5 text-[14px] font-semibold text-red-700">{parsed.deadlines.nextCancellationDate}</p>
+                  </div>
+                )}
+                {parsed.deadlines.warrantyPeriodMonths !== undefined && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-3">
+                    <p className="text-[11px] font-medium text-gray-500">Gewaehrleistung</p>
+                    <p className="mt-0.5 text-[14px] font-semibold text-gray-900">{parsed.deadlines.warrantyPeriodMonths} Monate</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Findings / Risks */}
           {parsed?.findings && parsed.findings.length > 0 && (
             <div className="space-y-3">
@@ -333,6 +409,12 @@ export default function AnalysePage() {
                     {finding.quote && (
                       <div className="mt-3 rounded-lg border-l-2 border-gray-300 bg-white/60 px-3 py-2">
                         <p className="text-[12px] italic text-gray-500">&ldquo;{finding.quote}&rdquo;</p>
+                      </div>
+                    )}
+                    {finding.suggestedRevision && (
+                      <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">✏️ Formulierungsvorschlag</p>
+                        <p className="mt-1.5 text-[12px] leading-relaxed text-emerald-900">{finding.suggestedRevision}</p>
                       </div>
                     )}
                   </div>
