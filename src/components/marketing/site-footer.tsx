@@ -16,6 +16,7 @@ const footerGroups = [
     links: [
       { label: "Für Kanzleien", href: "/loesungen/kanzleien" },
       { label: "Für Rechtsabteilungen", href: "/loesungen/rechtsabteilungen" },
+      { label: "Für Einkauf & Beschaffung", href: "/loesungen/einkauf" },
       { label: "Enterprise-Kontakt", href: "/enterprise-kontakt" },
     ]
   },
