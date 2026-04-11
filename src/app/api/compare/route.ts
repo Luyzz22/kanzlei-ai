@@ -101,10 +101,10 @@ ${comparisonSchema}`
     const result = await analyzeWithRouter(metadata, prompt, docA + "\n---\n" + docB)
     let parsed = null
     try {
-      const clean = result.analysisText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
+      const clean = result.analysis.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
       parsed = JSON.parse(clean)
     } catch {
-      parsed = { summary: result.analysisText, overallRisk: 50, matchPercentage: 50, findings: [], missingInA: [], missingInB: [], recommendations: [] }
+      parsed = { summary: result.analysis, overallRisk: 50, matchPercentage: 50, findings: [], missingInA: [], missingInB: [], recommendations: [] }
     }
     return NextResponse.json({ parsed, modelUsed: result.modelUsed, tokensUsed: result.tokensUsed })
   } catch (e) {
