@@ -12,6 +12,8 @@ const workspaceNav = [
   { label: "Upload", href: "/workspace/upload", emoji: "📤" },
   { label: "Faelle", href: "/workspace/faelle", emoji: "📁" },
   { label: "Review & Freigabe", href: "/workspace/review-queue", emoji: "✅" },
+  { label: "AGB-Vergleich", href: "/workspace/vergleich", emoji: "⚖️" },
+  { label: "Benchmarking", href: "/workspace/benchmarking", emoji: "📊" },
 ]
 
 const adminNav = [
