@@ -21,7 +21,7 @@ export default function LoesungenPage() {
 
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="grid gap-8 lg:grid-cols-2">
+          <div className="grid gap-8 lg:grid-cols-3">
             {/* Kanzleien */}
             <div className="group rounded-2xl border border-gray-200 bg-white p-8 transition-all hover:border-gold-300 hover:shadow-elevated">
               <span className="text-[36px]">🏛️</span>
@@ -52,6 +52,22 @@ export default function LoesungenPage() {
                 ))}
               </ul>
               <Link href="/loesungen/rechtsabteilungen" className="mt-8 inline-flex items-center rounded-full bg-[#003856] px-6 py-3 text-[14px] font-medium text-white hover:bg-[#002a42]">Mehr erfahren →</Link>
+            </div>
+
+            {/* Einkauf */}
+            <div className="group rounded-2xl border border-gray-200 bg-white p-8 transition-all hover:border-gold-300 hover:shadow-elevated">
+              <span className="text-[36px]">🛒</span>
+              <h2 className="mt-4 text-[22px] font-semibold text-gray-950">Fuer Einkauf & Beschaffung</h2>
+              <p className="mt-3 text-[15px] leading-relaxed text-gray-500">Lieferantenvertraege und NDAs in Deutsch und Englisch pruefen, Konditionen vergleichen und Kuendigungsfristen im Blick behalten.</p>
+              <ul className="mt-6 space-y-3">
+                {["Lieferantenvertraege (DE/EN)", "NDA-Analyse bilingual", "AGB vs. AEB Abgleich", "Kuendigungsfristen-Monitoring", "Umformulierungsvorschlaege", "Microsoft Dynamics Integration"].map((f) => (
+                  <li key={f} className="flex items-center gap-2.5 text-[14px] text-gray-600">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold-100 text-[10px] text-gold-700">✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/loesungen/einkauf" className="mt-8 inline-flex items-center rounded-full bg-[#003856] px-6 py-3 text-[14px] font-medium text-white hover:bg-[#002a42]">Mehr erfahren →</Link>
             </div>
           </div>
         </div>
