@@ -24,6 +24,7 @@ const publicNav: NavItem[] = [
     children: [
       { label: "Für Kanzleien", href: "/loesungen/kanzleien", desc: "Vertragsprüfung, Mandatskontext, Teamabstimmung" },
       { label: "Für Rechtsabteilungen", href: "/loesungen/rechtsabteilungen", desc: "Review-Abläufe, Freigaben, Entscheidungspfade" },
+      { label: "Für Einkauf & Beschaffung", href: "/loesungen/einkauf", desc: "Lieferantenverträge, NDAs, AGB-Abgleich" },
     ]
   },
   { label: "Preise", href: "/preise" },
