@@ -72,7 +72,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const contextHint = contractType ? `\n\nHinweis: Der Nutzer hat angegeben, dass es sich um einen "${contractType}" handelt. Berücksichtige dies bei der Analyse und den spezifischen Prüfkriterien.\n` : ""
-  const prompt = contractAnalysisPrompt({ documentText: documentText + contextHint, language: "de" })
+  const prompt = contractAnalysisPrompt({ documentText: documentText + contextHint, language: "auto" })
 
   try {
     const result = await analyzeWithRouter(metadata, prompt, documentText)
