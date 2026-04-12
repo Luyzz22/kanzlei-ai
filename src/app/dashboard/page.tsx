@@ -14,12 +14,14 @@ type HistoryEntry = {
 }
 
 const quickActions = [
-  { label: "⚡ Schnellanalyse", href: "/workspace/analyse", desc: "PDF hochladen, KI analysiert sofort Risiken", emoji: "🔍" },
-  { label: "🤖 Contract Copilot", href: "/workspace/copilot", desc: "KI-Assistent für Vertragsfragen und Risikoanalyse", emoji: "💬" },
-  { label: "📋 Analyseverlauf", href: "/workspace/history", desc: "Vergangene Analysen einsehen und im Copilot öffnen", emoji: "📊" },
-  { label: "📤 Vertrag hochladen", href: "/workspace/upload", desc: "Dokument im Workspace erfassen", emoji: "📂" },
-  { label: "📂 Dokumente", href: "/workspace/dokumente", desc: "Alle Verträge und Dokumente einsehen", emoji: "🗂️" },
-  { label: "✅ Review-Queue", href: "/workspace/review-queue", desc: "Offene Prüfvorgänge bearbeiten", emoji: "✏️" },
+  { label: "⚡ Schnellanalyse", href: "/workspace/analyse", desc: "PDF hochladen, KI analysiert sofort Risiken — DE & EN", emoji: "🔍" },
+  { label: "⚖️ AGB-Vergleich", href: "/workspace/vergleich", desc: "Lieferanten-AGB gegen Ihre AEB Klausel fuer Klausel abgleichen", emoji: "📋" },
+  { label: "🤖 Contract Copilot", href: "/workspace/copilot", desc: "KI-Assistent fuer Vertragsfragen und Risikoanalyse", emoji: "💬" },
+  { label: "📊 Benchmarking", href: "/workspace/benchmarking", desc: "Lieferanten-Risiko-Ranking und Konditionen-Vergleich", emoji: "📈" },
+  { label: "📋 Analyseverlauf", href: "/workspace/history", desc: "Vergangene Analysen einsehen und im Copilot oeffnen", emoji: "📊" },
+  { label: "📁 Faelle & Mandate", href: "/workspace/faelle", desc: "Vertraege mandatsbezogen organisieren", emoji: "🗂️" },
+  { label: "✅ Review-Queue", href: "/workspace/review-queue", desc: "Offene Pruefvorgaenge bearbeiten", emoji: "✏️" },
+  { label: "📂 Dokumente", href: "/workspace/dokumente", desc: "Alle Vertraege und Dokumente einsehen", emoji: "📄" },
 ]
 
 export default function DashboardPageWrapper() {
