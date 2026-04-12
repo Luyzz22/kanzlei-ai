@@ -60,7 +60,7 @@ const vertragstypen = [
   },
 ]
 
-export const metadata: Metadata = { title: "Vertragstypen — 8 spezialisierte Analysen", description: "KanzleiAI analysiert 8 Vertragstypen nach deutschem Recht: Arbeitsverträge, NDAs, SaaS, Dienstleistung, Lieferanten, Miet-, Kauf- und Lizenzverträge." }
+export const metadata: Metadata = { title: "Vertragstypen — 16 spezialisierte Analysen DE/EN", description: "KanzleiAI analysiert 16 Vertragstypen in Deutsch und Englisch mit spezifischen Pruefkriterien und Risikobereichen." }
 
 export default function VertragstypenPage() {
   return (
@@ -70,10 +70,10 @@ export default function VertragstypenPage() {
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-4 py-1.5">
               <span className="text-[14px]">⚖️</span>
-              <span className="text-[12px] font-medium text-gold-700">8 Vertragstypen</span>
+              <span className="text-[12px] font-medium text-gold-700">16 Vertragstypen DE/EN</span>
             </div>
-            <h1 className="text-display text-gray-950">Spezialisiert auf deutsches Recht</h1>
-            <p className="mt-4 text-[17px] leading-relaxed text-gray-500">KanzleiAI analysiert acht Vertragstypen mit spezifischen Prüfkriterien, BGB-Referenzen und typischen Risikobereichen.</p>
+            <h1 className="text-display text-gray-950">Deutsch & Englisch</h1>
+            <p className="mt-4 text-[17px] leading-relaxed text-gray-500">KanzleiAI analysiert 16 Vertragstypen mit spezifischen Pruefkriterien — 8 nach deutschem Recht mit BGB-Referenzen, 8 englische mit Common-Law-Risikokatalog.</p>
           </div>
         </div>
       </section>
@@ -106,6 +106,44 @@ export default function VertragstypenPage() {
                     </ul>
                   </div>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* English Contract Types */}
+      <section className="border-t border-gray-200 bg-white py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5">
+              <span className="text-[14px]">🌐</span>
+              <span className="text-[12px] font-medium text-blue-700">English Contracts</span>
+            </div>
+            <h2 className="text-display-sm text-gray-950">English Contract Types</h2>
+            <p className="mt-4 text-[16px] text-gray-500">Automatic language detection. English contracts are analyzed with Common Law risk catalogs and procurement-specific checkpoints.</p>
+          </div>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { emoji: "📦", title: "Supplier Agreement", risks: ["Limitation of Liability", "Indemnification gaps", "Price escalation clauses"] },
+              { emoji: "🔒", title: "NDA (English)", risks: ["Overbroad confidentiality", "Perpetual term", "Missing carve-outs"] },
+              { emoji: "📋", title: "Master Service Agreement", risks: ["Vendor lock-in", "Change control gaps", "IP ownership"] },
+              { emoji: "🛒", title: "Purchase Agreement", risks: ["Warranty limitations", "Force Majeure scope", "Delivery terms"] },
+              { emoji: "💻", title: "SaaS Agreement", risks: ["Data portability", "SLA enforcement", "Auto-renewal traps"] },
+              { emoji: "📄", title: "License Agreement", risks: ["Scope of license", "Sublicensing rights", "Termination triggers"] },
+              { emoji: "🤝", title: "Service Agreement", risks: ["Scope creep", "Acceptance criteria", "Liability caps"] },
+              { emoji: "🏗️", title: "Framework Agreement", risks: ["Call-off mechanics", "Volume commitments", "Exit provisions"] },
+            ].map((t) => (
+              <div key={t.title} className="rounded-xl border border-gray-100 bg-gray-50 p-5">
+                <span className="text-[22px]">{t.emoji}</span>
+                <h3 className="mt-2 text-[14px] font-semibold text-gray-900">{t.title}</h3>
+                <ul className="mt-3 space-y-1">
+                  {t.risks.map((r) => (
+                    <li key={r} className="flex items-start gap-1.5 text-[12px] text-gray-500">
+                      <span className="mt-0.5 text-[8px] text-amber-500">●</span>{r}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
