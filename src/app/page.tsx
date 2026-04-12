@@ -168,6 +168,35 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How it Works */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">⚡ Workflow</p>
+            <h2 className="mt-3 text-display-sm text-gray-950">So funktioniert&apos;s</h2>
+            <p className="mt-4 text-[16px] text-gray-500">Von Upload bis Export in unter 60 Sekunden — drei Schritte zur vollstaendigen Vertragsanalyse.</p>
+          </div>
+          <div className="mt-12 grid gap-8 lg:grid-cols-3">
+            {[
+              { step: "1", emoji: "📤", title: "Vertrag hochladen", desc: "PDF, DOCX oder Text einfuegen. Die KI erkennt Sprache und Vertragstyp automatisch — Deutsch und Englisch.", time: "5 Sekunden" },
+              { step: "2", emoji: "🧠", title: "KI analysiert", desc: "Multi-Provider-Pipeline (Claude + GPT-4o + Gemini) extrahiert Daten, bewertet Risiken, identifiziert Klauseln und generiert Formulierungsvorschlaege.", time: "< 3 Sekunden" },
+              { step: "3", emoji: "📊", title: "Ergebnis nutzen", desc: "Risiko-Score, Findings mit Vorschlaegen, Kuendigungsfristen-Ampel, Copilot-Chat, PDF-Export oder DATEV-Import.", time: "Sofort verfuegbar" },
+            ].map((s) => (
+              <div key={s.step} className="relative rounded-2xl border border-gray-100 bg-white p-7 text-center transition-all hover:border-gold-300 hover:shadow-card">
+                <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#003856] text-[15px] font-bold text-white">{s.step}</span>
+                <span className="mt-4 block text-[32px]">{s.emoji}</span>
+                <h3 className="mt-3 text-[17px] font-semibold text-gray-900">{s.title}</h3>
+                <p className="mt-2 text-[14px] leading-relaxed text-gray-500">{s.desc}</p>
+                <p className="mt-4 inline-block rounded-full bg-gold-50 px-3 py-1 text-[11px] font-semibold text-gold-700">{s.time}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-10 text-center">
+            <Link href="/workspace/analyse" className="rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42]">Jetzt ausprobieren →</Link>
+          </div>
+        </div>
+      </section>
+
       {/* Capabilities */}
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
