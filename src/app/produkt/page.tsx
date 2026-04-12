@@ -3,11 +3,22 @@ import type { Metadata } from "next"
 
 const kernmodule = [
   { emoji: "📂", title: "Dokumenten-Workspace", desc: "Zentrale Arbeitsoberfläche für Verträge und Dokumente mit klarer Struktur für Intake, Bearbeitung und Ablage.", meta: "Organisation" },
-  { emoji: "🧠", title: "KI-Vertragsanalyse", desc: "Multi-Provider KI-Pipeline (Claude Sonnet 4, GPT-4o, Gemini) analysiert Verträge, extrahiert Daten und bewertet Risiken nach deutschem Recht.", meta: "8 Vertragstypen" },
+  { emoji: "🧠", title: "KI-Vertragsanalyse", desc: "Multi-Provider KI-Pipeline (Claude Sonnet 4, GPT-4o, Gemini) analysiert Verträge bilingual (DE/EN), extrahiert Daten und bewertet Risiken.", meta: "16 Vertragstypen DE/EN" },
   { emoji: "🤖", title: "Contract Copilot", desc: "KI-Chat mit Echtzeit-Streaming und Vertragskontext. Stellen Sie Fragen zu jedem analysierten Vertrag — mit BGB-Referenzen.", meta: "Claude Sonnet 4" },
+  { emoji: "⚖️", title: "AGB-Vergleich", desc: "Zwei Dokumente Klausel für Klausel abgleichen. Abweichungen, Widersprüche und fehlende Klauseln automatisch identifizieren.", meta: "Einkauf & Beschaffung" },
   { emoji: "🛡️", title: "Review & Freigabe", desc: "Strukturierte Prüfprozesse mit RBAC-Rollenmodell, Human-in-the-Loop und nachvollziehbarer Entscheidungshistorie.", meta: "Governance" },
   { emoji: "📋", title: "Audit & Nachweise", desc: "Manipulationssichere Protokollierung mit Hash-Verkettung für ISO 27001, DSGVO-Audits und interne Governance.", meta: "Compliance" },
+  { emoji: "📊", title: "Lieferanten-Benchmarking", desc: "Risiko-Übersicht und Konditionen-Vergleich aller analysierten Lieferanten mit Ranking und Trend.", meta: "Einkauf" },
   { emoji: "🔗", title: "Export & Integration", desc: "PDF-Reports, DATEV-Export, CSV und JSON. REST API + Webhooks für nahtlose Workflow-Integration.", meta: "Schnittstellen" },
+]
+
+const metrics = [
+  { value: "< 3s", label: "Analyse-Antwortzeit", emoji: "⚡" },
+  { value: "16", label: "Vertragstypen (DE/EN)", emoji: "⚖️" },
+  { value: "3", label: "KI-Provider aktiv", emoji: "🧠" },
+  { value: "4", label: "Export-Formate", emoji: "📄" },
+  { value: "46+", label: "Enterprise-Seiten", emoji: "📊" },
+  { value: "26", label: "API-Endpunkte", emoji: "🔗" },
 ]
 
 const techStack = [
@@ -48,6 +59,21 @@ export default function ProduktPage() {
                 <h3 className="mt-3 text-[15px] font-semibold text-gray-900">{m.title}</h3>
                 <p className="mt-2 text-[13px] leading-relaxed text-gray-500">{m.desc}</p>
                 <p className="mt-4 text-[11px] font-medium uppercase tracking-[0.12em] text-gold-600">{m.meta}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Metrics */}
+      <section className="border-y border-gray-200 bg-white py-16">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <div className="grid gap-6 sm:grid-cols-3 lg:grid-cols-6">
+            {metrics.map((m) => (
+              <div key={m.label} className="text-center">
+                <span className="text-[18px]">{m.emoji}</span>
+                <p className="mt-1 text-[24px] font-bold text-[#003856]">{m.value}</p>
+                <p className="mt-0.5 text-[11px] text-gray-500">{m.label}</p>
               </div>
             ))}
           </div>
