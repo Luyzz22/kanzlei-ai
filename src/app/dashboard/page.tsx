@@ -63,6 +63,16 @@ function DashboardContent() {
         </div>
       )}
 
+      {/* What's New Banner */}
+      <Link href="/release-notes" className="flex items-center gap-3 rounded-xl border border-gold-200 bg-gold-50 px-5 py-3 transition-colors hover:bg-gold-100/50">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#003856] text-[10px] font-bold text-white">2.0</span>
+        <div className="flex-1">
+          <p className="text-[13px] font-medium text-gray-900">Neu: AGB-Vergleich, Lieferanten-Benchmarking & 16 Vertragstypen DE/EN</p>
+          <p className="text-[11px] text-gray-500">DERMALOG Enterprise Release — bilinguale Analyse, Formulierungsvorschlaege, Kuendigungsfristen-Ampel</p>
+        </div>
+        <span className="text-[12px] text-gold-600">Release Notes →</span>
+      </Link>
+
       <div>
         <h1 className="text-[1.5rem] font-semibold tracking-tight text-gray-950">Dashboard</h1>
         <p className="mt-1 text-[14px] text-gray-500">Überblick über Ihre Vertragsanalysen und Workflows.</p>
