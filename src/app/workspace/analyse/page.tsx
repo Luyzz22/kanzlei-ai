@@ -272,8 +272,8 @@ export default function AnalysePage() {
           </button>
 
           <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <p className="text-[13px] font-medium text-gray-700">💡 8 Vertragstypen nach deutschem Recht</p>
-            <p className="mt-1 text-[12px] text-gray-500">Arbeitsverträge, SaaS, NDAs, Lieferanten, Dienstleistung, Miet-, Kauf- und Lizenzverträge. <a href="/vertragstypen" className="font-medium text-[#003856] hover:text-[#00507a]">Alle Vertragstypen ansehen →</a></p>
+            <p className="text-[13px] font-medium text-gray-700">💡 16 Vertragstypen DE/EN</p>
+            <p className="mt-1 text-[12px] text-gray-500">8 deutsche + 8 englische Vertragstypen mit spezialisierten Pruefkatalogen. <a href="/vertragstypen" className="font-medium text-[#003856] hover:text-[#00507a]">Alle Vertragstypen ansehen →</a></p>
           </div>
         </div>
       ) : (
