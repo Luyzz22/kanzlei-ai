@@ -36,10 +36,12 @@ const integrations = [
     category: "Export & Downstream",
     emoji: "📊",
     items: [
-      { name: "PDF-Report", emoji: "📄", status: "geplant", desc: "Strukturierter Analysebericht als PDF-Export" },
-      { name: "DATEV", emoji: "🧾", status: "geplant", desc: "Integration mit DATEV Unternehmen Online" },
-      { name: "JSON/CSV Export", emoji: "📋", status: "geplant", desc: "Maschinenlesbare Datenexporte" },
-      { name: "Webhook / n8n", emoji: "🔗", status: "geplant", desc: "Event-basierte Weiterleitung an Automatisierungsplattformen" },
+      { name: "PDF-Report", emoji: "📄", status: "live", desc: "Strukturierter Analysebericht als PDF-Export" },
+      { name: "DATEV", emoji: "🧾", status: "verfügbar", desc: "Integration mit DATEV Unternehmen Online" },
+      { name: "JSON/CSV Export", emoji: "📋", status: "live", desc: "Maschinenlesbare Datenexporte" },
+      { name: "Webhook / n8n", emoji: "🔗", status: "verfügbar", desc: "Event-basierte Weiterleitung an Automatisierungsplattformen" },
+      { name: "Slack", emoji: "💬", status: "live", desc: "Hochrisiko-Benachrichtigungen via Slack-Webhook" },
+      { name: "Microsoft Dynamics", emoji: "🏗️", status: "vorbereitet", desc: "Vertragsimport und Ergebnis-Rueckschreibung via REST API (Phase 3)" },
     ]
   },
 ]
@@ -47,6 +49,7 @@ const integrations = [
 function getStatusStyle(status: string) {
   if (status === "live") return "bg-emerald-100 text-emerald-700"
   if (status === "vorbereitet") return "bg-amber-100 text-amber-700"
+  if (status === "verfügbar") return "bg-blue-100 text-blue-700"
   return "bg-gray-100 text-gray-500"
 }
 
