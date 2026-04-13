@@ -17,6 +17,7 @@ const workspaceNav = [
 ]
 
 const adminNav = [
+  { label: "Onboarding", href: "/workspace/onboarding", emoji: "👋" },
   { label: "Verwaltung", href: "/dashboard/admin", emoji: "⚙️" },
   { label: "Audit-Protokoll", href: "/dashboard/audit", emoji: "📋" },
   { label: "Billing", href: "/dashboard/billing", emoji: "💳" },
