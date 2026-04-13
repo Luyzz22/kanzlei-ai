@@ -22,6 +22,7 @@ const sections = [
   {
     title: "KI & Governance",
     items: [
+      { emoji: "🔑", title: "API-Schluessel", desc: "REST API Keys erstellen und verwalten", href: "/dashboard/admin/api-keys", status: "Verfuegbar" },
       { emoji: "🤖", title: "Prompt Governance", desc: "KI-Prompt-Versionen, Release-Prozesse und Qualitaetskontrolle", href: "/dashboard/admin/prompt-governance", status: "Verfuegbar" },
     ]
   },
