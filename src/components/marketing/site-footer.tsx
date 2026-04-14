@@ -38,6 +38,7 @@ const footerGroups = [
       { label: "Datenschutz", href: "/datenschutz" },
       { label: "Impressum", href: "/impressum" },
       { label: "AVV", href: "/avv" },
+      { label: "Cookie-Einstellungen", href: "/cookie-einstellungen" },
     ]
   }
 ]
@@ -99,6 +100,7 @@ export function SiteFooter() {
             <Link href="/datenschutz" className="text-[12px] text-gray-400 hover:text-gray-600">Datenschutz</Link>
             <Link href="/impressum" className="text-[12px] text-gray-400 hover:text-gray-600">Impressum</Link>
             <Link href="/avv" className="text-[12px] text-gray-400 hover:text-gray-600">AVV</Link>
+            <Link href="/cookie-einstellungen" className="text-[12px] text-gray-400 hover:text-gray-600">Cookies</Link>
           </div>
         </div>
       </div>
