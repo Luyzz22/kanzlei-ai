@@ -2,6 +2,7 @@ import Link from "next/link"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = { title: "Fuer Kanzleien & Notare", description: "KI-Vertragsanalyse fuer Kanzleien: Mandantenvertraege in Sekunden pruefen, Risiken bewerten, DSGVO-konform." }
+export const revalidate = 3600 // ISR: 1 Stunde
 
 export default function KanzleienPage() {
   return (
