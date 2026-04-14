@@ -169,6 +169,26 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Platform Metrics */}
+      <section className="border-b border-gray-200 bg-white py-16">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { value: "< 3s", label: "Analyse-Antwortzeit", sub: "Multi-Provider KI-Pipeline" },
+              { value: "16", label: "Vertragstypen DE/EN", sub: "8 deutsche + 8 englische" },
+              { value: "53+", label: "Enterprise-Seiten", sub: "Analyse bis Audit-Trail" },
+              { value: "28", label: "API-Endpunkte", sub: "REST + Webhooks + SCIM" },
+            ].map((m) => (
+              <div key={m.label} className="text-center">
+                <p className="text-[2.5rem] font-semibold tracking-tight text-[#003856]">{m.value}</p>
+                <p className="mt-1 text-[14px] font-medium text-gray-900">{m.label}</p>
+                <p className="text-[12px] text-gray-400">{m.sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* How it Works */}
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
