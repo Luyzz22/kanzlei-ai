@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next"
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://www.kanzlei-ai.com"
   const now = new Date().toISOString()
-  
+
   return [
     { url: base, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${base}/produkt`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
@@ -11,17 +11,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/loesungen`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/loesungen/kanzleien`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/loesungen/rechtsabteilungen`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${base}/loesungen/einkauf`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${base}/enterprise-kontakt`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${base}/vertragstypen`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/trust-center`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/integrationen`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/sicherheit-compliance`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${base}/enterprise-kontakt`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${base}/loesungen/einkauf`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${base}/vertragstypen`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${base}/ki-transparenz`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${base}/developer`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${base}/systemstatus`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
+    { url: `${base}/support`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/hilfe`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/release-notes`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${base}/datenschutz`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
     { url: `${base}/impressum`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
     { url: `${base}/avv`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${base}/cookie-einstellungen`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
   ]
 }
