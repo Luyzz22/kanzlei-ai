@@ -2,6 +2,7 @@ import Link from "next/link"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = { title: "Fuer Einkauf & Beschaffung", description: "KI-Vertragsanalyse fuer Einkaufsabteilungen: Lieferantenvertraege, NDAs, AGB-Abgleich, Kuendigungsfristen-Monitoring." }
+export const revalidate = 3600 // ISR: 1 Stunde
 
 export default function EinkaufPage() {
   return (
