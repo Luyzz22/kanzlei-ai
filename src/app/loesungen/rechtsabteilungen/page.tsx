@@ -2,6 +2,7 @@ import Link from "next/link"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = { title: "Fuer Rechtsabteilungen", description: "KI-Vertragsanalyse fuer Corporate Legal: Review-Workflows, Governance, Compliance und Lieferantenmanagement." }
+export const revalidate = 3600 // ISR: 1 Stunde
 
 export default function RechtsabteilungenPage() {
   return (
