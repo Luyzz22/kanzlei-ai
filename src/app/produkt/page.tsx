@@ -18,7 +18,7 @@ const metrics = [
   { value: "3", label: "KI-Provider aktiv", emoji: "🧠" },
   { value: "4", label: "Export-Formate", emoji: "📄" },
   { value: "51+", label: "Enterprise-Seiten", emoji: "📊" },
-  { value: "26", label: "API-Endpunkte", emoji: "🔗" },
+  { value: "28", label: "API-Endpunkte", emoji: "🔗" },
 ]
 
 const techStack = [
