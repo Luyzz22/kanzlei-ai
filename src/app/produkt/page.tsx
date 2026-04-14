@@ -32,6 +32,7 @@ const techStack = [
 
 
 export const metadata: Metadata = { title: "Produkt — Kernmodule", description: "KI-Vertragsanalyse mit Enterprise-Governance. Acht Kernmodule und 16 Vertragstypen fuer juristische Teams." }
+export const revalidate = 3600 // ISR: 1 Stunde
 export default function ProduktPage() {
   return (
     <main>
