@@ -61,6 +61,7 @@ const vertragstypen = [
 ]
 
 export const metadata: Metadata = { title: "Vertragstypen — 16 spezialisierte Analysen DE/EN", description: "KanzleiAI analysiert 16 Vertragstypen in Deutsch und Englisch mit spezifischen Pruefkriterien und Risikobereichen." }
+export const revalidate = 3600 // ISR: 1 Stunde
 
 export default function VertragstypenPage() {
   return (
