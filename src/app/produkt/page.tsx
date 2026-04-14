@@ -17,7 +17,7 @@ const metrics = [
   { value: "16", label: "Vertragstypen (DE/EN)", emoji: "⚖️" },
   { value: "3", label: "KI-Provider aktiv", emoji: "🧠" },
   { value: "4", label: "Export-Formate", emoji: "📄" },
-  { value: "46+", label: "Enterprise-Seiten", emoji: "📊" },
+  { value: "51+", label: "Enterprise-Seiten", emoji: "📊" },
   { value: "26", label: "API-Endpunkte", emoji: "🔗" },
 ]
 
@@ -51,7 +51,7 @@ export default function ProduktPage() {
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🏗️ Kernmodule</p>
-          <h2 className="mt-3 text-display-sm text-gray-950">Sechs Bausteine, eine Plattform</h2>
+          <h2 className="mt-3 text-display-sm text-gray-950">Acht Bausteine, eine Plattform</h2>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {kernmodule.map((m) => (
               <div key={m.title} className="rounded-2xl border border-gray-100 bg-white p-6 transition-all hover:border-gray-200 hover:shadow-card">
