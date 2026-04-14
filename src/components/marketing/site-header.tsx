@@ -175,6 +175,25 @@ export function SiteHeader() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="border-t border-gray-100 bg-white px-5 pb-6 pt-4 lg:hidden animate-fade-in">
+          {/* Workspace Nav for logged-in users */}
+          {isLoggedIn && (
+            <div className="mb-4 space-y-1 border-b border-gray-100 pb-4">
+              <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-gold-600">Workspace</p>
+              {[
+                { emoji: "📊", label: "Dashboard", href: "/dashboard" },
+                { emoji: "⚡", label: "Schnellanalyse", href: "/workspace/analyse" },
+                { emoji: "🤖", label: "Copilot", href: "/workspace/copilot" },
+                { emoji: "📂", label: "Dokumente", href: "/workspace/dokumente" },
+                { emoji: "⚖️", label: "AGB-Vergleich", href: "/workspace/vergleich" },
+                { emoji: "✅", label: "Review", href: "/workspace/review-queue" },
+                { emoji: "⚙️", label: "Verwaltung", href: "/dashboard/admin" },
+              ].map((item) => (
+                <Link key={item.href} href={item.href} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[14px] text-gray-700 hover:bg-gold-50" onClick={() => setMobileOpen(false)}>
+                  <span className="text-[14px]">{item.emoji}</span>{item.label}
+                </Link>
+              ))}
+            </div>
+          )}
           <div className="space-y-1">
             {nav.map((item) =>
               item.children ? (
