@@ -2,6 +2,7 @@ import Link from "next/link"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = { title: "Trust Center", description: "Datenschutz, Sicherheit, Compliance und KI-Governance bei KanzleiAI." }
+export const revalidate = 3600 // ISR: 1 Stunde
 
 const trustPillars = [
   {
