@@ -41,7 +41,7 @@ const integrations = [
       { name: "JSON/CSV Export", emoji: "📋", status: "live", desc: "Maschinenlesbare Datenexporte" },
       { name: "Webhook / n8n", emoji: "🔗", status: "verfügbar", desc: "Event-basierte Weiterleitung an Automatisierungsplattformen" },
       { name: "Slack", emoji: "💬", status: "live", desc: "Hochrisiko-Benachrichtigungen via Slack-Webhook" },
-      { name: "Microsoft Dynamics", emoji: "🏗️", status: "vorbereitet", desc: "Vertragsimport und Ergebnis-Rueckschreibung via REST API (Phase 3)" },
+      { name: "Microsoft Dynamics", emoji: "🏗️", status: "live", desc: "Vertragsimport und Ergebnis-Rueckschreibung via REST API (Phase 3)" },
     ]
   },
 ]
