@@ -17,6 +17,8 @@ export default function PromptGovernancePage() {
             { name: "contract-analysis-v2", model: "Claude Sonnet 4", version: "2.0.0", lastUpdate: "05.04.2026", status: "Produktiv" },
             { name: "copilot-conversation-v1", model: "Claude Sonnet 4", version: "1.2.0", lastUpdate: "04.04.2026", status: "Produktiv" },
             { name: "contract-analysis-fallback", model: "GPT-4o", version: "1.0.0", lastUpdate: "03.04.2026", status: "Fallback" },
+            { name: "agb-comparison-v1", model: "Claude Sonnet 4", version: "1.0.0", lastUpdate: "11.04.2026", status: "Produktiv" },
+            { name: "supplier-benchmarking-v1", model: "Claude Sonnet 4", version: "1.0.0", lastUpdate: "11.04.2026", status: "Produktiv" },
           ].map((p) => (
             <div key={p.name} className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-3.5">
               <div>
