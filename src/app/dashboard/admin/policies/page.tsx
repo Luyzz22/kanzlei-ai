@@ -12,7 +12,7 @@ export default function PoliciesPage() {
 
       <div className="mt-10 space-y-4">
         {[
-          { emoji: "🧠", title: "KI-Nutzungsrichtlinie", desc: "Welche Vertragstypen duerfen automatisch analysiert werden? Welche erfordern manuelle Pruefung?", status: "Aktiv", rules: ["Alle 8 Vertragstypen fuer KI-Analyse freigegeben", "Hochrisiko-Vertraege (Score >= 70) erfordern manuellen Review", "Ergebnisse sind Entscheidungshilfen, keine Entscheidungen"] },
+          { emoji: "🧠", title: "KI-Nutzungsrichtlinie", desc: "Welche Vertragstypen duerfen automatisch analysiert werden? Welche erfordern manuelle Pruefung?", status: "Aktiv", rules: ["Alle 16 Vertragstypen (DE/EN) fuer KI-Analyse freigegeben", "Hochrisiko-Vertraege (Score >= 70) erfordern manuellen Review", "Ergebnisse sind Entscheidungshilfen, keine Entscheidungen"] },
           { emoji: "📄", title: "Dokumenten-Policy", desc: "Zulaessige Dateiformate, maximale Dateigroesse und Aufbewahrungsfristen.", status: "Aktiv", rules: ["PDF und TXT zugelassen (max. 120.000 Zeichen)", "Dokumente werden mandantengetrennt gespeichert", "Loeschung nach Vertragsende oder auf Anfrage"] },
           { emoji: "📤", title: "Export-Richtlinie", desc: "Wer darf Analyseergebnisse exportieren und in welchen Formaten?", status: "Aktiv", rules: ["Admin und Anwalt: PDF, JSON, CSV, DATEV", "Assistent: nur PDF-Export", "Alle Exporte werden im Audit-Trail protokolliert"] },
           { emoji: "🔔", title: "Benachrichtigungs-Policy", desc: "Welche Events loesen automatische Benachrichtigungen aus?", status: "Aktiv", rules: ["Hochrisiko-Analysen (Score >= 70) → Slack + n8n", "Neue Team-Mitglieder → Admin-Benachrichtigung", "Fehlgeschlagene Logins → Audit-Log"] },
