@@ -61,6 +61,7 @@ function getStatusLabel(status: string) {
 
 
 export const metadata: Metadata = { title: "Integrationen — Ökosystem", description: "16+ Integrationen: Dokumentenquellen, SSO, KI-Provider und Export." }
+export const revalidate = 3600 // ISR: 1 Stunde
 export default function IntegrationenPage() {
   return (
     <main>
