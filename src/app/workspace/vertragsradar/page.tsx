@@ -140,6 +140,23 @@ export default function VertragsradarPage() {
         ))}
       </div>
 
+      {/* EUR-Lex Live Feed Status */}
+      <div className="mt-6 rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white px-5 py-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            </span>
+            <div>
+              <p className="text-[13px] font-medium text-gray-900">Live-Feed verbunden — EUR-Lex CELLAR SPARQL</p>
+              <p className="text-[11px] text-gray-500">Taeglicher Sync 03:00 Europe/Berlin · 6 Regulierungen aktiv ueberwacht · Quelle: <a href="https://eur-lex.europa.eu" target="_blank" rel="noopener noreferrer" className="font-medium text-[#003856] hover:underline">eur-lex.europa.eu</a></p>
+            </div>
+          </div>
+          <a href="/api/radar/feed?live=true" target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50">Feed-API ansehen →</a>
+        </div>
+      </div>
+
       {/* Regulations Overview */}
       {view === "overview" && (
         <div className="mt-6 space-y-3">
