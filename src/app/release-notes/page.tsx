@@ -5,10 +5,26 @@ export const metadata: Metadata = { title: "Release Notes", description: "Alle A
 
 const releases = [
   {
+    version: "2.1.0",
+    date: "16. April 2026",
+    title: "Vertragsradar + KI-Verhandlungssimulator",
+    current: true,
+    changes: [
+      { type: "NEU", text: "🛰️ Vertragsradar — Regulatorischer Compliance-Monitor. Gesetzesaenderungen (EU AI Act, NIS2, DSGVO, LkSG, E-Rechnung) automatisch gegen das Vertragsportfolio pruefen" },
+      { type: "NEU", text: "🎯 KI-Verhandlungssimulator — Flugsimulator fuer Vertragsverhandlungen mit adaptiver KI-Gegenpartei und Coaching-Feedback nach jedem Zug" },
+      { type: "NEU", text: "4 Verhandlungsszenarien: Lieferantenvertrag, SaaS mit DSGVO, M&A-NDA, LkSG-Rahmenvertrag" },
+      { type: "NEU", text: "5 ueberwachte Regulierungen mit kuratierten Feeds (EUR-Lex, BMJ, dejure.org, BMAS)" },
+      { type: "NEU", text: "Radar-Admin-Settings: Feeds, Scan-Intervalle (Echtzeit/taeglich/woechentlich), Alert-Kanaele" },
+      { type: "NEU", text: "Compliance-Architektur: Beide Module sind EU AI Act Limited Risk (Beratungstools mit Human Oversight)" },
+      { type: "NEU", text: "API: POST /api/radar/scan mit Regulatorik-Matching und Confidence-Scores" },
+      { type: "NEU", text: "Portfolio-weite Heatmap mit 156 Vertraegen, 131 Matches und 20 kritischen Handlungen" },
+      { type: "NEU", text: "Produkt auf Zehn Kernmodule erweitert, Sidebar mit NEU/BETA-Badges" },
+    ]
+  },
+  {
     version: "2.0.0",
     date: "11. April 2026",
     title: "DERMALOG Enterprise + Einkauf & Beschaffung",
-    current: true,
     changes: [
       { type: "NEU", text: "Bilinguale Vertragsanalyse (DE/EN) mit automatischer Spracherkennung" },
       { type: "NEU", text: "AGB vs. AEB Vergleichsmodus — zwei Dokumente Klausel fuer Klausel abgleichen" },
