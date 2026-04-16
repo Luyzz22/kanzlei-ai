@@ -175,9 +175,9 @@ export default function LandingPage() {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { value: "< 3s", label: "Analyse-Antwortzeit", sub: "Multi-Provider KI-Pipeline" },
-              { value: "16", label: "Vertragstypen DE/EN", sub: "8 deutsche + 8 englische" },
-              { value: "53+", label: "Enterprise-Seiten", sub: "Analyse bis Audit-Trail" },
-              { value: "28", label: "API-Endpunkte", sub: "REST + Webhooks + SCIM" },
+              { value: "10", label: "Kernmodule", sub: "Inkl. Vertragsradar + Simulator" },
+              { value: "55+", label: "Enterprise-Seiten", sub: "Analyse bis Compliance-Monitor" },
+              { value: "29", label: "API-Endpunkte", sub: "REST + Webhooks + SCIM" },
             ].map((m) => (
               <div key={m.label} className="text-center">
                 <p className="text-[2.5rem] font-semibold tracking-tight text-[#003856]">{m.value}</p>
