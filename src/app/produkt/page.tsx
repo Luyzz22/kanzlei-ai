@@ -9,16 +9,18 @@ const kernmodule = [
   { emoji: "🛡️", title: "Review & Freigabe", desc: "Strukturierte Prüfprozesse mit RBAC-Rollenmodell, Human-in-the-Loop und nachvollziehbarer Entscheidungshistorie.", meta: "Governance" },
   { emoji: "📋", title: "Audit & Nachweise", desc: "Manipulationssichere Protokollierung mit Hash-Verkettung für ISO 27001, DSGVO-Audits und interne Governance.", meta: "Compliance" },
   { emoji: "📊", title: "Lieferanten-Benchmarking", desc: "Risiko-Übersicht und Konditionen-Vergleich aller analysierten Lieferanten mit Ranking und Trend.", meta: "Einkauf" },
+  { emoji: "🛰️", title: "Vertragsradar", desc: "Regulatorischer Compliance-Monitor. Gesetzesänderungen (EU AI Act, NIS2, DSGVO, LkSG) automatisch gegen Ihr Vertragsportfolio prüfen. Einzigartig im DACH-Markt.", meta: "Regulatorik · EU AI Act Limited Risk" },
+  { emoji: "🎯", title: "Verhandlungssimulator", desc: "Flugsimulator für Vertragsverhandlungen. KI-Gegenpartei reagiert adaptiv, Coach gibt Feedback zu jeder Argumentation.", meta: "Training · BETA" },
   { emoji: "🔗", title: "Export & Integration", desc: "PDF-Reports, DATEV-Export, CSV und JSON. REST API + Webhooks für nahtlose Workflow-Integration.", meta: "Schnittstellen" },
 ]
 
 const metrics = [
   { value: "< 3s", label: "Analyse-Antwortzeit", emoji: "⚡" },
-  { value: "16", label: "Vertragstypen (DE/EN)", emoji: "⚖️" },
+  { value: "10", label: "Kernmodule", emoji: "⚖️" },
   { value: "3", label: "KI-Provider aktiv", emoji: "🧠" },
   { value: "4", label: "Export-Formate", emoji: "📄" },
   { value: "51+", label: "Enterprise-Seiten", emoji: "📊" },
-  { value: "28", label: "API-Endpunkte", emoji: "🔗" },
+  { value: "29", label: "API-Endpunkte", emoji: "🔗" },
 ]
 
 const techStack = [
@@ -31,7 +33,7 @@ const techStack = [
 ]
 
 
-export const metadata: Metadata = { title: "Produkt — Kernmodule", description: "KI-Vertragsanalyse mit Enterprise-Governance. Acht Kernmodule und 16 Vertragstypen fuer juristische Teams." }
+export const metadata: Metadata = { title: "Produkt — Kernmodule", description: "KI-Vertragsanalyse mit Enterprise-Governance. Zehn Kernmodule und 16 Vertragstypen fuer juristische Teams." }
 export const revalidate = 3600 // ISR: 1 Stunde
 export default function ProduktPage() {
   return (
@@ -52,7 +54,7 @@ export default function ProduktPage() {
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🏗️ Kernmodule</p>
-          <h2 className="mt-3 text-display-sm text-gray-950">Acht Bausteine, eine Plattform</h2>
+          <h2 className="mt-3 text-display-sm text-gray-950">Zehn Bausteine, eine Plattform</h2>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {kernmodule.map((m) => (
               <div key={m.title} className="rounded-2xl border border-gray-100 bg-white p-6 transition-all hover:border-gray-200 hover:shadow-card">
