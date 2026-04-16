@@ -22,6 +22,7 @@ const sections = [
   {
     title: "KI & Governance",
     items: [
+      { emoji: "🛰️", title: "Vertragsradar-Einstellungen", desc: "Regulierungs-Feeds, Scan-Intervalle, Alerts", href: "/dashboard/admin/radar", status: "Aktiv" },
       { emoji: "👥", title: "SCIM v2 Provisioning", desc: "Automatische Nutzerverwaltung via IdP", href: "/dashboard/admin/scim", status: "Verfuegbar" },
       { emoji: "🏗️", title: "Microsoft Dynamics", desc: "Business Central via OAuth 2.0 anbinden", href: "/dashboard/admin/dynamics", status: "Verfuegbar" },
       { emoji: "🔑", title: "API-Schluessel", desc: "REST API Keys erstellen und verwalten", href: "/dashboard/admin/api-keys", status: "Verfuegbar" },
