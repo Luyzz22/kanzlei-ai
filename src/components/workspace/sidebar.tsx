@@ -18,10 +18,11 @@ const workspaceNav = [
   { label: "Review & Freigabe", href: "/workspace/review-queue", emoji: "✅" },
   { label: "AGB-Vergleich", href: "/workspace/vergleich", emoji: "⚖️" },
   { label: "Benchmarking", href: "/workspace/benchmarking", emoji: "📊" },
+  { label: "Vertragsradar", href: "/workspace/vertragsradar", emoji: "🛰️", badge: "NEU" },
+  { label: "Verhandlungssimulator", href: "/workspace/verhandlung", emoji: "🎯", badge: "BETA" },
 ]
 
 const adminNav = [
-  { label: "Benachrichtigungen", href: "/dashboard/benachrichtigungen", emoji: "🔔" },
   { label: "Onboarding", href: "/workspace/onboarding", emoji: "👋" },
   { label: "Verwaltung", href: "/dashboard/admin", emoji: "⚙️" },
   { label: "Audit-Protokoll", href: "/dashboard/audit", emoji: "📋" },
@@ -43,7 +44,12 @@ function NavItem({ item, active, collapsed }: { item: typeof workspaceNav[0]; ac
       }`}
     >
       <span className={`${collapsed ? "text-[16px]" : "text-[14px]"} shrink-0`}>{item.emoji}</span>
-      {!collapsed && <span className="text-[13px] truncate">{item.label}</span>}
+      {!collapsed && (
+        <span className="flex flex-1 items-center gap-1.5 truncate">
+          <span className="text-[13px] truncate">{item.label}</span>
+          {"badge" in item && item.badge && <span className={`shrink-0 rounded px-1 py-0.5 text-[8px] font-bold ${item.badge === "NEU" ? "bg-gold-500 text-white" : "bg-blue-500 text-white"}`}>{item.badge}</span>}
+        </span>
+      )}
       {collapsed && (
         <span className="pointer-events-none absolute left-full z-50 ml-2 hidden whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1.5 text-[12px] font-medium text-white shadow-lg group-hover:block">
           {item.label}
