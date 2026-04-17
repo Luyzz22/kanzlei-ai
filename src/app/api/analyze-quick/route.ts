@@ -27,15 +27,28 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (file.type === "text/plain" || file.name.endsWith(".txt")) {
       documentText = await file.text()
     } else if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
-      try {
-        const buffer = Buffer.from(await file.arrayBuffer())
-        const pdfParse = (await import("pdf-parse")).default
-        const data = await pdfParse(buffer)
-        documentText = data.text
-      } catch (e) {
+      // PDF parsing can fail on cold start. Try twice with dynamic import each time.
+      let lastError: Error | null = null
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const buffer = Buffer.from(await file.arrayBuffer())
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const pdfParse = (await import("pdf-parse")).default
+          const data = await pdfParse(buffer)
+          documentText = data.text
+          lastError = null
+          break
+        } catch (e) {
+          lastError = e instanceof Error ? e : new Error("PDF parse failed")
+          if (attempt === 1) {
+            await new Promise(r => setTimeout(r, 200))
+          }
+        }
+      }
+      if (lastError) {
         return NextResponse.json(
-          { error: "PDF konnte nicht gelesen werden.", details: e instanceof Error ? e.message : "unknown" },
-          { status: 400 }
+          { error: "PDF konnte nicht gelesen werden. Bitte versuchen Sie es erneut oder geben Sie den Text direkt ein.", details: lastError.message },
+          { status: 422 }
         )
       }
     } else {
