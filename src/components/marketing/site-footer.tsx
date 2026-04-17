@@ -24,6 +24,7 @@ const footerGroups = [
     title: "Trust & Compliance",
     links: [
       { label: "Trust Center", href: "/trust-center" },
+      { label: "Compliance at a Glance", href: "/trust/compliance" },
       { label: "Sicherheit", href: "/sicherheit-compliance" },
       { label: "KI-Transparenz", href: "/ki-transparenz" },
       { label: "Systemstatus", href: "/systemstatus" },
