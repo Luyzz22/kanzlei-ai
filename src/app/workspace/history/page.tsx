@@ -142,10 +142,14 @@ export default function HistoryPage() {
       ) : (
         <div className="mt-4 space-y-2">
           {filtered.map((entry) => (
-            <div key={entry.id} className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-4 transition-all hover:border-gray-200 hover:shadow-card">
+            <Link
+              key={entry.id}
+              href={`/workspace/history/${entry.id}`}
+              className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-4 transition-all hover:border-gold-300 hover:shadow-card"
+            >
               <div className="flex items-center gap-4">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${(entry.riskScore ?? 0) >= 70 ? "bg-red-100" : (entry.riskScore ?? 0) >= 40 ? "bg-amber-100" : "bg-emerald-100"}`}>
-                  <span className="text-[14px] font-bold ${(entry.riskScore ?? 0) >= 70 ? 'text-red-700' : (entry.riskScore ?? 0) >= 40 ? 'text-amber-700' : 'text-emerald-700'}">
+                  <span className={`text-[14px] font-bold ${(entry.riskScore ?? 0) >= 70 ? "text-red-700" : (entry.riskScore ?? 0) >= 40 ? "text-amber-700" : "text-emerald-700"}`}>
                     {entry.riskScore ?? "—"}
                   </span>
                 </div>
@@ -159,13 +163,19 @@ export default function HistoryPage() {
               </div>
               <div className="flex items-center gap-2">
                 {entry.result && (
-                  <button onClick={() => loadInCopilot(entry)} className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-medium text-gray-700 hover:bg-gray-50">🤖 Copilot</button>
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); loadInCopilot(entry) }}
+                    className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    🤖 Copilot
+                  </button>
                 )}
                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${(entry.riskScore ?? 0) >= 70 ? "bg-red-100 text-red-700" : (entry.riskScore ?? 0) >= 40 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
                   {(entry.riskScore ?? 0) >= 70 ? "Hoch" : (entry.riskScore ?? 0) >= 40 ? "Mittel" : "Niedrig"}
                 </span>
+                <span className="text-[14px] text-gray-300">›</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
