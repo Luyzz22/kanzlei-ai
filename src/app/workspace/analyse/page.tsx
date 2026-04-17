@@ -153,16 +153,53 @@ export default function AnalysePage() {
         formData.append("contractType", contractType)
       }
 
-      const res = await fetch("/api/analyze-quick", { method: "POST", body: formData })
-      const data = await res.json()
+      // Retry logic: PDF parser / AI model cold-starts sometimes fail on first try.
+      // Auto-retry up to 2 times with backoff before surfacing error to user.
+      const MAX_ATTEMPTS = 3
+      let lastError: string | null = null
+      let data: AnalysisResult | { error?: string; details?: string } | null = null
+      let res: Response | null = null
 
-      if (!res.ok) {
-        setError(data.error || "Analyse fehlgeschlagen.")
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          res = await fetch("/api/analyze-quick", { method: "POST", body: formData })
+          data = await res.json()
+
+          if (res.ok) {
+            lastError = null
+            break // success — exit retry loop
+          }
+
+          // Non-retryable client errors (4xx validation) — fail fast
+          if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
+            lastError = (data as { error?: string })?.error || `Analyse fehlgeschlagen (${res.status}).`
+            // Validation errors (e.g. file too short) should not retry
+            if (attempt === 1 && (lastError.includes("zu kurz") || lastError.includes("hochladen") || lastError.includes("unterstützt"))) {
+              break
+            }
+          } else {
+            lastError = (data as { error?: string })?.error || `Serverfehler (${res.status}).`
+          }
+
+          // Exponential backoff: 500ms, 1500ms
+          if (attempt < MAX_ATTEMPTS) {
+            await new Promise(r => setTimeout(r, 500 * attempt))
+          }
+        } catch (networkErr) {
+          lastError = networkErr instanceof Error ? networkErr.message : "Netzwerkfehler"
+          if (attempt < MAX_ATTEMPTS) {
+            await new Promise(r => setTimeout(r, 500 * attempt))
+          }
+        }
+      }
+
+      if (lastError || !res?.ok) {
+        setError(lastError || "Analyse fehlgeschlagen.")
         setLoading(false)
         return
       }
 
-      setResult(data)
+      setResult(data as AnalysisResult)
     } catch {
       setError("Netzwerkfehler. Bitte erneut versuchen.")
     } finally {
