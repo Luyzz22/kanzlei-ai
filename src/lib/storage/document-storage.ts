@@ -5,7 +5,13 @@ import { createReadStream } from "node:fs"
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
 
-const STORAGE_ROOT = path.join(process.cwd(), ".local", "storage")
+// On Vercel, only /tmp is writable. Use it when VERCEL env is set.
+// Local dev keeps .local/storage for persistence across restarts.
+// NOTE: /tmp is ephemeral on Vercel — files don't survive across invocations.
+// For production-grade persistence, migrate to Vercel Blob or S3.
+const STORAGE_ROOT = process.env.VERCEL
+  ? path.join("/tmp", "kanzlei-storage")
+  : path.join(process.cwd(), ".local", "storage")
 
 function resolveStoragePath(storageKey: string): string {
   const normalizedKey = path.posix.normalize(storageKey)
