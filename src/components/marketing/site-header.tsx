@@ -14,7 +14,8 @@ const publicNav: NavItem[] = [
   {
     label: "Produkt",
     children: [
-      { label: "Produkt-Übersicht", href: "/produkt", desc: "8 Kernmodule, Tech-Stack, 16 Vertragstypen" },
+      { label: "Features — v2.1 ✨", href: "/features", desc: "Vertragsradar & Verhandlungssimulator — die Neuheiten" },
+      { label: "Produkt-Übersicht", href: "/produkt", desc: "Alle Kernmodule, Tech-Stack, 16 Vertragstypen" },
       { label: "Vertragstypen", href: "/vertragstypen", desc: "16 Typen DE/EN mit Risikokatalog" },
       { label: "Developer / API", href: "/developer", desc: "REST API, Webhooks, Integrationen" },
     ]
