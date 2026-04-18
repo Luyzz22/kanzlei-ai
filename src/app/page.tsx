@@ -4,8 +4,8 @@ export const revalidate = 3600
 const capabilities = [
   {
     emoji: "📋",
-    title: "Vertragsprüfung",
-    description: "KI-gestützte Analyse von Arbeits-, SaaS-, NDA-, Lieferanten- und weiteren Vertragstypen nach deutschem Recht."
+    title: "Vertragsprüfung DE/EN",
+    description: "KI-gestützte Analyse deutscher und englischsprachiger Verträge: Arbeits-, SaaS-, NDA-, Lieferanten- und 12 weitere Vertragstypen — mit Recherche zu BGB, HGB sowie Common Law."
   },
   {
     emoji: "⚠️",
@@ -32,14 +32,24 @@ const trustSignals = [
 ]
 
 const contractTypes = [
-  { emoji: "👔", label: "Arbeitsverträge" },
-  { emoji: "☁️", label: "SaaS-Verträge" },
-  { emoji: "🤝", label: "NDAs" },
-  { emoji: "🏭", label: "Lieferantenverträge" },
-  { emoji: "📋", label: "Dienstleistung" },
-  { emoji: "🏢", label: "Mietverträge" },
-  { emoji: "🛒", label: "Kaufverträge" },
-  { emoji: "⚖️", label: "Allgemeine Verträge" },
+  // Deutsche Verträge (BGB / HGB)
+  { emoji: "👔", label: "Arbeitsvertrag", jurisdiction: "DE" },
+  { emoji: "☁️", label: "SaaS-Vertrag", jurisdiction: "DE" },
+  { emoji: "🤝", label: "NDA", jurisdiction: "DE" },
+  { emoji: "🏭", label: "Lieferantenvertrag", jurisdiction: "DE" },
+  { emoji: "🔧", label: "Dienstleistungsvertrag", jurisdiction: "DE" },
+  { emoji: "🏢", label: "Mietvertrag", jurisdiction: "DE" },
+  { emoji: "🛒", label: "Kaufvertrag", jurisdiction: "DE" },
+  { emoji: "⚖️", label: "AGB", jurisdiction: "DE" },
+  // English-language contracts (Common Law)
+  { emoji: "👔", label: "Employment Agreement", jurisdiction: "EN" },
+  { emoji: "☁️", label: "SaaS Agreement / MSA", jurisdiction: "EN" },
+  { emoji: "🤝", label: "NDA / Confidentiality", jurisdiction: "EN" },
+  { emoji: "🏭", label: "Supply Agreement", jurisdiction: "EN" },
+  { emoji: "🔧", label: "Service Agreement", jurisdiction: "EN" },
+  { emoji: "💼", label: "License Agreement", jurisdiction: "EN" },
+  { emoji: "📜", label: "Terms & Conditions", jurisdiction: "EN" },
+  { emoji: "🤲", label: "Data Processing Agreement", jurisdiction: "EN" },
 ]
 
 const processSteps = [
@@ -73,7 +83,9 @@ export default function LandingPage() {
               </h1>
 
               <p className="mt-6 max-w-lg text-[17px] leading-relaxed text-gray-500">
-                KanzleiAI unterstützt Kanzleien und Rechtsabteilungen bei der strukturierten Prüfung von Verträgen — mit nachvollziehbarer KI und auditfähigen Nachweisen.
+                KanzleiAI unterstützt Kanzleien und Rechtsabteilungen bei der strukturierten Prüfung von Verträgen
+                in <span className="font-medium text-gray-700">Deutsch und Englisch</span> — mit nachvollziehbarer
+                KI und auditfähigen Nachweisen.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -175,9 +187,9 @@ export default function LandingPage() {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { value: "< 3s", label: "Analyse-Antwortzeit", sub: "Multi-Provider KI-Pipeline" },
-              { value: "10", label: "Kernmodule", sub: "Inkl. Vertragsradar + Simulator" },
-              { value: "55+", label: "Enterprise-Seiten", sub: "Analyse bis Compliance-Monitor" },
-              { value: "29", label: "API-Endpunkte", sub: "REST + Webhooks + SCIM" },
+              { value: "12", label: "Kernmodule", sub: "Inkl. Vertragsradar + Simulator" },
+              { value: "78", label: "Enterprise-Seiten", sub: "Analyse bis Compliance-Monitor" },
+              { value: "34", label: "API-Endpunkte", sub: "REST + Webhooks + SCIM" },
             ].map((m) => (
               <div key={m.label} className="text-center">
                 <p className="text-[2.5rem] font-semibold tracking-tight text-[#003856]">{m.value}</p>
@@ -244,27 +256,85 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Contract Types */}
-      <section className="border-y border-gray-200 bg-gray-50 py-16">
+      {/* Contract Types — bilingual DE/EN */}
+      <section className="border-y border-gray-200 bg-gray-50 py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="flex flex-col items-center gap-6 lg:flex-row lg:justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">⚖️ 8 Vertragstypen</p>
-              <h2 className="mt-2 text-[22px] font-semibold tracking-tight text-gray-950">
-                Spezialisiert auf deutsches Recht
-              </h2>
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">⚖️ 16 Vertragstypen · DE + EN</p>
+            <h2 className="mt-3 text-display-sm text-gray-950">
+              Deutsches Recht und internationales Vertragswesen
+            </h2>
+            <p className="mt-4 text-[15px] leading-relaxed text-gray-500">
+              KanzleiAI analysiert Verträge in Deutsch (BGB, HGB, AGB-Recht) und Englisch (Common Law).
+              Für DACH-Teams mit internationalen Mandanten, Konzernen und Cross-Border-Deals.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-8 lg:grid-cols-2">
+            {/* Deutsche Verträge */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-7">
+              <div className="flex items-center gap-3">
+                <span className="text-[22px]">🇩🇪</span>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gold-700">Deutsches Recht</p>
+                  <h3 className="mt-0.5 text-[16px] font-semibold text-gray-950">BGB · HGB · AGB-Recht</h3>
+                </div>
+              </div>
+              <p className="mt-3 text-[13px] leading-relaxed text-gray-500">
+                Acht spezialisierte Vertragstypen mit Klauselkatalog, Kündigungsfristen-Ampel und Risikobewertung
+                gemäß deutscher Rechtsprechung.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {contractTypes.filter((t) => t.jurisdiction === "DE").map((type) => (
+                  <span
+                    key={`de-${type.label}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-[12px] font-medium text-gray-700"
+                  >
+                    <span className="text-[13px]">{type.emoji}</span>
+                    {type.label}
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap justify-center gap-2 lg:justify-end">
-              {contractTypes.map((type) => (
-                <span
-                  key={type.label}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-[12px] font-medium text-gray-700 shadow-soft"
-                >
-                  <span className="text-[14px]">{type.emoji}</span>
-                  {type.label}
-                </span>
-              ))}
+
+            {/* English-language Contracts */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-7">
+              <div className="flex items-center gap-3">
+                <span className="text-[22px]">🌐</span>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gold-700">English-Language Contracts</p>
+                  <h3 className="mt-0.5 text-[16px] font-semibold text-gray-950">Common Law · International</h3>
+                </div>
+              </div>
+              <p className="mt-3 text-[13px] leading-relaxed text-gray-500">
+                Acht englischsprachige Vertragstypen für internationale Mandanten, Konzernbeziehungen
+                und Cross-Border-Deals — inklusive DPA (Art. 28 DSGVO) und MSAs.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {contractTypes.filter((t) => t.jurisdiction === "EN").map((type) => (
+                  <span
+                    key={`en-${type.label}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-[12px] font-medium text-gray-700"
+                  >
+                    <span className="text-[13px]">{type.emoji}</span>
+                    {type.label}
+                  </span>
+                ))}
+              </div>
             </div>
+          </div>
+
+          {/* Link */}
+          <div className="mt-8 text-center">
+            <Link
+              href="/vertragstypen"
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#003856] hover:text-gold-700"
+            >
+              Alle 16 Vertragstypen mit Risikokatalog ansehen
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
         </div>
       </section>
@@ -346,7 +416,7 @@ export default function LandingPage() {
         <div className="mx-auto grid max-w-5xl grid-cols-2 gap-8 px-5 sm:grid-cols-4 sm:px-8">
           {[
             { value: "< 3s", label: "Analyse-Antwortzeit" },
-            { value: "8", label: "Vertragstypen (DE-Recht)" },
+            { value: "16", label: "Vertragstypen (DE + EN)" },
             { value: "3", label: "KI-Provider aktiv" },
             { value: "4", label: "Export-Formate" },
           ].map((stat) => (
