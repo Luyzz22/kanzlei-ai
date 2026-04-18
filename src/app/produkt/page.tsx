@@ -16,11 +16,11 @@ const kernmodule = [
 
 const metrics = [
   { value: "< 3s", label: "Analyse-Antwortzeit", emoji: "⚡" },
-  { value: "10", label: "Kernmodule", emoji: "⚖️" },
+  { value: "12", label: "Kernmodule", emoji: "⚖️" },
   { value: "3", label: "KI-Provider aktiv", emoji: "🧠" },
   { value: "4", label: "Export-Formate", emoji: "📄" },
-  { value: "51+", label: "Enterprise-Seiten", emoji: "📊" },
-  { value: "29", label: "API-Endpunkte", emoji: "🔗" },
+  { value: "78", label: "Enterprise-Seiten", emoji: "📊" },
+  { value: "34", label: "API-Endpunkte", emoji: "🔗" },
 ]
 
 const techStack = [
@@ -47,6 +47,20 @@ export default function ProduktPage() {
             </div>
             <h1 className="text-display text-gray-950">KI-Vertragsanalyse mit Enterprise-Governance</h1>
             <p className="mt-4 text-[17px] leading-relaxed text-gray-500">KanzleiAI bündelt Dokumentenarbeit, KI-gestützte Vertragsprüfung und auditfähige Nachweise in einer konsistenten Plattform für juristische Teams.</p>
+
+            {/* v2.1 Callout */}
+            <Link
+              href="/features"
+              className="group mt-8 inline-flex items-center gap-3 rounded-full border border-gold-300 bg-white px-5 py-2.5 shadow-sm transition-all hover:border-gold-400 hover:shadow-md"
+            >
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gold-700">
+                NEU · v2.1
+              </span>
+              <span className="text-[13px] font-medium text-gray-900">Vertragsradar &amp; Verhandlungssimulator ansehen</span>
+              <svg className="h-3.5 w-3.5 text-gold-600 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
         </div>
       </section>
