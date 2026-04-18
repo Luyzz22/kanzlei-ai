@@ -33,7 +33,12 @@ const erlaubteMimeTypes = [
   "text/plain"
 ]
 
-const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+// Vercel Function body size limit is 4.5 MB for Server Actions (hard limit).
+// For files >4 MB, implement client-side upload via @vercel/blob/client handleUpload
+// with token endpoint — this bypasses the Function body size limit entirely.
+// Current limit is kept conservative at 4 MB to ensure reliability. Contracts are
+// typically well under this size (PDFs of 100-page contracts rarely exceed 2 MB).
+const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024
 
 type OptionalUploadFileResolution =
   | { kind: "none" }
@@ -218,7 +223,18 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
         message:
           "Das Dokument und die Datei wurden tenant-gebunden gespeichert. Die initiale Dokumentverarbeitung wurde gestartet."
       }
-    } catch {
+    } catch (attachError) {
+      console.error("[intake.attach_failed]", {
+        tenantId: tenantContext.tenantId,
+        documentId: document.id,
+        userId: session.user.id,
+        storageKey: storedFile.storageKey,
+        error: attachError instanceof Error ? {
+          name: attachError.name,
+          message: attachError.message,
+          stack: attachError.stack
+        } : String(attachError)
+      })
       await deleteStoredDocumentFile(storedFile.storageKey)
       await markDocumentStorageFailure({
         tenantId: tenantContext.tenantId,
@@ -232,7 +248,25 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
           "Das Dokument wurde angelegt, aber die tenant-gebundene Dateiablage konnte nicht abgeschlossen werden. Bitte laden Sie die Datei erneut hoch."
       }
     }
-  } catch {
+  } catch (intakeError) {
+    // EXPLICIT LOGGING — these errors were previously silently swallowed.
+    // Server logs (Vercel Runtime Logs) will now show the root cause.
+    console.error("[intake.create_failed]", {
+      tenantId: tenantContext.tenantId,
+      userId: session.user.id,
+      title: parsed.data.title,
+      hasFile: Boolean(file),
+      fileMimeType: resolvedMimeType,
+      fileSize: file?.size,
+      error: intakeError instanceof Error ? {
+        name: intakeError.name,
+        message: intakeError.message,
+        stack: intakeError.stack,
+        // Prisma errors have a `code` property we want to see (P2002, P2003, etc.)
+        code: (intakeError as { code?: string }).code,
+        meta: (intakeError as { meta?: unknown }).meta
+      } : String(intakeError)
+    })
     return {
       status: "error",
       message: "Der Dokumenteingang konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
