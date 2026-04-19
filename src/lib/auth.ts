@@ -33,6 +33,73 @@ function mapAdminFromEntraRoles(roles: unknown): boolean {
   return list.some((r) => adminRoles.includes(r))
 }
 
+// --- SBS corporate domain auto-elevation ---
+// Rule: Every user whose email ends with @sbsdeutschland.de or @sbsdeutschland.com
+// is automatically granted ADMIN role + OWNER membership on the sbs-deutschland tenant.
+// Enforced at every sign-in (not only JIT) so state stays consistent across providers.
+
+const SBS_CORPORATE_DOMAINS = ["sbsdeutschland.de", "sbsdeutschland.com"]
+const SBS_TENANT_SLUG = "sbs-deutschland"
+const SBS_TENANT_NAME = "SBS Deutschland GmbH & Co. KG"
+
+function isSbsCorporateEmail(email: string | null | undefined): boolean {
+  if (!email) return false
+  const normalized = email.trim().toLowerCase()
+  const atIndex = normalized.lastIndexOf("@")
+  if (atIndex === -1) return false
+  const domain = normalized.slice(atIndex + 1)
+  return SBS_CORPORATE_DOMAINS.includes(domain)
+}
+
+async function ensureSbsCorporateElevation(userId: string): Promise<void> {
+  // 1. Elevate global Role to ADMIN (idempotent)
+  await prisma.user
+    .update({ where: { id: userId }, data: { role: Role.ADMIN } })
+    .catch((error) => {
+      console.warn("[auth.sbs_elevation.role_update_failed]", {
+        userId,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    })
+
+  // 2. Ensure sbs-deutschland tenant exists
+  const tenant = await prisma.tenant
+    .upsert({
+      where: { slug: SBS_TENANT_SLUG },
+      update: {},
+      create: { slug: SBS_TENANT_SLUG, name: SBS_TENANT_NAME }
+    })
+    .catch((error) => {
+      console.error("[auth.sbs_elevation.tenant_upsert_failed]", {
+        userId,
+        error: error instanceof Error ? error.message : String(error)
+      })
+      return null
+    })
+
+  if (!tenant) return
+
+  // 3. Attach user as OWNER of the sbs-deutschland tenant (idempotent upsert)
+  await prisma.tenantMember
+    .upsert({
+      where: { tenantId_userId: { tenantId: tenant.id, userId } },
+      update: { role: TenantRole.OWNER },
+      create: { tenantId: tenant.id, userId, role: TenantRole.OWNER }
+    })
+    .catch((error) => {
+      console.warn("[auth.sbs_elevation.membership_upsert_failed]", {
+        userId,
+        tenantId: tenant.id,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    })
+
+  console.info("[auth.sbs_elevation.applied]", {
+    userId,
+    tenantId: tenant.id
+  })
+}
+
 export const authConfig: NextAuthConfig = {
   adapter,
   secret: process.env.NEXTAUTH_SECRET,
@@ -98,7 +165,17 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     // Enterprise gate: Tenant-Scoping + JIT Provisioning for Entra users
+    // Plus: SBS corporate domain auto-elevation for ALL providers
     signIn: async ({ user, account, profile }) => {
+      // --- Phase 1: SBS corporate domain auto-elevation (all providers) ---
+      // Applies to Credentials, Google, Entra — any auth method.
+      // If the signed-in email matches a SBS corporate domain, the user is
+      // automatically promoted to ADMIN and attached as OWNER of sbs-deutschland.
+      if (user?.id && isSbsCorporateEmail(user.email)) {
+        await ensureSbsCorporateElevation(user.id)
+      }
+
+      // --- Phase 2: Entra-specific tenant gate + JIT provisioning ---
       if (account?.provider !== "microsoft-entra-id") return true
 
       const allowedTenants = parseCsvEnv("AUTH_MICROSOFT_ALLOWED_TENANT_IDS")
@@ -131,9 +208,13 @@ export const authConfig: NextAuthConfig = {
       }
 
       // Persist internal Role on User (DB session uses user.role)
-      await prisma.user
-        .update({ where: { id: user.id }, data: { role: newUserRole } })
-        .catch(() => null)
+      // NOTE: For SBS corporate users, this would downgrade them from ADMIN → ASSISTENT
+      // if Entra didn't provision admin roles. We skip this for SBS domain users.
+      if (!isSbsCorporateEmail(user.email)) {
+        await prisma.user
+          .update({ where: { id: user.id }, data: { role: newUserRole } })
+          .catch(() => null)
+      }
 
       return true
     },
