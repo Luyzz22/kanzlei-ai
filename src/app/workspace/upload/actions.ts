@@ -42,7 +42,6 @@ const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024
 
 type OptionalUploadFileResolution =
   | { kind: "none" }
-  | { kind: "empty" }
   | { kind: "file"; file: File }
 
 function normalizeOptionalUploadFile(fileInput: FormDataEntryValue | null): OptionalUploadFileResolution {
@@ -50,12 +49,14 @@ function normalizeOptionalUploadFile(fileInput: FormDataEntryValue | null): Opti
     return { kind: "none" }
   }
 
-  if (fileInput.name.trim().length === 0) {
+  // Defensive: browsers (and React Server Actions) submit a stub File object
+  // even when no file was selected. The stub typically has size=0 and an
+  // empty/whitespace-only name. Since the file input is OPTIONAL per form
+  // spec, we treat any size=0 file or empty-name file as "no upload" rather
+  // than as a validation error. A real "empty file" case (named, 0 bytes)
+  // is implausible and not worth blocking the user over.
+  if (fileInput.size <= 0 || fileInput.name.trim().length === 0) {
     return { kind: "none" }
-  }
-
-  if (fileInput.size <= 0) {
-    return { kind: "empty" }
   }
 
   return { kind: "file", file: fileInput }
@@ -122,16 +123,26 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
     }
   }
 
-  const uploadFileResolution = normalizeOptionalUploadFile(formData.get("file"))
+  const rawFileInput = formData.get("file")
+  const uploadFileResolution = normalizeOptionalUploadFile(rawFileInput)
 
-  if (uploadFileResolution.kind === "empty") {
-    return {
-      status: "error",
-      message: "Die ausgewählte Datei ist leer.",
-      fieldErrors: {
-        file: "Bitte wählen Sie eine Datei mit Inhalt aus."
-      }
-    }
+  // Diagnostic logging: trace what the browser actually sends as the file input.
+  // This helps debug cases where users report the file pathway being triggered
+  // even when they did not attach a file.
+  if (rawFileInput instanceof File) {
+    console.info("[intake.file_input_received]", {
+      name: rawFileInput.name,
+      size: rawFileInput.size,
+      type: rawFileInput.type,
+      lastModified: rawFileInput.lastModified,
+      resolutionKind: uploadFileResolution.kind
+    })
+  } else {
+    console.info("[intake.file_input_received]", {
+      isFile: false,
+      rawType: typeof rawFileInput,
+      resolutionKind: uploadFileResolution.kind
+    })
   }
 
   const file = uploadFileResolution.kind === "file" ? uploadFileResolution.file : null
