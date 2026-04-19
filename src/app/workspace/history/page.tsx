@@ -1,190 +1,256 @@
-"use client"
-
-import { useState, useEffect } from "react"
 import Link from "next/link"
+import { redirect } from "next/navigation"
+
+import { auth } from "@/lib/auth"
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
+import { withTenant } from "@/lib/tenant-context.server"
+
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
+const dateTimeFormatter = new Intl.DateTimeFormat("de-DE", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit"
+})
 
 type HistoryEntry = {
   id: string
-  date: string
-  model: string
-  riskScore: number | null
-  findingsCount: number
-  product: string
-  result?: string
+  documentId: string
+  documentTitle: string
+  documentType: string
+  organizationName: string
+  status: string
+  reviewState: string
+  primaryProvider: string | null
+  primaryModel: string | null
+  startedAt: Date
+  completedAt: Date | null
+  totalTokensUsed: number
+  totalCostEstimate: number
+  durationMs: number | null
+  riskScore01: number | null
+  aggregateConfidence: number | null
 }
 
-export default function HistoryPage() {
-  const [history, setHistory] = useState<HistoryEntry[]>([])
-  const [search, setSearch] = useState("")
-  const [exporting, setExporting] = useState<string | null>(null)
+const statusToLabel: Record<string, { label: string; tone: "info" | "success" | "warning" | "risk" }> = {
+  QUEUED: { label: "Eingereiht", tone: "info" },
+  RUNNING: { label: "Läuft", tone: "info" },
+  COMPLETED: { label: "Abgeschlossen", tone: "success" },
+  FAILED: { label: "Fehlgeschlagen", tone: "risk" }
+}
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("kanzlei-analysis-history")
-      if (stored) setHistory(JSON.parse(stored))
-    } catch {}
-  }, [])
+const reviewStateLabel: Record<string, string> = {
+  UNGEPRUEFT: "Ungeprüft",
+  ENTWURF: "Entwurf",
+  ANALYSIERT: "Analysiert",
+  IN_PRUEFUNG: "In Prüfung",
+  FREIGEGEBEN: "Freigegeben",
+  ZURUECKGEWIESEN: "Zurückgewiesen",
+  WIEDERHOLUNG_ANGEFORDERT: "Wiederholung angefordert"
+}
 
-  const filtered = search
-    ? history.filter(h => h.product.toLowerCase().includes(search.toLowerCase()) || h.model.toLowerCase().includes(search.toLowerCase()))
-    : history
+const toneClass: Record<"info" | "success" | "warning" | "risk", string> = {
+  info: "bg-blue-100 text-blue-700",
+  success: "bg-emerald-100 text-emerald-700",
+  warning: "bg-amber-100 text-amber-700",
+  risk: "bg-rose-100 text-rose-700"
+}
 
-  const loadInCopilot = (entry: HistoryEntry) => {
-    if (entry.result) {
-      sessionStorage.setItem("copilot-contract-context", entry.result)
-      sessionStorage.setItem("copilot-contract-name", entry.product)
-      window.location.href = "/workspace/copilot"
-    }
+async function loadHistoryForTenant(tenantId: string): Promise<HistoryEntry[]> {
+  return withTenant(tenantId, async (tx) => {
+    const runs = await tx.analysisRun.findMany({
+      orderBy: [{ startedAt: "desc" }],
+      take: 100,
+      select: {
+        id: true,
+        documentId: true,
+        status: true,
+        reviewState: true,
+        primaryProvider: true,
+        primaryModel: true,
+        startedAt: true,
+        completedAt: true,
+        totalTokensUsed: true,
+        totalCostEstimate: true,
+        durationMs: true,
+        riskScore01: true,
+        aggregateConfidence: true,
+        document: {
+          select: {
+            title: true,
+            documentType: true,
+            organizationName: true
+          }
+        }
+      }
+    })
+
+    return runs.map((run) => ({
+      id: run.id,
+      documentId: run.documentId,
+      documentTitle: run.document?.title ?? "Unbekanntes Dokument",
+      documentType: run.document?.documentType ?? "—",
+      organizationName: run.document?.organizationName ?? "—",
+      status: run.status,
+      reviewState: run.reviewState,
+      primaryProvider: run.primaryProvider,
+      primaryModel: run.primaryModel,
+      startedAt: run.startedAt,
+      completedAt: run.completedAt,
+      totalTokensUsed: run.totalTokensUsed,
+      totalCostEstimate: run.totalCostEstimate,
+      durationMs: run.durationMs,
+      riskScore01: run.riskScore01,
+      aggregateConfidence: run.aggregateConfidence
+    }))
+  })
+}
+
+export default async function HistoryPage() {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    redirect("/login?next=/workspace/history")
   }
 
-  const exportCSV = async () => {
-    setExporting("csv")
-    try {
-      const res = await fetch("/api/export/csv", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ analyses: filtered })
-      })
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a"); a.href = url; a.download = `analysen-${Date.now()}.csv`; a.click()
-      URL.revokeObjectURL(url)
-    } catch {} finally { setExporting(null) }
+  const tenantContext = await resolveTenantContextForUser(session.user.id)
+
+  if (tenantContext.status !== "single") {
+    return (
+      <div className="mx-auto max-w-2xl px-5 py-16 text-center">
+        <span className="text-[36px]">🔒</span>
+        <h1 className="mt-4 text-[20px] font-semibold text-gray-950">Mandantenkontext nicht eindeutig</h1>
+        <p className="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-gray-500">
+          Die Analyse-Historie benötigt einen eindeutigen Mandantenkontext.
+        </p>
+      </div>
+    )
   }
 
-  const exportDATEV = async () => {
-    setExporting("datev")
-    try {
-      const res = await fetch("/api/export/datev", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ analyses: filtered })
-      })
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a"); a.href = url; a.download = `datev-export-${Date.now()}.csv`; a.click()
-      URL.revokeObjectURL(url)
-    } catch {} finally { setExporting(null) }
+  let entries: HistoryEntry[] = []
+  let loadError: string | null = null
+
+  try {
+    entries = await loadHistoryForTenant(tenantContext.tenantId)
+  } catch (error) {
+    console.error("[workspace.history.list_failed]", {
+      tenantId: tenantContext.tenantId,
+      userId: session.user.id,
+      error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : String(error)
+    })
+    loadError = "Die Analyse-Historie konnte nicht geladen werden. Bitte versuchen Sie es erneut."
   }
 
-  const clearHistory = () => {
-    if (confirm("Alle Analysen aus dem Verlauf löschen?")) {
-      localStorage.removeItem("kanzlei-analysis-history")
-      setHistory([])
-    }
-  }
-
-  const avgRisk = filtered.filter(h => h.riskScore !== null).length > 0
-    ? Math.round(filtered.filter(h => h.riskScore !== null).reduce((s, h) => s + (h.riskScore || 0), 0) / filtered.filter(h => h.riskScore !== null).length)
-    : null
+  const completedRuns = entries.filter((e) => e.status === "COMPLETED").length
+  const totalCost = entries.reduce((sum, e) => sum + (e.totalCostEstimate || 0), 0)
+  const totalTokens = entries.reduce((sum, e) => sum + (e.totalTokensUsed || 0), 0)
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">📋 Workspace</p>
-          <h1 className="mt-2 text-[1.75rem] font-semibold tracking-tight text-gray-950">Analyseverlauf</h1>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={exportCSV} disabled={!filtered.length || exporting === "csv"} className="rounded-full border border-gray-200 bg-white px-4 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
-            {exporting === "csv" ? "..." : "📊 CSV"}
-          </button>
-          <button onClick={exportDATEV} disabled={!filtered.length || exporting === "datev"} className="rounded-full border border-gray-200 bg-white px-4 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
-            {exporting === "datev" ? "..." : "🏦 DATEV"}
-          </button>
-          <Link href="/workspace/analyse" className="rounded-full bg-[#003856] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#002a42]">⚡ Neue Analyse</Link>
-        </div>
-      </div>
+    <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8">
+      <header>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">📜 Verlauf</p>
+        <h1 className="mt-2 text-[1.75rem] font-semibold tracking-tight text-gray-950">Analyse-Historie</h1>
+        <p className="mt-1 text-[14px] text-gray-500">
+          {entries.length === 0
+            ? "Noch keine Analyse-Läufe vorhanden."
+            : `${entries.length} ${entries.length === 1 ? "Analyse-Lauf" : "Analyse-Läufe"} · neueste zuerst`}
+        </p>
+      </header>
 
-      {/* Stats Bar */}
-      {history.length > 0 && (
-        <div className="mt-6 grid gap-3 sm:grid-cols-4">
-          <div className="rounded-xl border border-gray-100 bg-white p-3 text-center">
-            <p className="text-[18px] font-semibold text-gray-950">{filtered.length}</p>
-            <p className="text-[11px] text-gray-400">Analysen</p>
+      {loadError ? (
+        <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-800">
+          {loadError}
+        </div>
+      ) : null}
+
+      {entries.length > 0 ? (
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-gray-100 bg-white p-4">
+            <p className="text-[11px] uppercase tracking-wider text-gray-400">Abgeschlossen</p>
+            <p className="mt-1 text-[22px] font-semibold text-emerald-600">{completedRuns}</p>
           </div>
-          <div className="rounded-xl border border-gray-100 bg-white p-3 text-center">
-            <p className={`text-[18px] font-semibold ${avgRisk !== null ? (avgRisk >= 70 ? "text-red-600" : avgRisk >= 40 ? "text-amber-600" : "text-emerald-600") : "text-gray-400"}`}>
-              {avgRisk ?? "—"}
+          <div className="rounded-xl border border-gray-100 bg-white p-4">
+            <p className="text-[11px] uppercase tracking-wider text-gray-400">Tokens insgesamt</p>
+            <p className="mt-1 text-[22px] font-semibold text-gray-900">{totalTokens.toLocaleString("de-DE")}</p>
+          </div>
+          <div className="rounded-xl border border-gray-100 bg-white p-4">
+            <p className="text-[11px] uppercase tracking-wider text-gray-400">Kosten geschätzt</p>
+            <p className="mt-1 text-[22px] font-semibold text-gray-900">
+              {totalCost.toLocaleString("de-DE", { style: "currency", currency: "USD", maximumFractionDigits: 4 })}
             </p>
-            <p className="text-[11px] text-gray-400">Ø Risiko</p>
-          </div>
-          <div className="rounded-xl border border-gray-100 bg-white p-3 text-center">
-            <p className="text-[18px] font-semibold text-gray-950">{filtered.reduce((s, h) => s + h.findingsCount, 0)}</p>
-            <p className="text-[11px] text-gray-400">Risiken gesamt</p>
-          </div>
-          <div className="rounded-xl border border-gray-100 bg-white p-3 text-center">
-            <p className="text-[18px] font-semibold text-gray-950">{filtered.filter(h => (h.riskScore ?? 0) >= 70).length}</p>
-            <p className="text-[11px] text-gray-400">Hochrisiko</p>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Search */}
-      <div className="mt-6">
-        <input
-          type="text"
-          placeholder="🔍 Analysen durchsuchen..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-400 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200"
-        />
-      </div>
-
-      {/* List */}
-      {filtered.length === 0 ? (
-        <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-12 text-center">
-          <span className="text-[40px]">📋</span>
-          <h2 className="mt-4 text-[17px] font-semibold text-gray-900">{search ? "Keine Treffer" : "Noch keine Analysen"}</h2>
-          <p className="mx-auto mt-2 max-w-md text-[14px] text-gray-500">{search ? "Versuchen Sie einen anderen Suchbegriff." : "Starten Sie Ihre erste Vertragsanalyse."}</p>
-          {!search && <Link href="/workspace/analyse" className="mt-6 inline-block rounded-full bg-[#003856] px-6 py-3 text-[14px] font-medium text-white hover:bg-[#002a42]">⚡ Schnellanalyse starten</Link>}
+      {entries.length === 0 && !loadError ? (
+        <div className="mt-10 rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+          <span className="text-[40px]">⏱️</span>
+          <h2 className="mt-4 text-[18px] font-semibold text-gray-900">Noch keine Analyse-Läufe</h2>
+          <p className="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-gray-500">
+            Sobald die erste KI-Analyse eines Dokuments läuft, erscheint hier ein vollständiger,
+            auditierbarer Verlauf inkl. Provider, Modell, Kosten und Token-Verbrauch.
+          </p>
+          <Link
+            href="/workspace/upload"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#003856] px-5 py-2.5 text-[13px] font-medium text-white hover:bg-[#002a42]"
+          >
+            📤 Dokument erfassen
+          </Link>
         </div>
       ) : (
-        <div className="mt-4 space-y-2">
-          {filtered.map((entry) => (
-            <Link
-              key={entry.id}
-              href={`/workspace/history/${entry.id}`}
-              className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-4 transition-all hover:border-gold-300 hover:shadow-card"
-            >
-              <div className="flex items-center gap-4">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${(entry.riskScore ?? 0) >= 70 ? "bg-red-100" : (entry.riskScore ?? 0) >= 40 ? "bg-amber-100" : "bg-emerald-100"}`}>
-                  <span className={`text-[14px] font-bold ${(entry.riskScore ?? 0) >= 70 ? "text-red-700" : (entry.riskScore ?? 0) >= 40 ? "text-amber-700" : "text-emerald-700"}`}>
-                    {entry.riskScore ?? "—"}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-[14px] font-medium text-gray-900">{entry.product}</p>
-                  <p className="text-[12px] text-gray-400">
-                    {new Date(entry.date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                    {" · "}{entry.model} · {entry.findingsCount} Risiken
+        <div className="mt-8 overflow-hidden rounded-xl border border-gray-200">
+          <div className="hidden bg-gray-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 sm:grid sm:grid-cols-[1.4fr_1fr_120px_120px_120px]">
+            <span>Dokument</span>
+            <span>Provider · Modell</span>
+            <span>Status</span>
+            <span>Risiko</span>
+            <span>Gestartet</span>
+          </div>
+
+          {entries.map((entry) => {
+            const statusInfo = statusToLabel[entry.status] ?? { label: entry.status, tone: "info" as const }
+            const riskPercent = entry.riskScore01 !== null ? Math.round(entry.riskScore01 * 100) : null
+            return (
+              <Link
+                key={entry.id}
+                href={`/workspace/dokumente/${entry.documentId}`}
+                className="grid border-b border-gray-100 bg-white px-5 py-4 last:border-b-0 transition-colors hover:bg-gold-50/30 sm:grid-cols-[1.4fr_1fr_120px_120px_120px] sm:items-center"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-[14px] font-medium text-gray-900">{entry.documentTitle}</p>
+                  <p className="mt-0.5 text-[11px] text-gray-400">
+                    {entry.documentType} · {entry.organizationName} · {reviewStateLabel[entry.reviewState] ?? entry.reviewState}
                   </p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {entry.result && (
-                  <button
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); loadInCopilot(entry) }}
-                    className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    🤖 Copilot
-                  </button>
-                )}
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${(entry.riskScore ?? 0) >= 70 ? "bg-red-100 text-red-700" : (entry.riskScore ?? 0) >= 40 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
-                  {(entry.riskScore ?? 0) >= 70 ? "Hoch" : (entry.riskScore ?? 0) >= 40 ? "Mittel" : "Niedrig"}
+                <div className="mt-2 sm:mt-0">
+                  <p className="text-[12px] font-medium text-gray-700">{entry.primaryProvider ?? "—"}</p>
+                  <p className="text-[11px] text-gray-400">{entry.primaryModel ?? "kein Modell"}</p>
+                </div>
+                <span
+                  className={`mt-2 inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold sm:mt-0 ${toneClass[statusInfo.tone]}`}
+                >
+                  {statusInfo.label}
                 </span>
-                <span className="text-[14px] text-gray-300">›</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {/* Footer Actions */}
-      {history.length > 0 && (
-        <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-4">
-          <p className="text-[12px] text-gray-400">{history.length} Analysen gespeichert (lokal)</p>
-          <button onClick={clearHistory} className="text-[12px] font-medium text-red-500 hover:text-red-600">Verlauf löschen</button>
+                <span
+                  className={`mt-2 text-[13px] font-semibold sm:mt-0 ${
+                    riskPercent === null
+                      ? "text-gray-300"
+                      : riskPercent >= 70
+                      ? "text-rose-600"
+                      : riskPercent >= 40
+                      ? "text-amber-600"
+                      : "text-emerald-600"
+                  }`}
+                >
+                  {riskPercent !== null ? `${riskPercent}%` : "—"}
+                </span>
+                <span className="mt-2 text-[12px] text-gray-500 sm:mt-0">{dateTimeFormatter.format(entry.startedAt)}</span>
+              </Link>
+            )
+          })}
         </div>
       )}
     </div>
