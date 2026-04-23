@@ -2,8 +2,10 @@ import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 
 import { ProcessingTriggerForm } from "@/app/workspace/dokumente/[id]/processing-trigger-form"
+import { ContractAnalysisPanel } from "@/components/documents/contract-analysis-panel"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
+import { getWorkbenchAiContractAnalysis } from "@/lib/documents/analysis-run-core"
 import {
   getDocumentProcessingStatusLabel,
   getDocumentProcessingStatusTone,
@@ -12,6 +14,7 @@ import {
   getWorkspaceDocumentStatusTone,
   type WorkspaceDocumentStatusTone
 } from "@/lib/documents/workspace-core"
+import { serializeWorkbenchAiContractAnalysis } from "@/lib/documents/workbench-core"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -92,6 +95,36 @@ export default async function DokumentDetailPage({ params }: { params: { id: str
   if (!document) {
     notFound()
   }
+
+  // --- KI-Vertragsanalyse: letzten Lauf laden (tenant-scoped, membership-gepruft) ---
+  let aiContractAnalysis: Awaited<ReturnType<typeof getWorkbenchAiContractAnalysis>> = null
+  try {
+    aiContractAnalysis = await getWorkbenchAiContractAnalysis(
+      tenantContext.tenantId,
+      session.user.id,
+      document.id
+    )
+  } catch (error) {
+    console.error("[workspace.dokumente.ai_analysis_load_failed]", {
+      tenantId: tenantContext.tenantId,
+      documentId: document.id,
+      userId: session.user.id,
+      error: error instanceof Error ? { name: error.name, message: error.message } : String(error)
+    })
+  }
+
+  const serializedAnalysis = serializeWorkbenchAiContractAnalysis(aiContractAnalysis)
+
+  // KI-Vertragsanalyse darf nur starten, wenn Textextraktion erfolgreich war
+  // und ein nicht-leerer Textauszug vorliegt. runPersistedContractAnalysis
+  // prueft das serverseitig zusaetzlich — das hier ist nur das UX-Gate.
+  const canStartAnalysis =
+    document.processingStatus === "VERARBEITET" &&
+    Boolean(document.extractedTextPreview && document.extractedTextPreview.trim().length > 0)
+
+  // Hinweis: Review-Berechtigung wird serverseitig in submitAnalysisFindingReviewAction
+  // erneut geprueft (Platform-Role + Tenant-Role). Hier nur UX-Gate fuer das Panel.
+  const canReviewFindings = true
 
   const hasFile = Boolean(document.storageKey)
   const statusTone = getWorkspaceDocumentStatusTone(document.status)
@@ -267,6 +300,50 @@ export default async function DokumentDetailPage({ params }: { params: { id: str
               </div>
             </section>
           ) : null}
+
+          {/* KI-Vertragsanalyse — Inline-Trigger + letzter Lauf */}
+          {document.processingStatus === "VERARBEITET" ? (
+            <section aria-labelledby="ai-analysis-heading" className="rounded-2xl border border-gold-200 bg-gradient-to-br from-white to-gold-50/30 p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">
+                    🧠 KI-Vertragsanalyse
+                  </p>
+                  <h2
+                    id="ai-analysis-heading"
+                    className="mt-2 text-[1.125rem] font-semibold tracking-tight text-gray-950"
+                  >
+                    Strukturierte Analyse &amp; Risiko-Bewertung
+                  </h2>
+                  <p className="mt-1 text-[13px] leading-relaxed text-gray-500">
+                    Multi-Provider-Pipeline (Extraktion, Risiko, Handlungsempfehlungen). Ergebnisse
+                    sind mandantenbezogen persistiert und zur fachlichen Prüfung bestimmt — keine
+                    automatische Rechtsberatung.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <ContractAnalysisPanel
+                  documentId={document.id}
+                  canStartAnalysis={canStartAnalysis}
+                  canReviewFindings={canReviewFindings}
+                  analysis={serializedAnalysis}
+                />
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-gray-500">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Mandant: <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono">{tenantContext.tenantId.slice(0, 8)}…</code>
+                </span>
+                <span>·</span>
+                <Link href="/workspace/history" className="text-gold-700 underline-offset-2 hover:underline">
+                  Alle Läufe in der Historie →
+                </Link>
+              </div>
+            </section>
+          ) : null}
         </div>
 
         {/* Sidebar */}
@@ -275,8 +352,8 @@ export default async function DokumentDetailPage({ params }: { params: { id: str
             <h2 className="text-[14px] font-semibold text-gray-900">⚡ Schnellaktionen</h2>
             <div className="mt-4 space-y-2">
               <Link
-                href={`/workspace/analyse?documentId=${document.id}`}
-                className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-[13px] font-medium text-gray-700 hover:bg-gold-50"
+                href="#ai-analysis-heading"
+                className="flex items-center gap-2 rounded-lg border border-gold-200 bg-gold-50 px-3 py-2.5 text-[13px] font-medium text-gray-900 hover:bg-gold-100"
               >
                 🧠 Vertrag analysieren
               </Link>
@@ -291,6 +368,18 @@ export default async function DokumentDetailPage({ params }: { params: { id: str
                 className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-[13px] font-medium text-gray-700 hover:bg-gold-50"
               >
                 ⚖️ Mit AGB vergleichen
+              </Link>
+              <Link
+                href={`/workspace/dokumente/${document.id}/dossier`}
+                className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-[13px] font-medium text-gray-700 hover:bg-gold-50"
+              >
+                📋 Vertragsdossier öffnen
+              </Link>
+              <Link
+                href={`/workspace/dokumente/${document.id}/evidence`}
+                className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-[13px] font-medium text-gray-700 hover:bg-gold-50"
+              >
+                🔐 Nachweise &amp; Audit-Trail
               </Link>
               {hasFile ? (
                 <a
