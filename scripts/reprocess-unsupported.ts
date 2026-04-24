@@ -38,13 +38,13 @@ type ReprocessTarget = {
   title: string
   filename: string
   processingStatus: string
-  uploadedById: string
+  uploadedById: string | null
 }
 
 async function main(): Promise<void> {
   const dryRun = process.env.REPROCESS_DRY_RUN === "1" || process.env.REPROCESS_DRY_RUN === "true"
   const tenantFilter = process.env.REPROCESS_TENANTS?.trim()
-    ? process.env.REPROCESS_TENANTS.split(",").map((t) => t.trim()).filter(Boolean)
+    ? process.env.REPROCESS_TENANTS.split(",").map((t: string) => t.trim()).filter(Boolean)
     : null
 
   console.log("=".repeat(70))
@@ -93,10 +93,23 @@ async function main(): Promise<void> {
   let successCount = 0
   let failedCount = 0
   let unsupportedCount = 0
+  let skippedCount = 0
   const errors: Array<{ documentId: string; title: string; error: string }> = []
 
   for (const target of targets) {
     process.stdout.write(`  Reprocessing ${target.id.slice(0, 10)}… (${target.title.slice(0, 40)})... `)
+
+    // AuditEvent verlangt einen actorId. Wenn uploadedById null ist (selten:
+    // z. B. System-Imports, geseedete Docs), muessen wir das Doc ueberspringen
+    // oder einen Admin als Actor erzwingen. Wir ueberspringen hier bewusst,
+    // damit der Audit-Trail korrekt bleibt und nie ein fremder User als
+    // Reprocess-Actor auftaucht.
+    if (!target.uploadedById) {
+      console.log("⏭️  uebersprungen (kein uploadedById — wahrscheinlich Seed-Doc)")
+      skippedCount++
+      continue
+    }
+
     try {
       const result = await processDocumentExtraction({
         tenantId: target.tenantId,
@@ -151,6 +164,7 @@ async function main(): Promise<void> {
   console.log(`✅ Erfolgreich verarbeitet:      ${successCount}`)
   console.log(`⚠️  Weiterhin nicht unterstuetzt: ${unsupportedCount}`)
   console.log(`❌ Fehlgeschlagen:              ${failedCount}`)
+  console.log(`⏭️  Uebersprungen (kein actor):  ${skippedCount}`)
   console.log(`   Gesamt:                      ${targets.length}`)
 
   if (errors.length > 0) {
