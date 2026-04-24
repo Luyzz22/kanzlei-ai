@@ -8,7 +8,11 @@ import {
 } from "@/app/workspace/dokumente/[id]/actions"
 import { AnalysisFindingReviewForm } from "@/components/documents/analysis-finding-review-form"
 import { StatusBadge } from "@/components/marketing/status-badge"
-import type { WorkbenchAiContractAnalysisProps } from "@/types/ai-workbench"
+import type {
+  WorkbenchAiContractAnalysisProps,
+  WorkbenchStructuredData,
+  WorkbenchDeadlines
+} from "@/types/ai-workbench"
 
 const initialState: ContractAnalysisFormState = {
   status: "idle"
@@ -118,6 +122,42 @@ type ContractAnalysisPanelProps = {
   analysis: WorkbenchAiContractAnalysisProps | null
 }
 
+// --- v2 Helper functions for structuredData + deadlines rendering ---
+
+function hasAnyStructuredDataField(sd: WorkbenchStructuredData): boolean {
+  return Object.values(sd).some((v) => v !== null && v !== undefined && v !== "")
+}
+
+function hasAnyDeadlinesField(d: WorkbenchDeadlines): boolean {
+  return Object.values(d).some((v) => v !== null && v !== undefined && v !== "")
+}
+
+function formatBoolean(v: boolean | null | undefined): string | null {
+  if (v === true) return "Ja"
+  if (v === false) return "Nein"
+  return null
+}
+
+function formatDays(v: number | null | undefined): string | null {
+  if (v == null) return null
+  return `${v} Tage`
+}
+
+function formatMonths(v: number | null | undefined): string | null {
+  if (v == null) return null
+  return `${v} Monate`
+}
+
+function StructuredDataRow({ label, value }: { label: string; value: string | null | undefined }) {
+  if (value == null || value === "") return null
+  return (
+    <div className="flex flex-col">
+      <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</dt>
+      <dd className="mt-0.5 text-sm text-slate-800">{value}</dd>
+    </div>
+  )
+}
+
 export function ContractAnalysisPanel({
   documentId,
   canStartAnalysis,
@@ -219,31 +259,125 @@ export function ContractAnalysisPanel({
           ) : null}
 
           {analysis.extraction ? (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Extraktion</p>
-              <p className="mt-1 text-sm font-medium text-slate-900">Vertragstyp: {analysis.extraction.contractType}</p>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Extraktion</p>
+                <p className="mt-1 text-sm font-medium text-slate-900">Vertragstyp: {analysis.extraction.contractType}</p>
+              </div>
+
+              {/* v2: Strukturierte Businessdaten als 2-Spalten-Grid */}
+              {analysis.extraction.structuredData &&
+              hasAnyStructuredDataField(analysis.extraction.structuredData) ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    📊 Extrahierte Daten
+                  </p>
+                  <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                    <StructuredDataRow label="Kunde" value={analysis.extraction.structuredData.customer} />
+                    <StructuredDataRow label="Anbieter" value={analysis.extraction.structuredData.vendor} />
+                    <StructuredDataRow label="Produkt" value={analysis.extraction.structuredData.product} />
+                    <StructuredDataRow label="Gerichtsstand" value={analysis.extraction.structuredData.jurisdiction} />
+                    <StructuredDataRow label="Anwendbares Recht" value={analysis.extraction.structuredData.applicableLaw} />
+                    <StructuredDataRow label="Haftungsgrenze" value={analysis.extraction.structuredData.liabilityLimit} />
+                    <StructuredDataRow
+                      label="Geheimhaltung"
+                      value={formatBoolean(analysis.extraction.structuredData.confidentialityObligation)}
+                    />
+                    <StructuredDataRow label="Vertragsstrafe" value={analysis.extraction.structuredData.penaltyClause} />
+                    <StructuredDataRow label="IP-Rechte" value={analysis.extraction.structuredData.intellectualProperty} />
+                    <StructuredDataRow
+                      label="AVV vorhanden"
+                      value={formatBoolean(analysis.extraction.structuredData.dataProcessingAgreement)}
+                    />
+                    <StructuredDataRow label="Datenlokation" value={analysis.extraction.structuredData.dataLocation} />
+                    <StructuredDataRow
+                      label="Datenexport-Klausel"
+                      value={formatBoolean(analysis.extraction.structuredData.dataExportClause)}
+                    />
+                  </dl>
+                </div>
+              ) : null}
+
+              {/* v2: Deadlines-Strip */}
+              {analysis.extraction.deadlines &&
+              hasAnyDeadlinesField(analysis.extraction.deadlines) ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    📅 Fristen &amp; Termine
+                  </p>
+                  <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                    <StructuredDataRow
+                      label="Kündigungsfrist"
+                      value={formatDays(analysis.extraction.deadlines.noticePeriodDays)}
+                    />
+                    <StructuredDataRow
+                      label="Auto-Verlängerung"
+                      value={formatBoolean(analysis.extraction.deadlines.autoRenewal)}
+                    />
+                    <StructuredDataRow
+                      label="Verlängerungszeitraum"
+                      value={formatMonths(analysis.extraction.deadlines.renewalTermMonths)}
+                    />
+                    <StructuredDataRow
+                      label="Vertragsbeginn"
+                      value={analysis.extraction.deadlines.contractStartDate}
+                    />
+                    <StructuredDataRow
+                      label="Vertragsende"
+                      value={analysis.extraction.deadlines.contractEndDate}
+                    />
+                    <StructuredDataRow
+                      label="Nächster Kündigungstermin"
+                      value={analysis.extraction.deadlines.nextCancellationDate}
+                    />
+                    <StructuredDataRow
+                      label="Gewährleistung"
+                      value={formatMonths(analysis.extraction.deadlines.warrantyPeriodMonths)}
+                    />
+                  </dl>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
           {analysis.findings.length ? (
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Wesentliche Findings</p>
-              <ul className="mt-2 space-y-2">
+              <ul className="mt-2 space-y-3">
                 {analysis.findings.slice(0, 12).map((f) => (
-                  <li key={f.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
+                  <li key={f.id} className="rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
                       <span className="font-medium text-slate-900">{f.title}</span>
                       <StatusBadge label={severityLabel(f.severity)} tone={severityTone(f.severity)} />
                     </div>
-                    <p className="mt-1 text-slate-700">{f.description}</p>
-                    {f.confidence != null ? (
-                      <p className="mt-1 text-xs text-slate-500">Konfidenz: {f.confidence.toFixed(2)}</p>
+                    <p className="mt-2 text-slate-700">{f.description}</p>
+
+                    {/* v2: Original-Klauselzitat als Blockquote */}
+                    {f.sourceSpan ? (
+                      <blockquote className="mt-3 border-l-4 border-slate-300 bg-slate-50 py-2 pl-3 pr-3 text-xs italic leading-relaxed text-slate-600">
+                        &ldquo;{f.sourceSpan}&rdquo;
+                      </blockquote>
                     ) : null}
-                    {f.clauseRef ? (
-                      <p className="mt-1 text-xs text-slate-500">Klauselbezug: {f.clauseRef}</p>
+
+                    {/* v2: Formulierungsvorschlag als Fix-Kasten */}
+                    {f.suggestedRevision ? (
+                      <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50/60 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                          ✏️ Formulierungsvorschlag
+                        </p>
+                        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-emerald-900">
+                          {f.suggestedRevision}
+                        </p>
+                      </div>
                     ) : null}
+
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                      {f.confidence != null ? <span>Konfidenz: {f.confidence.toFixed(2)}</span> : null}
+                      {f.clauseRef ? <span>Klauselbezug: {f.clauseRef}</span> : null}
+                    </div>
+
                     {f.latestReview ? (
-                      <p className="mt-1 text-xs text-slate-600">
+                      <p className="mt-2 text-xs text-slate-600">
                         Letzte Prüfung: {findingDecisionLabel(f.latestReview.decision)}
                         {f.latestReview.comment ? ` — ${f.latestReview.comment}` : ""} ·{" "}
                         {new Date(f.latestReview.reviewedAt).toLocaleString("de-DE")}
