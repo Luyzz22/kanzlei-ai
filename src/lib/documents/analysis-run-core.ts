@@ -72,6 +72,10 @@ export type WorkbenchAiContractAnalysis = {
     parties: unknown
     term: unknown
     legalTopics: unknown
+    /** v2: strukturierte Businessdaten (Kunde, Anbieter, AVV, Haftung, ...) */
+    structuredData: unknown
+    /** v2: Deadlines (Kündigungsfristen, Vertragslaufzeit, ...) */
+    deadlines: unknown
   } | null
   findings: Array<{
     id: string
@@ -82,6 +86,8 @@ export type WorkbenchAiContractAnalysis = {
     confidence: number | null
     clauseRef: string | null
     sourceSpan: string | null
+    /** v2: konkreter Formulierungsvorschlag zur Risikominimierung */
+    suggestedRevision: string | null
     latestReview: {
       decision: string
       comment: string | null
@@ -163,7 +169,10 @@ export async function getWorkbenchAiContractAnalysis(
             contractType: run.extraction.contractType,
             parties: run.extraction.parties,
             term: run.extraction.term,
-            legalTopics: run.extraction.legalTopics
+            legalTopics: run.extraction.legalTopics,
+            // v2 — kann bei älteren Runs null sein (Backward Compat).
+            structuredData: run.extraction.structuredData ?? null,
+            deadlines: run.extraction.deadlines ?? null
           }
         : null,
       findings: run.findings.map((f) => {
@@ -177,6 +186,8 @@ export async function getWorkbenchAiContractAnalysis(
           confidence: f.confidence,
           clauseRef: f.clauseRef,
           sourceSpan: f.sourceSpan,
+          // v2 — bei älteren Findings null.
+          suggestedRevision: f.suggestedRevision,
           latestReview: r
             ? {
                 decision: r.decision,
@@ -403,6 +414,10 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
         parties: pipeline.extraction.parties as Prisma.InputJsonValue,
         term: pipeline.extraction.term as Prisma.InputJsonValue,
         legalTopics: pipeline.extraction.legalTopics as Prisma.InputJsonValue,
+        // v2: Strukturierte Businessdaten + Deadlines als optionale Json-Blobs.
+        // Null-safe: wenn das Modell sie nicht liefert, bleibt das Feld null.
+        structuredData: (pipeline.extraction.structuredData ?? null) as Prisma.InputJsonValue | null,
+        deadlines: (pipeline.extraction.deadlines ?? null) as Prisma.InputJsonValue | null,
         confidence: pipeline.extraction.extractionConfidence ?? null,
         promptVersion: pipeline.promptMetadata.extractionVersion,
         contentHash: pipeline.inputTextHash
@@ -422,7 +437,10 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
           confidence: f.confidence ?? null,
           sourceStage: AnalysisPipelineStageName.RISK_AND_GUIDANCE,
           clauseRef: f.clauseRef?.slice(0, 200) ?? null,
-          sourceSpan: null
+          // v2: quote landet in sourceSpan (bestehendes Feld, max Text).
+          // suggestedRevision ist ein neues Feld aus der v2-Migration.
+          sourceSpan: f.quote ?? null,
+          suggestedRevision: f.suggestedRevision ?? null
         }))
       })
     }
