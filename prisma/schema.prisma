@@ -132,6 +132,7 @@ model Tenant {
   analysisFindingReviews AnalysisFindingReview[]
   promptReleases         PromptRelease[]
   governanceSettings TenantGovernanceSettings?
+  dynamicsIntegration DynamicsIntegration?
 }
 
 model TenantMember {
@@ -607,4 +608,40 @@ model DocumentExtraction {
   analysisRun AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, documentId])
+}
+
+// =====================================================================
+// Microsoft Dynamics 365 Business Central Integration (per-Tenant)
+// =====================================================================
+// Eine Integration pro Tenant. clientSecretEncrypted enthaelt den via
+// AES-256-GCM verschluesselten Client-Secret ("v1:<iv>:<tag>:<ct>").
+//
+// Entschluesselung: siehe src/lib/dynamics/crypto.ts via
+// process.env.DYNAMICS_ENCRYPTION_KEY (32-byte Base64).
+// =====================================================================
+model DynamicsIntegration {
+  id                     String   @id @default(cuid())
+  tenantId               String   @unique
+
+  azureTenantId          String   @db.VarChar(64)
+  clientId               String   @db.VarChar(64)
+  clientSecretEncrypted  String   @db.Text
+
+  environment            String   @default("Production") @db.VarChar(64)
+  companyId              String?  @db.VarChar(64)
+  companyName            String?  @db.VarChar(200)
+  baseUrl                String   @default("https://api.businesscentral.dynamics.com/v2.0") @db.VarChar(300)
+
+  syncEnabled            Boolean  @default(false)
+  webhookEnabled         Boolean  @default(false)
+  lastSyncAt             DateTime?
+  lastSyncStatus         String?  @db.VarChar(32)
+  lastSyncError          String?  @db.Text
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
