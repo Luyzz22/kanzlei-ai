@@ -480,6 +480,7 @@ model AnalysisFinding {
   sourceStage   AnalysisPipelineStageName?
   clauseRef     String?  @db.VarChar(200)
   sourceSpan    String?  @db.Text
+  suggestedRevision String? @db.Text
   createdAt     DateTime @default(now())
 
   tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -594,6 +595,8 @@ model DocumentExtraction {
   parties        Json
   term           Json
   legalTopics    Json
+  structuredData Json?
+  deadlines      Json?
   confidence     Float?
   promptVersion  String   @db.VarChar(32)
   contentHash    String?  @db.VarChar(64)
