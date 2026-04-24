@@ -57,7 +57,9 @@ const contractJsonSchema = JSON.stringify(
             severity: { type: "string", enum: ["niedrig", "mittel", "hoch"] },
             explanation: { type: "string", description: "Erläuterung des Risikos und warum es relevant ist" },
             quote: { type: "string", description: "Exaktes Zitat der relevanten Vertragsklausel" },
-            suggestedRevision: { type: "string", description: "Konkreter Formulierungsvorschlag zur Risikominimierung. Formuliere eine alternative Klausel die das identifizierte Risiko adressiert." }
+            suggestedRevision: { type: "string", description: "Konkreter Formulierungsvorschlag zur Risikominimierung. Formuliere eine alternative Klausel die das identifizierte Risiko adressiert." },
+            confidence: { type: "number", minimum: 0, maximum: 1, description: "Konfidenz des Findings (0-1). Unified Schema v2." },
+            clauseRef: { type: "string", description: "Klausel-/Paragraphenverweis, z.B. '§ 3 Abs. 1'. Unified Schema v2." }
           },
           required: ["title", "severity", "explanation"]
         }
@@ -130,10 +132,11 @@ ANALYSE-SCHWERPUNKTE:
 2. Bewerte das Gesamtrisiko auf einer Skala von 0-100
 3. Identifiziere konkrete Risiken mit Schweregrad und Zitat der betreffenden Klausel
 4. Für jedes Risiko mit Severity "hoch": Formuliere einen konkreten Formulierungsvorschlag (suggestedRevision) der das Risiko adressiert
-5. Prüfe auf DSGVO/GDPR-Konformität, fehlende AVV/DPA, Datenlokation
-6. Bewerte Kündigungsfristen, Auto-Renewal, Haftungsbeschränkungen, Vertragsstrafen
-7. Extrahiere alle Fristen und Termine in das "deadlines"-Objekt (Kündigungsfrist, Auto-Renewal, Vertragsbeginn/-ende, nächster Kündigungstermin)
-8. Formuliere konkrete, umsetzbare Handlungsempfehlungen
+5. Für JEDES Finding: setze confidence (0-1, Unified Schema v2) und — wenn möglich — clauseRef (z.B. "§ 3 Abs. 1"). Beides ist optional, aber für Enterprise-Audit-Trails wichtig.
+6. Prüfe auf DSGVO/GDPR-Konformität, fehlende AVV/DPA, Datenlokation
+7. Bewerte Kündigungsfristen, Auto-Renewal, Haftungsbeschränkungen, Vertragsstrafen
+8. Extrahiere alle Fristen und Termine in das "deadlines"-Objekt (Kündigungsfrist, Auto-Renewal, Vertragsbeginn/-ende, nächster Kündigungstermin)
+9. Formuliere konkrete, umsetzbare Handlungsempfehlungen
 
 BESONDERE PRÜFPUNKTE FÜR EINKAUF & BESCHAFFUNG:
 - Limitation of Liability / Haftungsbeschränkungen zuungunsten des Auftraggebers
