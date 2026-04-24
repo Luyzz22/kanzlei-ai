@@ -69,6 +69,10 @@ export function getDocumentProcessingStatusTone(status: DocumentProcessingStatus
 export async function listWorkspaceDocuments(tenantId: string): Promise<WorkspaceDocumentItem[]> {
   return withTenant(tenantId, async (tx) => {
     const documents = await tx.document.findMany({
+      // Expliziter Tenant-Filter — defense-in-depth, unabhaengig von RLS.
+      // Solange RLS-Policies nicht aktiv sind, ist DIESE Zeile das einzige,
+      // was Cross-Tenant-Datenlecks in der Workspace-Liste verhindert.
+      where: { tenantId },
       orderBy: [{ createdAt: "desc" }],
       select: {
         id: true,
@@ -103,8 +107,12 @@ export async function listWorkspaceDocuments(tenantId: string): Promise<Workspac
 
 export async function getWorkspaceDocumentById(tenantId: string, documentId: string): Promise<WorkspaceDocumentDetail | null> {
   return withTenant(tenantId, async (tx) => {
-    const document = await tx.document.findUnique({
-      where: { id: documentId },
+    const document = await tx.document.findFirst({
+      // WICHTIG: findFirst statt findUnique, weil wir den Query um tenantId
+      // erweitern muessen. findUnique akzeptiert nur @unique-Felder als where.
+      // Der Index (id, tenantId) macht das trotzdem effizient; die id-Gleichheit
+      // greift sofort, tenantId ist eine zusaetzliche Filter-Bedingung.
+      where: { id: documentId, tenantId },
       select: {
         id: true,
         title: true,
