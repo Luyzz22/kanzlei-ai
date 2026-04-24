@@ -415,9 +415,17 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
         term: pipeline.extraction.term as Prisma.InputJsonValue,
         legalTopics: pipeline.extraction.legalTopics as Prisma.InputJsonValue,
         // v2: Strukturierte Businessdaten + Deadlines als optionale Json-Blobs.
-        // Null-safe: wenn das Modell sie nicht liefert, bleibt das Feld null.
-        structuredData: (pipeline.extraction.structuredData ?? null) as Prisma.InputJsonValue | null,
-        deadlines: (pipeline.extraction.deadlines ?? null) as Prisma.InputJsonValue | null,
+        // Prisma verlangt für nullable Json-Felder entweder einen gültigen
+        // JSON-Wert oder den Sentinel Prisma.JsonNull (setzt SQL NULL).
+        // TypeScript-Typ bei nullable Json: NullableJsonNullValueInput | InputJsonValue
+        structuredData:
+          pipeline.extraction.structuredData != null
+            ? (pipeline.extraction.structuredData as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+        deadlines:
+          pipeline.extraction.deadlines != null
+            ? (pipeline.extraction.deadlines as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
         confidence: pipeline.extraction.extractionConfidence ?? null,
         promptVersion: pipeline.promptMetadata.extractionVersion,
         contentHash: pipeline.inputTextHash
