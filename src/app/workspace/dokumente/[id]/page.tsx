@@ -263,6 +263,24 @@ export default async function DokumentDetailPage({ params }: { params: { id: str
                 </div>
               ) : null}
 
+              {document.processingStatus === "NICHT_UNTERSTUETZT" ? (
+                <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-[13px] font-medium text-amber-900">⚠️ Verarbeitung bisher nicht unterstützt</p>
+                  {document.processingError ? (
+                    <p className="mt-1 text-[12px] leading-relaxed text-amber-800">
+                      {document.processingError}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-[12px] leading-relaxed text-amber-800">
+                    Die Extraktions-Pipeline wurde um PDF-Text-Layer-Support erweitert.
+                    Sie können die Verarbeitung für dieses Dokument erneut anstoßen.
+                  </p>
+                  <div className="mt-3">
+                    <ProcessingTriggerForm documentId={document.id} />
+                  </div>
+                </div>
+              ) : null}
+
               {document.processingStatus === "VERARBEITET" && document.processedAt ? (
                 <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                   <p className="text-[13px] font-medium text-emerald-800">✓ Textextraktion abgeschlossen</p>
