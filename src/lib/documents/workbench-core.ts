@@ -8,7 +8,11 @@ import {
   getWorkbenchAiContractAnalysis,
   type WorkbenchAiContractAnalysis
 } from "@/lib/documents/analysis-run-core"
-import type { WorkbenchAiContractAnalysisProps } from "@/types/ai-workbench"
+import type {
+  WorkbenchAiContractAnalysisProps,
+  WorkbenchStructuredData,
+  WorkbenchDeadlines
+} from "@/types/ai-workbench"
 import { getDocumentReviewSummary, type DocumentReviewSummary } from "@/lib/documents/review-workbench-core"
 import { getWorkspaceDocumentById, type WorkspaceDocumentDetail } from "@/lib/documents/workspace-core"
 
@@ -71,7 +75,19 @@ export function serializeWorkbenchAiContractAnalysis(
       riskPromptKey: ai.run.riskPromptKey,
       riskPromptVersion: ai.run.riskPromptVersion
     },
-    extraction: ai.extraction,
+    extraction: ai.extraction
+      ? {
+          contractType: ai.extraction.contractType,
+          parties: ai.extraction.parties,
+          term: ai.extraction.term,
+          legalTopics: ai.extraction.legalTopics,
+          // Prisma liefert JSON-Felder als JsonValue (~unknown). Hier casten wir
+          // auf das Client-Typ-Shape — Struktur wurde beim Persistieren gegen
+          // das Zod-Schema validiert, daher sicher.
+          structuredData: (ai.extraction.structuredData ?? null) as WorkbenchStructuredData | null,
+          deadlines: (ai.extraction.deadlines ?? null) as WorkbenchDeadlines | null
+        }
+      : null,
     findings: ai.findings.map((f) => ({
       id: f.id,
       title: f.title,
@@ -81,6 +97,8 @@ export function serializeWorkbenchAiContractAnalysis(
       confidence: f.confidence,
       clauseRef: f.clauseRef,
       sourceSpan: f.sourceSpan,
+      // v2: Formulierungsvorschlag durchreichen
+      suggestedRevision: f.suggestedRevision,
       latestReview: f.latestReview
         ? {
             decision: f.latestReview.decision,
