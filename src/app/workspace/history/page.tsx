@@ -16,6 +16,21 @@ const dateTimeFormatter = new Intl.DateTimeFormat("de-DE", {
   minute: "2-digit"
 })
 
+type PipelineStageKey = "EXTRACTION" | "RISK_AND_GUIDANCE"
+
+type ProviderKindKey = "OPENAI" | "ANTHROPIC" | "GOOGLE_GEMINI" | "LLAMA_COMPAT"
+
+type StageDecision = {
+  stage: PipelineStageKey
+  provider: ProviderKindKey
+  model: string
+  tokensUsed: number | null
+  latencyMs: number | null
+  wasPrimaryChoice: boolean
+  wasSuccessful: boolean
+  fallbackFromProvider: ProviderKindKey | null
+}
+
 type HistoryEntry = {
   id: string
   documentId: string
@@ -33,6 +48,7 @@ type HistoryEntry = {
   durationMs: number | null
   riskScore01: number | null
   aggregateConfidence: number | null
+  stageDecisions: StageDecision[]
 }
 
 const statusToLabel: Record<string, { label: string; tone: "info" | "success" | "warning" | "risk" }> = {
@@ -57,6 +73,23 @@ const toneClass: Record<"info" | "success" | "warning" | "risk", string> = {
   success: "bg-emerald-100 text-emerald-700",
   warning: "bg-amber-100 text-amber-700",
   risk: "bg-rose-100 text-rose-700"
+}
+
+const providerPrettyName: Record<ProviderKindKey, string> = {
+  OPENAI: "OpenAI",
+  ANTHROPIC: "Anthropic",
+  GOOGLE_GEMINI: "Google Gemini",
+  LLAMA_COMPAT: "Llama"
+}
+
+const stageIcon: Record<PipelineStageKey, string> = {
+  EXTRACTION: "🔍",
+  RISK_AND_GUIDANCE: "⚖️"
+}
+
+const stageShortLabel: Record<PipelineStageKey, string> = {
+  EXTRACTION: "Extraktion",
+  RISK_AND_GUIDANCE: "Risiko"
 }
 
 async function loadHistoryForTenant(tenantId: string): Promise<HistoryEntry[]> {
@@ -84,28 +117,78 @@ async function loadHistoryForTenant(tenantId: string): Promise<HistoryEntry[]> {
             documentType: true,
             organizationName: true
           }
+        },
+        // Router-Transparenz: alle Provider-Decisions pro Stufe.
+        // Reihenfolge (stage asc, attemptOrder asc) gibt den zeitlichen
+        // Ablauf wieder — erster Versuch zuerst, ggf. gefolgt vom Fallback.
+        decisions: {
+          orderBy: [{ stage: "asc" }, { attemptOrder: "asc" }],
+          select: {
+            stage: true,
+            attemptOrder: true,
+            provider: true,
+            model: true,
+            tokensUsed: true,
+            latencyMs: true,
+            wasPrimaryChoice: true,
+            wasSuccessful: true,
+            fallbackFromProvider: true
+          }
         }
       }
     })
 
-    return runs.map((run) => ({
-      id: run.id,
-      documentId: run.documentId,
-      documentTitle: run.document?.title ?? "Unbekanntes Dokument",
-      documentType: run.document?.documentType ?? "—",
-      organizationName: run.document?.organizationName ?? "—",
-      status: run.status,
-      reviewState: run.reviewState,
-      primaryProvider: run.primaryProvider,
-      primaryModel: run.primaryModel,
-      startedAt: run.startedAt,
-      completedAt: run.completedAt,
-      totalTokensUsed: run.totalTokensUsed,
-      totalCostEstimate: run.totalCostEstimate,
-      durationMs: run.durationMs,
-      riskScore01: run.riskScore01,
-      aggregateConfidence: run.aggregateConfidence
-    }))
+    return runs.map((run) => {
+      // Pro Stage DEN "effektiv genutzten" Decision-Eintrag waehlen:
+      // Zuerst der erfolgreiche (wasSuccessful=true), sonst der letzte Versuch.
+      // Das spiegelt exakt wider, was der Router in der Schnellanalyse-UI
+      // als "Routing/Protokoll" zeigt.
+      const byStage: Partial<Record<PipelineStageKey, StageDecision>> = {}
+      for (const d of run.decisions) {
+        const stageKey = d.stage as PipelineStageKey
+        const current = byStage[stageKey]
+        const decision: StageDecision = {
+          stage: stageKey,
+          provider: d.provider as ProviderKindKey,
+          model: d.model,
+          tokensUsed: d.tokensUsed,
+          latencyMs: d.latencyMs,
+          wasPrimaryChoice: d.wasPrimaryChoice,
+          wasSuccessful: d.wasSuccessful,
+          fallbackFromProvider: (d.fallbackFromProvider ?? null) as ProviderKindKey | null
+        }
+        // Ueberschreiben NUR wenn neuer Eintrag erfolgreicher ist als aktueller.
+        if (!current) {
+          byStage[stageKey] = decision
+        } else if (!current.wasSuccessful && decision.wasSuccessful) {
+          byStage[stageKey] = decision
+        }
+      }
+
+      const stageDecisions: StageDecision[] = []
+      if (byStage.EXTRACTION) stageDecisions.push(byStage.EXTRACTION)
+      if (byStage.RISK_AND_GUIDANCE) stageDecisions.push(byStage.RISK_AND_GUIDANCE)
+
+      return {
+        id: run.id,
+        documentId: run.documentId,
+        documentTitle: run.document?.title ?? "Unbekanntes Dokument",
+        documentType: run.document?.documentType ?? "—",
+        organizationName: run.document?.organizationName ?? "—",
+        status: run.status,
+        reviewState: run.reviewState,
+        primaryProvider: run.primaryProvider,
+        primaryModel: run.primaryModel,
+        startedAt: run.startedAt,
+        completedAt: run.completedAt,
+        totalTokensUsed: run.totalTokensUsed,
+        totalCostEstimate: run.totalCostEstimate,
+        durationMs: run.durationMs,
+        riskScore01: run.riskScore01,
+        aggregateConfidence: run.aggregateConfidence,
+        stageDecisions
+      }
+    })
   })
 }
 
@@ -185,6 +268,19 @@ export default async function HistoryPage() {
         </div>
       ) : null}
 
+      {entries.length > 0 ? (
+        <div className="mt-4 rounded-xl border border-gold-200 bg-gold-50/40 px-4 py-3">
+          <p className="text-[12px] leading-relaxed text-gray-700">
+            <span className="font-semibold text-gray-900">Multi-Provider-Routing:</span>{" "}
+            KanzleiAI routet jede Analyse intelligent über zwei Pipeline-Stufen. Die{" "}
+            <span className="font-medium text-gray-900">Extraktion</span> (Parteien, Klauseln, Kennzahlen) läuft
+            auf einem günstigen, schnellen Modell; die{" "}
+            <span className="font-medium text-gray-900">Risiko- &amp; Empfehlungslogik</span> auf einem
+            Reasoning-starken Modell. Die vollständige Provider-Matrix je Lauf ist unten auditfähig sichtbar.
+          </p>
+        </div>
+      ) : null}
+
       {entries.length === 0 && !loadError ? (
         <div className="mt-10 rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
           <span className="text-[40px]">⏱️</span>
@@ -202,9 +298,9 @@ export default async function HistoryPage() {
         </div>
       ) : (
         <div className="mt-8 overflow-hidden rounded-xl border border-gray-200">
-          <div className="hidden bg-gray-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 sm:grid sm:grid-cols-[1.4fr_1fr_120px_120px_120px]">
+          <div className="hidden bg-gray-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 sm:grid sm:grid-cols-[1.4fr_1.8fr_120px_100px_140px]">
             <span>Dokument</span>
-            <span>Provider · Modell</span>
+            <span>Routing / Modell-Matrix</span>
             <span>Status</span>
             <span>Risiko</span>
             <span>Gestartet</span>
@@ -217,7 +313,7 @@ export default async function HistoryPage() {
               <Link
                 key={entry.id}
                 href={`/workspace/dokumente/${entry.documentId}`}
-                className="grid border-b border-gray-100 bg-white px-5 py-4 last:border-b-0 transition-colors hover:bg-gold-50/30 sm:grid-cols-[1.4fr_1fr_120px_120px_120px] sm:items-center"
+                className="grid border-b border-gray-100 bg-white px-5 py-4 last:border-b-0 transition-colors hover:bg-gold-50/30 sm:grid-cols-[1.4fr_1.8fr_120px_100px_140px] sm:items-center sm:gap-x-4"
               >
                 <div className="min-w-0">
                   <p className="truncate text-[14px] font-medium text-gray-900">{entry.documentTitle}</p>
@@ -225,10 +321,56 @@ export default async function HistoryPage() {
                     {entry.documentType} · {entry.organizationName} · {reviewStateLabel[entry.reviewState] ?? entry.reviewState}
                   </p>
                 </div>
-                <div className="mt-2 sm:mt-0">
-                  <p className="text-[12px] font-medium text-gray-700">{entry.primaryProvider ?? "—"}</p>
-                  <p className="text-[11px] text-gray-400">{entry.primaryModel ?? "kein Modell"}</p>
+
+                {/* Routing-Matrix: zeigt pro Pipeline-Stufe den effektiv genutzten Provider + Modell. */}
+                <div className="mt-3 min-w-0 space-y-1 sm:mt-0">
+                  {entry.stageDecisions.length === 0 ? (
+                    // Fallback: falls aus irgendeinem Grund (Legacy-Runs, noch
+                    // laufender Run) keine Decisions persistiert sind, zeigen
+                    // wir den run-weiten primary* als Single-Line an.
+                    <div className="text-[12px] text-gray-500">
+                      <span className="font-medium text-gray-700">
+                        {entry.primaryProvider
+                          ? providerPrettyName[entry.primaryProvider as ProviderKindKey] ?? entry.primaryProvider
+                          : "—"}
+                      </span>
+                      <span className="ml-1.5 font-mono text-[11px] text-gray-500">
+                        {entry.primaryModel ?? "kein Modell"}
+                      </span>
+                    </div>
+                  ) : (
+                    entry.stageDecisions.map((decision) => {
+                      const providerLabel = providerPrettyName[decision.provider] ?? decision.provider
+                      const isFallback = Boolean(decision.fallbackFromProvider)
+                      return (
+                        <div
+                          key={decision.stage}
+                          className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] leading-tight"
+                        >
+                          <span className="text-[11px]" aria-hidden>
+                            {stageIcon[decision.stage]}
+                          </span>
+                          <span className="font-medium text-gray-600">
+                            {stageShortLabel[decision.stage]}:
+                          </span>
+                          <span className="font-medium text-gray-900">{providerLabel}</span>
+                          <span className="font-mono text-[11px] text-gray-500">{decision.model}</span>
+                          {decision.tokensUsed !== null && decision.tokensUsed > 0 ? (
+                            <span className="text-[10px] text-gray-400">
+                              · {decision.tokensUsed.toLocaleString("de-DE")} tok
+                            </span>
+                          ) : null}
+                          {isFallback ? (
+                            <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-800">
+                              Fallback
+                            </span>
+                          ) : null}
+                        </div>
+                      )
+                    })
+                  )}
                 </div>
+
                 <span
                   className={`mt-2 inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold sm:mt-0 ${toneClass[statusInfo.tone]}`}
                 >
