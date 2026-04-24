@@ -275,6 +275,10 @@ export async function listDocumentActivities(input: ListDocumentActivitiesInput)
   const events = await withTenant(input.tenantId, async (tx) => {
     return tx.auditEvent.findMany({
       where: {
+        // Expliziter Tenant-Filter: AuditEvents sind tenant-partitioniert.
+        // Ohne diese Zeile wuerden Audit-Events aus Fremd-Tenants geliefert,
+        // sobald eine documentId/resourceId global kollidiert.
+        tenantId: input.tenantId,
         OR: [
           { documentId: input.documentId },
           {
