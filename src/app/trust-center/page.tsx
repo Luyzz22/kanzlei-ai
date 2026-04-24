@@ -8,7 +8,7 @@ const trustPillars = [
   {
     emoji: "🔐",
     title: "Datensicherheit",
-    desc: "TLS 1.3, AES-256, HSTS, Row-Level Security auf 12 PostgreSQL-Tabellen. Defense-in-Depth auf jeder Ebene.",
+    desc: "TLS 1.3, AES-256, HSTS, Row-Level Security auf 13 PostgreSQL-Tabellen. Defense-in-Depth auf jeder Ebene.",
     href: "/sicherheit-compliance",
     link: "Details ansehen →"
   },
@@ -27,7 +27,28 @@ const trustPillars = [
     link: "KI-Transparenz →"
   },
   {
+    emoji: "⚖️",
+    title: "§ 203 StGB Geheimhaltung",
+    desc: "Dedizierte Geheimhaltungsvereinbarung fuer Berufsgeheimnistraeger (Rechtsanwaelte, Steuerberater). Erfuellt § 203 Abs. 4 StGB und § 43e BRAO.",
+    href: "/trust/geheimhaltung-203",
+    link: "Vereinbarung anfordern →"
+  },
+  {
+    emoji: "🇪🇺",
+    title: "EU AI Act",
+    desc: "Risiko-Klassifizierung, GPAI-Modell-Dokumentation, Hochrisiko-Compliance ab 2. August 2026. Technical Dossier auf Anfrage.",
+    href: "/trust/eu-ai-act",
+    link: "EU AI Act Details →"
+  },
+  {
     emoji: "📋",
+    title: "Sub-Prozessoren",
+    desc: "Vollstaendige Liste aller Auftragsverarbeiter nach Art. 28 DSGVO. Transparenz ueber CLOUD-Act-Betroffenheit und Datentransfer.",
+    href: "/trust/sub-prozessoren",
+    link: "Sub-Prozessoren-Liste →"
+  },
+  {
+    emoji: "📊",
     title: "Audit & Nachweise",
     desc: "Manipulationssicherer Audit Trail. Jede Aktion mit Akteur, Mandant und Zeitstempel dokumentiert.",
     href: "/dashboard/audit",
@@ -37,9 +58,11 @@ const trustPillars = [
 
 const certifications = [
   { emoji: "🇪🇺", label: "DSGVO", status: "Konform", color: "emerald" },
-  { emoji: "🏛️", label: "GoBD-Naehe", status: "Umgesetzt", color: "blue" },
-  { emoji: "📊", label: "ISO 27001", status: "Vorbereitet", color: "amber" },
   { emoji: "📜", label: "AVV Art. 28", status: "Verfuegbar", color: "emerald" },
+  { emoji: "⚖️", label: "§ 203 StGB", status: "Verfuegbar", color: "emerald" },
+  { emoji: "🇪🇺", label: "EU AI Act", status: "Dokumentiert", color: "blue" },
+  { emoji: "🏛️", label: "GoBD-Naehe", status: "Umgesetzt", color: "blue" },
+  { emoji: "📊", label: "ISO 27001", status: "In Vorbereitung", color: "amber" },
   { emoji: "🔒", label: "SOC 2 Type II", status: "Geplant", color: "gray" },
   { emoji: "🛡️", label: "BSI C5", status: "Roadmap", color: "gray" },
 ]
@@ -74,7 +97,7 @@ export default function TrustCenterPage() {
       {/* Trust Pillars */}
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {trustPillars.map((pillar) => (
               <div key={pillar.title} className="rounded-2xl border border-gray-100 bg-white p-7">
                 <span className="text-[32px]">{pillar.emoji}</span>
@@ -91,7 +114,7 @@ export default function TrustCenterPage() {
       <section className="border-y border-gray-200 bg-gray-50 py-16">
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
           <p className="text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">📜 Compliance-Status</p>
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
             {certifications.map((cert) => (
               <div key={cert.label} className="rounded-xl border border-gray-100 bg-white p-4 text-center">
                 <span className="text-[22px]">{cert.emoji}</span>
