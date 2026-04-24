@@ -32,6 +32,33 @@ export type WorkbenchAiRunSummary = {
   riskPromptVersion: string
 }
 
+/** v2: Strukturierte Businessdaten aus der Extraktionsphase. */
+export type WorkbenchStructuredData = {
+  customer?: string | null
+  vendor?: string | null
+  product?: string | null
+  jurisdiction?: string | null
+  applicableLaw?: string | null
+  liabilityLimit?: string | null
+  confidentialityObligation?: boolean | null
+  penaltyClause?: string | null
+  intellectualProperty?: string | null
+  dataProcessingAgreement?: boolean | null
+  dataLocation?: string | null
+  dataExportClause?: boolean | null
+}
+
+/** v2: Deadlines / Fristen aus der Extraktionsphase. */
+export type WorkbenchDeadlines = {
+  noticePeriodDays?: number | null
+  autoRenewal?: boolean | null
+  renewalTermMonths?: number | null
+  contractStartDate?: string | null
+  contractEndDate?: string | null
+  nextCancellationDate?: string | null
+  warrantyPeriodMonths?: number | null
+}
+
 export type WorkbenchAiContractAnalysisProps = {
   run: WorkbenchAiRunSummary
   extraction: {
@@ -39,6 +66,10 @@ export type WorkbenchAiContractAnalysisProps = {
     parties: unknown
     term: unknown
     legalTopics: unknown
+    /** v2 — kann bei älteren Runs null sein. */
+    structuredData: WorkbenchStructuredData | null
+    /** v2 — kann bei älteren Runs null sein. */
+    deadlines: WorkbenchDeadlines | null
   } | null
   findings: Array<{
     id: string
@@ -49,6 +80,8 @@ export type WorkbenchAiContractAnalysisProps = {
     confidence: number | null
     clauseRef: string | null
     sourceSpan: string | null
+    /** v2 — konkreter Formulierungsvorschlag, bei alten Findings null. */
+    suggestedRevision: string | null
     latestReview: {
       decision: string
       comment: string | null
