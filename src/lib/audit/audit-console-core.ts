@@ -1,6 +1,5 @@
 import "server-only"
 
-import { prisma } from "@/lib/prisma"
 import { withTenant } from "@/lib/tenant-context-core"
 import { describeAction, type AuditCategory, type AuditSeverity } from "@/lib/audit/registry"
 
