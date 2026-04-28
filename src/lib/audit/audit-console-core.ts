@@ -1,5 +1,7 @@
 import "server-only"
 
+import { Prisma } from "@prisma/client"
+
 import { withTenant } from "@/lib/tenant-context-core"
 import { describeAction, type AuditCategory, type AuditSeverity } from "@/lib/audit/registry"
 
@@ -103,27 +105,21 @@ export async function listAuditEvents(input: ListAuditEventsInput): Promise<List
   const limit = Math.min(Math.max(input.limit ?? 50, 1), 200)
 
   return withTenant(input.tenantId, async (tx) => {
-    // Build where-clause
-    const where: Parameters<typeof tx.auditEvent.findMany>[0] extends infer T
-      ? T extends { where?: infer W }
-        ? W
-        : never
-      : never = {}
+    // Build where-clause using Prisma's official type
+    const where: Prisma.AuditEventWhereInput = {}
 
     if (input.query && input.query.trim()) {
       const q = input.query.trim()
-      Object.assign(where as object, {
-        OR: [
-          { action: { contains: q, mode: "insensitive" } },
-          { resourceType: { contains: q, mode: "insensitive" } },
-          { resourceId: { contains: q, mode: "insensitive" } },
-          { actor: { email: { contains: q, mode: "insensitive" } } }
-        ]
-      })
+      where.OR = [
+        { action: { contains: q, mode: "insensitive" } },
+        { resourceType: { contains: q, mode: "insensitive" } },
+        { resourceId: { contains: q, mode: "insensitive" } },
+        { actor: { email: { contains: q, mode: "insensitive" } } }
+      ]
     }
 
     const rows = await tx.auditEvent.findMany({
-      where: where as Parameters<typeof tx.auditEvent.findMany>[0]["where"],
+      where,
       orderBy: { createdAt: "desc" },
       take: limit + 1,
       ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
@@ -133,7 +129,8 @@ export async function listAuditEvents(input: ListAuditEventsInput): Promise<List
     })
 
     // Filter category in app layer (Prisma can't filter on registry-derived field)
-    const enriched: AuditEventListItem[] = rows.map((r) => {
+    type RowType = (typeof rows)[number]
+    const enriched: AuditEventListItem[] = rows.map((r: RowType) => {
       const meta = describeAction(r.action)
       return {
         id: r.id,
