@@ -56,3 +56,44 @@ html {
   background-color: #F0E6CC;
   color: #3D331E;
 }
+
+/* =====================================================================
+ * Force light mode for the entire application.
+ *
+ * KanzleiAI ist als Enterprise-SaaS konzipiert, das ausschliesslich im
+ * Light-Mode betrieben wird (Brand-Konsistenz mit warm stone palette,
+ * SBS Blue + Gold). Es gibt keinen User-Toggle fuer Dark-Mode.
+ *
+ * Browser, deren OS-Einstellung auf "Dunkel" steht, koennen jedoch
+ * Form-Elemente (input, select, textarea) automatisch dunkel rendern,
+ * was zu schwarzem Hintergrund + dunkler Schrift fuehrt — unlesbar.
+ *
+ * Mit color-scheme: light auf html erzwingen wir konsequent das helle
+ * Browser-Farbschema fuer alle nativen Controls.
+ * ===================================================================== */
+html {
+  color-scheme: light;
+}
+
+/* Sicherheit: explizite Light-Mode-Defaults fuer alle Native-Form-Elemente */
+input,
+select,
+textarea {
+  color-scheme: light;
+  background-color: white;
+  color: #0f172a; /* slate-900 */
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8; /* slate-400 */
+  opacity: 1;
+}
+
+/* Disabled-States bleiben sichtbar */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: #f1f5f9; /* slate-100 */
+  color: #64748b; /* slate-500 */
+}
