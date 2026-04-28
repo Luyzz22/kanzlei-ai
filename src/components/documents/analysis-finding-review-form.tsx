@@ -9,13 +9,33 @@ import {
 
 const initial: AnalysisFindingReviewFormState = { status: "idle" }
 
+/**
+ * Enterprise-grade form styling:
+ * - Explicit bg-white + text-slate-900 to prevent browser-applied dark mode
+ * - Visible borders + focus rings (gold accent matches SBS brand)
+ * - Placeholder color explicitly set to mid-gray
+ * - color-scheme: light hint to override OS-level dark preference
+ */
+const inputClass =
+  "mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 " +
+  "placeholder:text-slate-400 shadow-sm " +
+  "focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200 " +
+  "[color-scheme:light]"
+
+const selectClass =
+  "mt-1 block rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 " +
+  "shadow-sm focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200 " +
+  "[color-scheme:light]"
+
+const labelClass = "block text-xs font-medium text-slate-700"
+
 function SubmitReviewButton() {
   const { pending } = useFormStatus()
   return (
     <button
       type="submit"
       disabled={pending}
-      className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+      className="rounded-md bg-[#003856] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-[#002a42] disabled:opacity-50"
     >
       {pending ? "Speichern …" : "Speichern"}
     </button>
@@ -31,18 +51,17 @@ export function AnalysisFindingReviewForm({ documentId, findingId }: Props) {
   const [state, action] = useFormState(submitAnalysisFindingReviewAction, initial)
 
   return (
-    <form action={action} className="mt-2 space-y-2 rounded-md border border-dashed border-slate-200 bg-white/80 p-2">
+    <form
+      action={action}
+      className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+    >
       <input type="hidden" name="documentId" value={documentId} />
       <input type="hidden" name="findingId" value={findingId} />
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="text-xs text-slate-600">
+
+      <div className="flex flex-wrap items-end gap-3">
+        <label className={labelClass}>
           Entscheidung
-          <select
-            name="decision"
-            required
-            className="ml-1 mt-0.5 block rounded border border-slate-300 px-2 py-1 text-sm"
-            defaultValue=""
-          >
+          <select name="decision" required className={selectClass} defaultValue="">
             <option value="" disabled>
               Bitte wählen
             </option>
@@ -53,28 +72,51 @@ export function AnalysisFindingReviewForm({ documentId, findingId }: Props) {
         </label>
         <SubmitReviewButton />
       </div>
-      <label className="block text-xs text-slate-600">
+
+      <label className={labelClass}>
         Kommentar (bei Ablehnung erforderlich)
         <textarea
           name="comment"
           rows={2}
-          className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm"
+          className={inputClass}
           placeholder="Kurze fachliche Begründung …"
         />
       </label>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <label className="block text-xs text-slate-600">
-          Neuer Titel (nur bei „Angepasst“)
-          <input name="modifiedTitle" className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className={labelClass}>
+          Neuer Titel (nur bei „Angepasst")
+          <input
+            name="modifiedTitle"
+            className={inputClass}
+            placeholder="z.B. Vertragsstrafe — überarbeitet"
+          />
         </label>
-        <label className="block text-xs text-slate-600 sm:col-span-2">
-          Neue Beschreibung (nur bei „Angepasst“)
-          <textarea name="modifiedDescription" rows={2} className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm" />
+        <label className={`${labelClass} sm:col-span-2`}>
+          Neue Beschreibung (nur bei „Angepasst")
+          <textarea
+            name="modifiedDescription"
+            rows={2}
+            className={inputClass}
+            placeholder="Optional: alternative Formulierung des Findings …"
+          />
         </label>
       </div>
-      <p className="text-[11px] text-slate-500">Nur für berechtigte Rollen sichtbar; wird protokolliert.</p>
+
+      <p className="text-[11px] text-slate-500">
+        Nur für berechtigte Rollen sichtbar; wird protokolliert.
+      </p>
+
       {state.message ? (
-        <p className={`text-xs ${state.status === "success" ? "text-emerald-700" : "text-rose-700"}`}>{state.message}</p>
+        <p
+          className={`rounded-md px-3 py-2 text-xs font-medium ${
+            state.status === "success"
+              ? "bg-emerald-50 text-emerald-800"
+              : "bg-rose-50 text-rose-800"
+          }`}
+        >
+          {state.message}
+        </p>
       ) : null}
     </form>
   )
