@@ -4,8 +4,7 @@ import { redirect } from "next/navigation"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
 import {
-  listAuditEvents,
-  type AuditEventListItem
+  listAuditEvents
 } from "@/lib/audit/audit-console-core"
 import { AUDIT_CATEGORIES, SEVERITY_TONE, type AuditCategory } from "@/lib/audit/registry"
 
