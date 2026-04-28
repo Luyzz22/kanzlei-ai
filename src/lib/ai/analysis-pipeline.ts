@@ -118,7 +118,7 @@ function apiModelLabel(model: ModelType): string {
     case ModelType.GPT_4O_MINI:
       return process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-4o-mini"
     case ModelType.CLAUDE_SONNET_4:
-      return process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-3-5-sonnet-latest"
+      return process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-sonnet-4-6"
     case ModelType.GEMINI_2_5_PRO:
       return process.env.GEMINI_CHAT_MODEL?.trim() || "gemini-1.5-pro"
     case ModelType.LLAMA_COMPAT:
