@@ -8,7 +8,10 @@ function extractClaudeText(content: Array<{ text?: string }>): string {
 }
 
 function claudeModelId(): string {
-  return process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-sonnet-4-20250514"
+  // Default: Claude Sonnet 4.6 (released Feb 17, 2026)
+  // Override via ENV ANTHROPIC_CHAT_MODEL fuer Pin auf bestimmte Version
+  // (z.B. claude-sonnet-4-6-20260217 fuer reproduzierbare Outputs).
+  return process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-sonnet-4-6"
 }
 
 export class ClaudeProvider extends BaseAIProvider {
