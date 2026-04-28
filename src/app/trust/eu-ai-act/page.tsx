@@ -20,20 +20,10 @@ type GpaiModel = {
 
 const gpaiModels: GpaiModel[] = [
   {
-    name: "claude-sonnet-4-20250514",
+    name: "claude-sonnet-4-6",
     provider: "Anthropic",
     role: "risk",
-    version: "claude-sonnet-4 · Stand Mai 2025",
-    euRegion: false,
-    trainingOptOut: "default",
-    gpaiTier: "general",
-    modelCardUrl: "https://docs.anthropic.com/en/docs/about-claude/models"
-  },
-  {
-    name: "claude-3-5-sonnet-latest",
-    provider: "Anthropic",
-    role: "risk",
-    version: "claude-3-5-sonnet · Stand Oktober 2024",
+    version: "claude-sonnet-4.6 · Release 17. Februar 2026",
     euRegion: false,
     trainingOptOut: "default",
     gpaiTier: "general",
