@@ -65,7 +65,7 @@ const categories: Array<{ title: string; emoji: string; processors: SubProcessor
     processors: [
       {
         name: "Anthropic PBC",
-        role: "Primaeres KI-Modell (claude-sonnet-4, claude-3-5-sonnet-latest)",
+        role: "Primaeres KI-Modell (claude-sonnet-4.6)",
         purpose: "Vertragsanalyse-Pipeline: Risiko-Bewertung und Formulierungsvorschlaege. Kein Training mit Kundendaten (Zero-Data-Retention-API).",
         location: "AWS us-east-1 (US) — EU-Hosting aktuell nicht verfuegbar",
         cloudActRisk: "hoch",
