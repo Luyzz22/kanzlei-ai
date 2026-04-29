@@ -85,7 +85,7 @@ export function AnalysisFindingReviewForm({ documentId, findingId }: Props) {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className={labelClass}>
-          Neuer Titel (nur bei „Angepasst")
+          Neuer Titel (nur bei &bdquo;Angepasst&ldquo;)
           <input
             name="modifiedTitle"
             className={inputClass}
@@ -93,7 +93,7 @@ export function AnalysisFindingReviewForm({ documentId, findingId }: Props) {
           />
         </label>
         <label className={`${labelClass} sm:col-span-2`}>
-          Neue Beschreibung (nur bei „Angepasst")
+          Neue Beschreibung (nur bei &bdquo;Angepasst&ldquo;)
           <textarea
             name="modifiedDescription"
             rows={2}
