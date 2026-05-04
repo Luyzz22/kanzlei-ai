@@ -1,12 +1,42 @@
 "use client"
 
-import { useState, useRef, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 
 type Message = {
   role: "user" | "assistant"
   content: string
   model?: string
   tokens?: number
+}
+
+type CopilotContract = {
+  runId: string
+  documentId: string
+  title: string
+  documentType: string
+  organizationName: string
+  contractType: string
+  riskScore: number | null
+  confidence: number | null
+  completedAt: string | null
+  extraction: {
+    contractType: string
+    parties: unknown
+    term: unknown
+    legalTopics: unknown
+    structuredData: unknown
+    deadlines: unknown
+  } | null
+  findings: Array<{
+    category: string
+    title: string
+    description: string
+    severity: string
+    confidence: number | null
+    clauseRef: string | null
+    sourceSpan: string | null
+    suggestedRevision: string | null
+  }>
 }
 
 function renderMarkdown(text: string): string {
@@ -65,8 +95,59 @@ export default function CopilotPage() {
   const [streamingText, setStreamingText] = useState("")
   const [contractContext, setContractContext] = useState<string | null>(null)
   const [contractName, setContractName] = useState<string | null>(null)
+  const [availableContracts, setAvailableContracts] = useState<CopilotContract[]>([])
+  const [showContractPicker, setShowContractPicker] = useState(false)
+  const [contractsLoading, setContractsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const pickerRef = useRef<HTMLDivElement>(null)
+
+  // Fetch available contracts on mount
+  useEffect(() => {
+    setContractsLoading(true)
+    fetch("/api/copilot/contracts")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.contracts) setAvailableContracts(data.contracts) })
+      .catch(() => {})
+      .finally(() => setContractsLoading(false))
+  }, [])
+
+  // Close picker on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setShowContractPicker(false)
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
+  const selectContract = useCallback((contract: CopilotContract) => {
+    const parts: string[] = []
+    parts.push(`VERTRAG: ${contract.title} (${contract.contractType})`)
+    parts.push(`ORGANISATION: ${contract.organizationName}`)
+    if (contract.riskScore != null) parts.push(`RISIKO-SCORE: ${(contract.riskScore * 100).toFixed(0)}%`)
+    if (contract.extraction) {
+      if (contract.extraction.parties) parts.push(`VERTRAGSPARTEIEN:\n${JSON.stringify(contract.extraction.parties, null, 2)}`)
+      if (contract.extraction.structuredData) parts.push(`VERTRAGSDATEN:\n${JSON.stringify(contract.extraction.structuredData, null, 2)}`)
+      if (contract.extraction.deadlines) parts.push(`FRISTEN:\n${JSON.stringify(contract.extraction.deadlines, null, 2)}`)
+      if (contract.extraction.legalTopics) parts.push(`RECHTSTHEMEN:\n${JSON.stringify(contract.extraction.legalTopics, null, 2)}`)
+    }
+    if (contract.findings.length > 0) {
+      const findingsText = contract.findings.map(f =>
+        `- [${f.severity.toUpperCase()}] ${f.title}: ${f.description}${f.sourceSpan ? ` (Zitat: "${f.sourceSpan}")` : ""}${f.suggestedRevision ? `\n  Formulierungsvorschlag: ${f.suggestedRevision}` : ""}`
+      ).join("\n")
+      parts.push(`IDENTIFIZIERTE RISIKEN (${contract.findings.length}):\n${findingsText}`)
+    }
+    setContractContext(parts.join("\n\n"))
+    setContractName(contract.title)
+    setShowContractPicker(false)
+  }, [])
+
+  const clearContract = useCallback(() => {
+    setContractContext(null)
+    setContractName(null)
+    if (typeof window !== "undefined") sessionStorage.removeItem("kanzlei-copilot-context")
+  }, [])
 
   // Load contract context from sessionStorage (set by Schnellanalyse)
   useEffect(() => {
@@ -186,17 +267,67 @@ export default function CopilotPage() {
       {/* Header */}
       <div className="shrink-0 border-b border-gray-100 py-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#003856] text-[18px] text-white">🤖</div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#003856] text-[18px] text-white">&#x1F916;</div>
           <div>
             <h1 className="text-[17px] font-semibold text-gray-950">Contract Copilot</h1>
-            <p className="text-[12px] text-gray-500">Powered by Claude Sonnet 4 · Vertragsexperte für DACH-Recht</p>
+            <p className="text-[12px] text-gray-500">Powered by Claude Sonnet 4 &middot; Vertragsexperte f&uuml;r DACH-Recht</p>
           </div>
-          {contractName && (
-            <div className="ml-auto flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-[12px] font-medium text-emerald-700">📄 {contractName}</span>
-            </div>
-          )}
+          <div className="ml-auto relative" ref={pickerRef}>
+            {contractName ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="text-[12px] font-medium text-emerald-700 max-w-[200px] truncate">&#128196; {contractName}</span>
+                </div>
+                <button onClick={clearContract} className="rounded-full border border-stone-200 p-1 text-stone-400 hover:bg-stone-50 hover:text-stone-600 transition-colors" title="Vertrag entfernen">
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <button onClick={() => setShowContractPicker(!showContractPicker)} className="rounded-full border border-stone-200 p-1 text-stone-400 hover:bg-stone-50 hover:text-stone-600 transition-colors" title="Anderen Vertrag waehlen">
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setShowContractPicker(!showContractPicker)} className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-[12px] font-medium text-stone-600 transition-colors hover:bg-stone-50 hover:border-stone-300">
+                <span>&#128196;</span>
+                <span>{contractsLoading ? "Lade..." : "Vertrag waehlen"}</span>
+                <svg className="h-3 w-3 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+            )}
+
+            {showContractPicker && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-[380px] rounded-xl border border-stone-200 bg-white shadow-lg">
+                <div className="border-b border-stone-100 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">Analysierte Vertraege</p>
+                  <p className="text-[10px] text-stone-400">Waehlen Sie einen Vertrag, um gezielte Fragen zu stellen</p>
+                </div>
+                <div className="max-h-[320px] overflow-y-auto p-2">
+                  {availableContracts.length === 0 ? (
+                    <div className="p-4 text-center">
+                      <p className="text-sm text-stone-500">{contractsLoading ? "Lade Vertraege..." : "Keine analysierten Vertraege vorhanden"}</p>
+                      {!contractsLoading && <p className="mt-1 text-xs text-stone-400">Laden Sie einen Vertrag hoch und starten Sie eine Analyse.</p>}
+                    </div>
+                  ) : (
+                    availableContracts.map(c => (
+                      <button key={c.runId} onClick={() => selectContract(c)} className="flex w-full items-start gap-3 rounded-lg p-3 text-left transition-colors hover:bg-stone-50">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[#003856] truncate">{c.title}</p>
+                          <p className="text-[11px] text-stone-500 truncate">{c.contractType} &middot; {c.organizationName}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          {c.riskScore != null && (
+                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${c.riskScore >= 0.7 ? "bg-red-100 text-red-700" : c.riskScore >= 0.4 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                              {(c.riskScore * 100).toFixed(0)}%
+                            </span>
+                          )}
+                          <span className="text-[10px] text-stone-400">{c.findings.length} Findings</span>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
