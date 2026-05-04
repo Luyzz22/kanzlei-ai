@@ -152,5 +152,38 @@ export function stripCodeFences(raw: string): string {
 
 export function parseJsonUnknown(raw: string): unknown {
   const cleaned = stripCodeFences(raw)
-  return JSON.parse(cleaned) as unknown
+
+  // Erst normaler Parse-Versuch
+  try {
+    return JSON.parse(cleaned) as unknown
+  } catch {
+    // Zweiter Versuch: LLM-typische JSON-Fehler bereinigen
+  }
+
+  let fixed = cleaned
+  // Trailing commas vor } oder ] entfernen: ,\s*} → } und ,\s*] → ]
+  fixed = fixed.replace(/,\s*([}\]])/g, "$1")
+  // Einzeilige Kommentare entfernen (// ...)
+  fixed = fixed.replace(/\/\/[^\n]*/g, "")
+  // Block-Kommentare entfernen (/* ... */)
+  fixed = fixed.replace(/\/\*[\s\S]*?\*\//g, "")
+  // NaN / Infinity durch null ersetzen
+  fixed = fixed.replace(/\bNaN\b/g, "null")
+  fixed = fixed.replace(/\bInfinity\b/g, "null")
+  // Unescaped control characters in Strings entfernen (Newlines in Werten)
+  fixed = fixed.replace(/(?<=:\s*"[^"]*)\n(?=[^"]*")/g, "\\n")
+
+  try {
+    return JSON.parse(fixed) as unknown
+  } catch {
+    // Dritter Versuch: JSON-Block aus dem Text extrahieren (aggressiver)
+    const jsonStart = fixed.indexOf("{")
+    const jsonEnd = fixed.lastIndexOf("}")
+    if (jsonStart >= 0 && jsonEnd > jsonStart) {
+      const block = fixed.slice(jsonStart, jsonEnd + 1)
+      return JSON.parse(block) as unknown
+    }
+    // Alles fehlgeschlagen — Original-Fehler werfen
+    return JSON.parse(cleaned) as unknown
+  }
 }
