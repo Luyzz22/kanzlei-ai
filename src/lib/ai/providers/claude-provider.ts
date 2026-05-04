@@ -7,6 +7,17 @@ function extractClaudeText(content: Array<{ text?: string }>): string {
   return firstBlock?.text ?? ""
 }
 
+/**
+ * Entfernt Markdown-Code-Fences aus Claude-Antworten (Defense in Depth).
+ * Wird VOR parseJsonSafely aufgerufen, damit outputText bereits sauber ist.
+ */
+function stripMarkdownCodeFences(text: string): string {
+  const t = text.trim()
+  const fence = /`{3,4}(?:json|JSON)?\s*\n([\s\S]+?)\n\s*`{3,4}/.exec(t)
+  if (fence?.[1]) return fence[1].trim()
+  return t
+}
+
 function claudeModelId(): string {
   // Default: Claude Sonnet 4.6 (released Feb 17, 2026)
   // Override via ENV ANTHROPIC_CHAT_MODEL fuer Pin auf bestimmte Version
@@ -45,7 +56,9 @@ export class ClaudeProvider extends BaseAIProvider {
         messages: [{ role: "user", content: userContent }]
       })
 
-      const outputText = extractClaudeText(response.content)
+      const rawText = extractClaudeText(response.content)
+      // Bei JSON-Mode: Markdown-Fences entfernen, die Sonnet gelegentlich hinzufügt.
+      const outputText = input.jsonMode ? stripMarkdownCodeFences(rawText) : rawText
 
       return {
         model: this.config.model,
