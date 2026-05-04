@@ -63,13 +63,13 @@ export const contractStructuredDataSchema = z.object({
 }).partial()
 
 export const contractDeadlinesSchema = z.object({
-  noticePeriodDays: z.number().int().min(0).max(3650).nullable().optional(),
+  noticePeriodDays: z.nullable(z.coerce.number().int().min(0).max(3650)).optional(),
   autoRenewal: z.boolean().nullable().optional(),
-  renewalTermMonths: z.number().int().min(0).max(600).nullable().optional(),
+  renewalTermMonths: z.nullable(z.coerce.number().int().min(0).max(600)).optional(),
   contractStartDate: z.string().max(200).nullable().optional(),
   contractEndDate: z.string().max(200).nullable().optional(),
   nextCancellationDate: z.string().max(200).nullable().optional(),
-  warrantyPeriodMonths: z.number().int().min(0).max(600).nullable().optional()
+  warrantyPeriodMonths: z.nullable(z.coerce.number().int().min(0).max(600)).optional()
 }).partial()
 
 export type ContractStructuredData = z.infer<typeof contractStructuredDataSchema>
@@ -84,7 +84,7 @@ export const extractionStageSchema = z.object({
   structuredData: contractStructuredDataSchema.nullable().optional(),
   /** v2: explizite Fristenstruktur (Kündigung, Laufzeit, Verlängerung) */
   deadlines: contractDeadlinesSchema.nullable().optional(),
-  extractionConfidence: z.number().min(0).max(1).optional(),
+  extractionConfidence: z.coerce.number().min(0).max(1).optional(),
   modelNotes: z.string().max(2000).optional()
 })
 
@@ -93,7 +93,7 @@ export const pipelineFindingSchema = z.object({
   title: z.string().min(1).max(240),
   description: z.string().min(1).max(8000),
   severity: severityLiteral,
-  confidence: z.number().min(0).max(1).optional(),
+  confidence: z.coerce.number().min(0).max(1).optional(),
   clauseRef: z.string().max(200).optional(),
   /** v2: exaktes Zitat der Originalklausel (max 2000 Zeichen) */
   quote: z.string().max(2000).nullable().optional(),
@@ -103,11 +103,11 @@ export const pipelineFindingSchema = z.object({
 
 export const riskAndGuidanceStageSchema = z.object({
   findings: z.array(pipelineFindingSchema).max(40),
-  riskScore01: z.number().min(0).max(1),
+  riskScore01: z.coerce.number().min(0).max(1),
   recommendedMeasures: z.array(z.string().min(1).max(1200)).max(30),
   negotiationHints: z.array(z.string().min(1).max(1200)).max(20),
   explanationSummary: z.string().min(1).max(4000),
-  aggregateConfidence: z.number().min(0).max(1).optional()
+  aggregateConfidence: z.coerce.number().min(0).max(1).optional()
 })
 
 export type ExtractionStagePayload = z.infer<typeof extractionStageSchema>
@@ -120,10 +120,33 @@ export const fullContractAnalysisSchema = z.object({
 
 export type FullContractAnalysisPayload = z.infer<typeof fullContractAnalysisSchema>
 
+/**
+ * Entfernt Markdown-Code-Fences (```json ... ```) aus LLM-Antworten.
+ *
+ * Behandelt alle bekannten Varianten:
+ * - ```json ... ```
+ * - ``` ... ```  (ohne Sprachkennung)
+ * - Preamble-Text vor dem Fence (z.B. "Here is the JSON:\n```json ...")
+ * - Trailing-Text nach dem Fence
+ * - 3–4 Backticks
+ */
 export function stripCodeFences(raw: string): string {
   const t = raw.trim()
-  const fence = /^```(?:json)?\s*([\s\S]*?)```$/im.exec(t)
+
+  // Greedy-Match: suche das ERSTE öffnende Fence und das LETZTE schließende Fence.
+  // Damit wird auch Text vor/nach den Fences entfernt.
+  const fence = /`{3,4}(?:json|JSON)?\s*\n([\s\S]+?)\n\s*`{3,4}/.exec(t)
   if (fence?.[1]) return fence[1].trim()
+
+  // Fallback: wenn kein Fence gefunden, aber der String mit { oder [ startet,
+  // versuche den JSON-Block zu isolieren (z.B. bei Preamble ohne Fences).
+  const jsonStart = t.indexOf("{")
+  const jsonEnd = t.lastIndexOf("}")
+  if (jsonStart >= 0 && jsonEnd > jsonStart && jsonStart <= 200) {
+    // Maximal 200 Zeichen Preamble tolerieren
+    return t.slice(jsonStart, jsonEnd + 1)
+  }
+
   return t
 }
 
