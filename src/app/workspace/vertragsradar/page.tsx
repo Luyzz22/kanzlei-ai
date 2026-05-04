@@ -1,259 +1,206 @@
-"use client"
-
-import { useState } from "react"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 
-type Regulation = {
-  id: string
-  name: string
-  shortName: string
-  emoji: string
-  effectiveDate: string
-  status: "in_kraft" | "uebergang" | "angekuendigt"
-  affectedContracts: number
-  criticalCount: number
-  desc: string
+import { auth } from "@/lib/auth"
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
+import { getRadarMatches, getPortfolioStats } from "@/lib/documents/workspace-analytics"
+import { REGULATION_WATCHLIST } from "@/lib/regulatory/watchlist"
+
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
+const urgencyStyle: Record<string, { border: string; bg: string; text: string; label: string; dot: string }> = {
+  kritisch: { border: "border-red-300", bg: "bg-red-50", text: "text-red-800", label: "Kritisch", dot: "bg-red-500" },
+  hoch:     { border: "border-amber-300", bg: "bg-amber-50", text: "text-amber-800", label: "Hoch", dot: "bg-amber-500" },
+  mittel:   { border: "border-blue-200", bg: "bg-blue-50", text: "text-blue-700", label: "Mittel", dot: "bg-blue-400" },
+  niedrig:  { border: "border-stone-200", bg: "bg-stone-50", text: "text-stone-600", label: "Niedrig", dot: "bg-stone-400" }
 }
 
-type AffectedContract = {
-  id: string
-  name: string
-  type: string
-  risk: "kritisch" | "hoch" | "mittel" | "niedrig"
-  clauses: string[]
-  action: string
-  deadline: string
+function daysUntil(dateStr: string): number {
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
 }
 
-const regulations: Regulation[] = [
-  { id: "eu-ai-act", name: "EU AI Act (Regulation 2024/1689)", shortName: "EU AI Act", emoji: "🤖", effectiveDate: "02.08.2026", status: "uebergang", affectedContracts: 12, criticalCount: 4, desc: "High-Risk-Pflichten fuer KI-Systeme. Transparenz, Dokumentation, Human Oversight. Betrifft KI-Klauseln in Lieferantenvertraegen." },
-  { id: "nis2", name: "NIS2-Umsetzungsgesetz", shortName: "NIS2", emoji: "🛡️", effectiveDate: "18.10.2024", status: "in_kraft", affectedContracts: 23, criticalCount: 8, desc: "Cybersecurity-Anforderungen in der Lieferkette. Betroffene Sektoren muessen Sicherheitsklauseln in Vertraegen verankern." },
-  { id: "dsgvo-2026", name: "DSGVO-Aenderungen 2026", shortName: "DSGVO Update", emoji: "🇪🇺", effectiveDate: "01.01.2026", status: "in_kraft", affectedContracts: 47, criticalCount: 3, desc: "Aktualisierte Standardvertragsklauseln, neue Anforderungen an Auftragsverarbeitung und internationale Datentransfers." },
-  { id: "e-rechnung", name: "E-Rechnungspflicht B2B", shortName: "E-Rechnung", emoji: "🧾", effectiveDate: "01.01.2027", status: "angekuendigt", affectedContracts: 31, criticalCount: 0, desc: "Verpflichtung zur elektronischen Rechnungsstellung im B2B-Verkehr. Rechnungsformat-Klauseln in Vertraegen anpassen." },
-  { id: "lieferketten", name: "Lieferkettensorgfaltspflichtengesetz", shortName: "LkSG", emoji: "🔗", effectiveDate: "01.01.2024", status: "in_kraft", affectedContracts: 18, criticalCount: 5, desc: "Sorgfaltspflichten in der Lieferkette. Menschenrechts- und Umweltklauseln in Lieferantenvertraegen erforderlich." },
-]
+function deadlineLabel(dateStr: string): string {
+  const days = daysUntil(dateStr)
+  if (days < 0) return `seit ${Math.abs(days)} Tagen in Kraft`
+  if (days === 0) return "Heute"
+  if (days <= 30) return `in ${days} Tagen`
+  if (days <= 365) return `in ${Math.round(days / 30)} Monaten`
+  return `in ${(days / 365).toFixed(1)} Jahren`
+}
 
-const affectedContracts: AffectedContract[] = [
-  { id: "doc-001", name: "Supplier Agreement — TechVendor GmbH", type: "Lieferantenvertrag", risk: "kritisch", clauses: ["Keine KI-Transparenzklausel", "Fehlende Human-Oversight-Regelung"], action: "Nachtrag erforderlich bis 02.08.2026", deadline: "02.08.2026" },
-  { id: "doc-003", name: "SaaS-Vertrag — Analytics Platform", type: "SaaS-Vertrag", risk: "kritisch", clauses: ["KI-generierte Entscheidungen ohne Offenlegung", "Keine Konformitaetsbewertung referenziert"], action: "Vertrag nachverhandeln oder kuendigen", deadline: "02.08.2026" },
-  { id: "doc-002", name: "NDA — Cloud Provider Inc.", type: "NDA", risk: "hoch", clauses: ["Cybersecurity-Anforderungen fehlen (NIS2)", "Keine Incident-Reporting-Pflicht"], action: "Cybersecurity-Annex ergaenzen", deadline: "Q3 2026" },
-  { id: "doc-004", name: "Rahmenvertrag — Logistik AG", type: "Rahmenvertrag", risk: "mittel", clauses: ["LkSG-Klausel vorhanden aber veraltet"], action: "LkSG-Klausel auf Stand 2026 aktualisieren", deadline: "Q4 2026" },
-  { id: "doc-007", name: "Dienstleistungsvertrag — IT-Berater", type: "Dienstleistungsvertrag", risk: "niedrig", clauses: ["DSGVO-AVV verweist auf alte SCCs"], action: "SCCs auf 2026-Version aktualisieren", deadline: "Naechste Verlaengerung" },
-]
+export default async function VertragsradarPage() {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/login")
 
-export default function VertragsradarPage() {
-  const [, setSelectedReg] = useState<string | null>(null)
-  const [view, setView] = useState<"overview" | "detail">("overview")
-  const [scanning, setScanning] = useState(false)
+  const ctx = await resolveTenantContextForUser(session.user.id)
+  if (ctx.status !== "single") redirect("/workspace")
 
-  const totalAffected = regulations.reduce((sum, r) => sum + r.affectedContracts, 0)
-  const totalCritical = regulations.reduce((sum, r) => sum + r.criticalCount, 0)
+  const [matches, stats] = await Promise.all([
+    getRadarMatches(ctx.tenantId),
+    getPortfolioStats(ctx.tenantId)
+  ])
 
-  const riskColor = (risk: string) => {
-    if (risk === "kritisch") return "bg-red-100 text-red-700 border-red-200"
-    if (risk === "hoch") return "bg-amber-100 text-amber-700 border-amber-200"
-    if (risk === "mittel") return "bg-blue-100 text-blue-700 border-blue-200"
-    return "bg-gray-100 text-gray-600 border-gray-200"
-  }
+  const unmatched = REGULATION_WATCHLIST.filter(
+    reg => !matches.some(m => m.regulation.id === reg.id)
+  )
 
-  const statusColor = (s: string) => {
-    if (s === "in_kraft") return "bg-red-100 text-red-700"
-    if (s === "uebergang") return "bg-amber-100 text-amber-700"
-    return "bg-blue-100 text-blue-700"
-  }
-  const statusLabel = (s: string) => {
-    if (s === "in_kraft") return "In Kraft"
-    if (s === "uebergang") return "Uebergangsfrist"
-    return "Angekuendigt"
-  }
-
-  const runScan = async () => {
-    setScanning(true)
-    await new Promise(r => setTimeout(r, 3000))
-    setScanning(false)
-  }
+  const totalAffected = matches.reduce((sum, m) => sum + m.affectedDocuments.length, 0)
+  const criticalCount = matches.filter(m => m.urgency === "kritisch" || m.urgency === "hoch").length
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#003856] text-[12px] font-bold text-white">VR</span>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">Modul 9 · Enterprise</p>
+    <div className="min-h-screen bg-stone-50">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+
+        <div className="mb-8">
+          <Link href="/workspace" className="text-sm text-stone-500 hover:text-[#003856] transition-colors">
+            &larr; Workspace
+          </Link>
+          <h1 className="mt-2 text-2xl font-semibold text-[#003856]">Vertragsradar</h1>
+          <p className="mt-1 text-sm text-stone-500">
+            Regulatorisches Monitoring &mdash; automatischer Abgleich Ihres Vertragsportfolios mit aktuellen EU- und DE-Regulierungen.
+          </p>
+        </div>
+
+        {/* Status-KPIs */}
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="rounded-xl border border-stone-200 bg-white p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-stone-400">Regulierungen</p>
+            <p className="mt-1 text-2xl font-semibold text-[#003856]">{REGULATION_WATCHLIST.length}</p>
+            <p className="text-xs text-stone-400">auf der Watchlist</p>
           </div>
-          <h1 className="mt-3 text-[1.75rem] font-semibold tracking-tight text-gray-950">Vertragsradar</h1>
-          <p className="mt-1 text-[14px] text-gray-500">Regulatorischer Compliance-Monitor — Gesetzesaenderungen automatisch gegen Ihr Vertragsportfolio pruefen.</p>
-        </div>
-        <button onClick={runScan} disabled={scanning} className="flex items-center gap-2 rounded-full bg-[#003856] px-5 py-2.5 text-[13px] font-medium text-white hover:bg-[#002a42] disabled:opacity-60">
-          {scanning ? (
-            <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Portfolio wird gescannt...</>
-          ) : (
-            <>🔍 Portfolio-Scan starten</>
-          )}
-        </button>
-      </div>
-
-      {/* KPI Strip */}
-      <div className="mt-8 grid gap-3 sm:grid-cols-5">
-        <div className="rounded-xl border border-gray-100 bg-white p-4 text-center">
-          <p className="text-[24px] font-semibold text-gray-900">{regulations.length}</p>
-          <p className="text-[11px] text-gray-400">Regulierungen ueberwacht</p>
-        </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4 text-center">
-          <p className="text-[24px] font-semibold text-amber-600">{totalAffected}</p>
-          <p className="text-[11px] text-gray-400">Betroffene Vertraege</p>
-        </div>
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center">
-          <p className="text-[24px] font-semibold text-red-700">{totalCritical}</p>
-          <p className="text-[11px] text-red-600">Kritische Handlungen</p>
-        </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4 text-center">
-          <p className="text-[24px] font-semibold text-emerald-600">156</p>
-          <p className="text-[11px] text-gray-400">Vertraege im Portfolio</p>
-        </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4 text-center">
-          <p className="text-[24px] font-semibold text-[#003856]">84%</p>
-          <p className="text-[11px] text-gray-400">Compliance-Quote</p>
-        </div>
-      </div>
-
-      {/* Critical Alert */}
-      {totalCritical > 0 && (
-        <div className="mt-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-[14px]">⚠️</span>
-          <div className="flex-1">
-            <p className="text-[13px] font-medium text-red-900">{totalCritical} kritische Compliance-Luecken identifiziert</p>
-            <p className="text-[12px] text-red-700">EU AI Act (4) · NIS2 (8) · LkSG (5) — Handlungsbedarf vor naechster Enforcement-Deadline</p>
+          <div className="rounded-xl border border-stone-200 bg-white p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-stone-400">Treffer</p>
+            <p className="mt-1 text-2xl font-semibold text-[#003856]">{matches.length}</p>
+            <p className="text-xs text-stone-400">betreffen Ihr Portfolio</p>
           </div>
-          <button onClick={() => setView("detail")} className="shrink-0 rounded-full bg-red-600 px-4 py-1.5 text-[12px] font-medium text-white hover:bg-red-700">Details ansehen</button>
+          <div className="rounded-xl border border-stone-200 bg-white p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-stone-400">Betroffene Vertraege</p>
+            <p className="mt-1 text-2xl font-semibold text-amber-600">{totalAffected}</p>
+          </div>
+          <div className="rounded-xl border border-stone-200 bg-white p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-stone-400">Dringend</p>
+            <p className="mt-1 text-2xl font-semibold text-red-600">{criticalCount}</p>
+            <p className="text-xs text-stone-400">kritisch / hoch</p>
+          </div>
         </div>
-      )}
 
-      {/* Tabs */}
-      <div className="mt-6 flex gap-1 border-b border-gray-200">
-        {[
-          { key: "overview" as const, label: "Regulierungen", emoji: "📋" },
-          { key: "detail" as const, label: "Betroffene Vertraege", emoji: "📄" },
-        ].map((tab) => (
-          <button key={tab.key} onClick={() => setView(tab.key)} className={`border-b-2 px-4 py-2.5 text-[13px] font-medium transition-colors ${view === tab.key ? "border-[#003856] text-[#003856]" : "border-transparent text-gray-400 hover:text-gray-600"}`}>{tab.emoji} {tab.label}</button>
-        ))}
-      </div>
-
-      {/* EUR-Lex Live Feed Status */}
-      <div className="mt-6 rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white px-5 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            </span>
-            <div>
-              <p className="text-[13px] font-medium text-gray-900">Live-Feed verbunden — EUR-Lex CELLAR SPARQL</p>
-              <p className="text-[11px] text-gray-500">Taeglicher Sync 03:00 Europe/Berlin · 6 Regulierungen aktiv ueberwacht · Quelle: <a href="https://eur-lex.europa.eu" target="_blank" rel="noopener noreferrer" className="font-medium text-[#003856] hover:underline">eur-lex.europa.eu</a></p>
+        {/* Matches */}
+        {matches.length === 0 && stats.analyzedDocuments === 0 ? (
+          <div className="rounded-xl border border-stone-200 bg-white p-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-stone-100">
+              <span className="text-2xl">&#128225;</span>
             </div>
+            <h2 className="text-lg font-medium text-[#003856]">Radar aktiv &mdash; keine Vertraege geladen</h2>
+            <p className="mt-2 text-sm text-stone-500">Laden Sie Vertraege hoch, um sie automatisch gegen {REGULATION_WATCHLIST.length} Regulierungen abzugleichen.</p>
+            <Link href="/workspace/upload" className="mt-4 inline-block rounded-lg bg-[#003856] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#00263d]">
+              Vertrag hochladen
+            </Link>
           </div>
-          <a href="/api/radar/feed?live=true" target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50">Feed-API ansehen →</a>
-        </div>
-      </div>
-
-      {/* Regulations Overview */}
-      {view === "overview" && (
-        <div className="mt-6 space-y-3">
-          {regulations.map((reg) => (
-            <div key={reg.id} onClick={() => { setSelectedReg(reg.id); setView("detail") }} className="cursor-pointer rounded-xl border border-gray-100 bg-white px-5 py-4 transition-all hover:border-gold-300 hover:shadow-card">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 text-[22px]">{reg.emoji}</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-[14px] font-semibold text-gray-900">{reg.name}</h3>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusColor(reg.status)}`}>{statusLabel(reg.status)}</span>
-                    </div>
-                    <p className="mt-1 text-[13px] text-gray-500">{reg.desc}</p>
-                    <div className="mt-2 flex items-center gap-4 text-[12px]">
-                      <span className="text-gray-400">Wirksam: <span className="font-medium text-gray-700">{reg.effectiveDate}</span></span>
-                      <span className="text-amber-600 font-medium">{reg.affectedContracts} Vertraege betroffen</span>
-                      {reg.criticalCount > 0 && <span className="text-red-600 font-medium">{reg.criticalCount} kritisch</span>}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-1">
-                    <div className="h-2 rounded-full bg-gray-100" style={{ width: "80px" }}>
-                      <div className="h-full rounded-full bg-[#003856]" style={{ width: `${Math.min(100, ((156 - reg.affectedContracts) / 156) * 100)}%` }} />
-                    </div>
-                    <span className="text-[10px] text-gray-400">{Math.round(((156 - reg.affectedContracts) / 156) * 100)}%</span>
-                  </div>
-                  <span className="text-[10px] text-gray-300">Compliance</span>
-                </div>
+        ) : (
+          <div className="space-y-4">
+            {matches.length === 0 && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+                <p className="text-sm font-medium text-emerald-800">Keine regulatorischen Treffer &mdash; Ihr Portfolio ist derzeit nicht von ueberwachten Aenderungen betroffen.</p>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            )}
 
-      {/* Affected Contracts Detail */}
-      {view === "detail" && (
-        <div className="mt-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-[13px] text-gray-500">{affectedContracts.length} Vertraege mit Handlungsbedarf</p>
-            <div className="flex gap-2">
-              {["kritisch", "hoch", "mittel", "niedrig"].map((r) => (
-                <span key={r} className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${riskColor(r)}`}>{r}</span>
-              ))}
-            </div>
-          </div>
-          {affectedContracts.map((c) => (
-            <div key={c.id} className="rounded-xl border border-gray-100 bg-white px-5 py-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Link href={`/workspace/dokumente/${c.id}`} className="text-[14px] font-semibold text-gray-900 hover:text-[#003856]">{c.name}</Link>
-                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${riskColor(c.risk)}`}>{c.risk}</span>
-                  </div>
-                  <p className="mt-1 text-[12px] text-gray-400">{c.type} · {c.id}</p>
-                  <div className="mt-3 space-y-1.5">
-                    {c.clauses.map((cl, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[8px] text-amber-700">!</span>
-                        <span className="text-[13px] text-gray-600">{cl}</span>
+            {matches.map(match => {
+              const style = urgencyStyle[match.urgency] ?? urgencyStyle.niedrig
+              const reg = match.regulation
+
+              return (
+                <div key={reg.id} className={`rounded-xl border ${style.border} ${style.bg} p-6`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{reg.emoji}</span>
+                        <div>
+                          <h3 className="font-semibold text-[#003856]">{reg.shortName}</h3>
+                          <p className="text-xs text-stone-500">{reg.fullName}</p>
+                        </div>
                       </div>
-                    ))}
+                      <p className="mt-3 text-sm text-stone-600">{reg.description}</p>
+
+                      {/* Betroffene Klauseln */}
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {reg.impactedClauses.map(clause => (
+                          <span key={clause} className="rounded bg-white/60 px-2 py-0.5 text-xs text-stone-500 border border-stone-200">{clause}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${style.text} bg-white/80 border ${style.border}`}>
+                        <span className={`inline-block h-2 w-2 rounded-full ${style.dot}`} />
+                        {style.label}
+                      </span>
+                      <p className="text-xs text-stone-500">{deadlineLabel(reg.enforcementDate)}</p>
+                      <p className="text-xs text-stone-400">{reg.jurisdiction}</p>
+                    </div>
                   </div>
-                  <div className="mt-3 rounded-lg bg-gold-50 px-3 py-2">
-                    <p className="text-[12px] text-gold-800"><span className="font-medium">Empfehlung:</span> {c.action}</p>
-                  </div>
+
+                  {/* Betroffene Vertraege */}
+                  {match.affectedDocuments.length > 0 && (
+                    <div className="mt-4 border-t border-stone-200/50 pt-3">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500">
+                        {match.affectedDocuments.length} betroffene{match.affectedDocuments.length === 1 ? "r Vertrag" : " Vertraege"}
+                      </p>
+                      <div className="space-y-1">
+                        {match.affectedDocuments.slice(0, 5).map(doc => (
+                          <Link key={doc.id} href={`/workspace/dokumente/${doc.id}`} className="flex items-center justify-between rounded-lg bg-white/50 px-3 py-2 text-sm transition-colors hover:bg-white/80">
+                            <div className="flex items-center gap-2">
+                              <span className="text-stone-400">&#128196;</span>
+                              <span className="font-medium text-[#003856]">{doc.title}</span>
+                              <span className="text-xs text-stone-400">{doc.organizationName}</span>
+                            </div>
+                            {doc.riskScore != null && (
+                              <span className={`rounded px-2 py-0.5 text-xs font-medium ${doc.riskScore >= 0.7 ? "bg-red-100 text-red-700" : doc.riskScore >= 0.4 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                                {(doc.riskScore * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </Link>
+                        ))}
+                        {match.affectedDocuments.length > 5 && (
+                          <p className="px-3 text-xs text-stone-400">+ {match.affectedDocuments.length - 5} weitere</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-[11px] text-gray-400">Deadline</p>
-                  <p className={`text-[13px] font-semibold ${c.risk === "kritisch" ? "text-red-600" : "text-gray-700"}`}>{c.deadline}</p>
+              )
+            })}
+
+            {/* Nicht betroffene Regulierungen */}
+            {unmatched.length > 0 && (
+              <div className="mt-8">
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-400">
+                  Weitere ueberwachte Regulierungen (keine Treffer)
+                </h2>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {unmatched.map(reg => (
+                    <div key={reg.id} className="flex items-center gap-3 rounded-lg border border-stone-200 bg-white p-3">
+                      <span>{reg.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-stone-600 truncate">{reg.shortName}</p>
+                        <p className="text-xs text-stone-400">{reg.jurisdiction} &middot; {deadlineLabel(reg.enforcementDate)}</p>
+                      </div>
+                      <span className="flex-shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-600">&#10003;</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            )}
+          </div>
+        )}
 
-      {/* Compliance Architecture */}
-      <div className="mt-8 rounded-xl border border-gray-100 bg-gray-50 p-5">
-        <h3 className="text-[14px] font-semibold text-gray-900">Architektur & Compliance</h3>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          {[
-            { label: "EU AI Act", status: "Limited Risk — Beratungstool mit Human Oversight" },
-            { label: "DSGVO", status: "Verarbeitet nur Vertragsdaten, kein PII-Zugriff" },
-            { label: "NIS2", status: "Hilft aktiv bei NIS2-Compliance der Kunden" },
-          ].map((c) => (
-            <div key={c.label} className="rounded-lg border border-gray-100 bg-white px-3 py-2">
-              <p className="text-[12px] font-medium text-gray-700">{c.label}</p>
-              <p className="mt-0.5 text-[10px] text-emerald-600">{c.status}</p>
-            </div>
-          ))}
+        {/* Disclaimer */}
+        <div className="mt-8 rounded-lg border border-stone-200 bg-white p-4">
+          <p className="text-xs text-stone-400">
+            <span className="font-semibold">Hinweis:</span> Der Vertragsradar gleicht Ihr Portfolio automatisch gegen eine kuratierte Watchlist ab (Quellen: EUR-Lex, BGBl).
+            Dies stellt keine Rechtsberatung dar. Die Ergebnisse dienen der Information und erfordern eine juristische Pruefung.
+          </p>
         </div>
-      </div>
-
-      <div className="mt-4 text-center text-[11px] text-gray-400">
-        Letzte Aktualisierung: {new Date().toLocaleDateString("de-DE")} · Quellen: EUR-Lex, BMJ, dejure.org, BMAS · <Link href="/ki-transparenz" className="font-medium text-[#003856]">KI-Transparenz</Link>
       </div>
     </div>
   )
