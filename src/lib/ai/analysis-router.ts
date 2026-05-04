@@ -64,8 +64,9 @@ export function selectPrimaryModelForStage(stage: PipelineStage, ctx: RouterCont
       const long = envModelToType("LONG_DOCUMENT_MODEL", ModelType.GEMINI_2_5_PRO)
       return long === ModelType.GEMINI_2_5_PRO || long === ModelType.CLAUDE_SONNET_4 ? long : ModelType.GEMINI_2_5_PRO
     }
-    const simple = envModelToType("SIMPLE_QUERY_MODEL", ModelType.GPT_4O_MINI)
-    return simple === ModelType.GPT_4O_MINI ? ModelType.GPT_4O_MINI : simple
+    // Claude als Primary für präzise Extraktion (Enterprise-Qualität).
+    // gpt-4o-mini bleibt Fallback über getFallbackChainForStage.
+    return envModelToType("SIMPLE_QUERY_MODEL", ModelType.CLAUDE_SONNET_4)
   }
 
   // RISK_AND_GUIDANCE — Klauselbegründung / Redlining: Claude bevorzugt
