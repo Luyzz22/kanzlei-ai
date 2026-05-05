@@ -27,27 +27,15 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (file.type === "text/plain" || file.name.endsWith(".txt")) {
       documentText = await file.text()
     } else if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
-      // PDF parsing can fail on cold start. Try twice with dynamic import each time.
-      let lastError: Error | null = null
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          const buffer = Buffer.from(await file.arrayBuffer())
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const pdfParse = (await import("pdf-parse")).default
-          const data = await pdfParse(buffer)
-          documentText = data.text
-          lastError = null
-          break
-        } catch (e) {
-          lastError = e instanceof Error ? e : new Error("PDF parse failed")
-          if (attempt === 1) {
-            await new Promise(r => setTimeout(r, 200))
-          }
-        }
-      }
-      if (lastError) {
+      try {
+        const arrayBuf = await file.arrayBuffer()
+        const uint8 = new Uint8Array(arrayBuf)
+        const { extractText } = await import("unpdf")
+        const result = await extractText(uint8)
+        documentText = Array.isArray(result.text) ? result.text.join("\n") : String(result.text)
+      } catch (e) {
         return NextResponse.json(
-          { error: "PDF konnte nicht gelesen werden. Bitte versuchen Sie es erneut oder geben Sie den Text direkt ein.", details: lastError.message },
+          { error: "PDF konnte nicht gelesen werden. Bitte versuchen Sie es erneut oder geben Sie den Text direkt ein.", details: e instanceof Error ? e.message : "PDF parse failed" },
           { status: 422 }
         )
       }
