@@ -78,29 +78,16 @@ function classifyFile(filename: string, mimeType: string | null): FileKind {
 }
 
 /**
- * PDF-Text-Layer-Extraktion via pdf-parse.
+ * PDF-Text-Layer-Extraktion via unpdf.
  *
- * Nutzt dasselbe erprobte Muster wie /api/analyze-quick:
- * - Dynamischer Import (pdf-parse haengt auf Cold Start gelegentlich)
- * - Retry bei transienten Fehlern
+ * Ersetzt pdf-parse (v1.1.1 nutzt veraltetes pdfjs v1.10.100 das auf
+ * Vercel Serverless mit "bad XRef entry" Fehlern abstuerzt).
  */
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  let lastError: Error | null = null
-
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const pdfParse = (await import("pdf-parse")).default
-      const data = await pdfParse(buffer)
-      return data.text
-    } catch (e) {
-      lastError = e instanceof Error ? e : new Error("pdf-parse failed")
-      if (attempt === 1) {
-        await new Promise((resolve) => setTimeout(resolve, 200))
-      }
-    }
-  }
-
-  throw lastError ?? new Error("pdf-parse failed without error")
+  const { extractText } = await import("unpdf")
+  const uint8 = new Uint8Array(buffer)
+  const result = await extractText(uint8)
+  return Array.isArray(result.text) ? result.text.join("\n") : String(result.text)
 }
 
 /**
