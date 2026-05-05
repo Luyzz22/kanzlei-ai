@@ -51,7 +51,7 @@ export class ClaudeProvider extends BaseAIProvider {
 
       const response = await client.messages.create({
         model: claudeModelId(),
-        max_tokens: 16384,
+        max_tokens: input.maxTokens ?? 8192,
         temperature: 0.2,
         messages: [{ role: "user", content: userContent }]
       })
