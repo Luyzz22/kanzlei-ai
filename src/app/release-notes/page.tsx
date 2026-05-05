@@ -5,10 +5,30 @@ export const metadata: Metadata = { title: "Release Notes", description: "Alle A
 
 const releases = [
   {
+    version: "2.2.0",
+    date: "4. Mai 2026",
+    title: "Provider-Fix, Verhandlungssimulator Live & Dashboard-Upgrade",
+    current: true,
+    changes: [
+      { type: "NEU", text: "\u{1F3AF} Verhandlungssimulator Live \u2014 Echtzeit-Streaming mit Claude Sonnet als KI-Gegenpartei und Coach-Feedback nach jedem Zug" },
+      { type: "NEU", text: "\u{1F4CB} Copilot Vertrags-Picker \u2014 analysierte Vertraege direkt im Copilot auswaehlen, inkl. Extraction, Findings und Formulierungsvorschlaegen" },
+      { type: "NEU", text: "\u{1F4CA} Dashboard zeigt jetzt echte DB-Daten: Analysen gesamt, \u00D8 Risiko-Score, Findings, letzte Analysen mit Verlinkung" },
+      { type: "NEU", text: "\u{1F514} Benachrichtigungssystem mit echten Daten aus Analyse-Runs und Review-Entscheidungen" },
+      { type: "FIX", text: "Provider-Fallback-Bug behoben: max_tokens 4096\u219216384 \u2014 Sonnet Risk-Output wurde abgeschnitten (Root Cause)" },
+      { type: "FIX", text: "stripCodeFences() robuster: neues Regex ohne m-Flag, JSON-Block-Isolation als Fallback" },
+      { type: "FIX", text: "ClaudeProvider strippt Markdown-Fences bei jsonMode vor der Rueckgabe (Defense in Depth)" },
+      { type: "FIX", text: "Dreistufiger JSON-Parser: Trailing Commas, Kommentare, NaN und unescaped Newlines werden bereinigt" },
+      { type: "FIX", text: "z.coerce.number() fuer alle numerischen Schema-Felder \u2014 LLM-String-Zahlen werden toleriert" },
+      { type: "FIX", text: "Prisma-Relation documentExtraction \u2192 extraction \u2014 Portfolio-Stats und Benchmarking funktionieren jetzt korrekt" },
+      { type: "CHANGE", text: "Extraction Primary: gpt-4o-mini \u2192 Claude Sonnet (Enterprise-Qualitaet)" },
+      { type: "CHANGE", text: "Admin-Diagnose-Endpoint /api/admin/diagnose-risk fuer Live-Debugging des Sonnet Risk-Outputs" },
+    ]
+  },
+  {
     version: "2.1.0",
     date: "16. April 2026",
     title: "Vertragsradar + KI-Verhandlungssimulator",
-    current: true,
+    current: false,
     changes: [
       { type: "NEU", text: "🛰️ Vertragsradar — Regulatorischer Compliance-Monitor. Gesetzesaenderungen (EU AI Act, NIS2, DSGVO, LkSG, E-Rechnung) automatisch gegen das Vertragsportfolio pruefen" },
       { type: "NEU", text: "🎯 KI-Verhandlungssimulator — Flugsimulator fuer Vertragsverhandlungen mit adaptiver KI-Gegenpartei und Coaching-Feedback nach jedem Zug" },
