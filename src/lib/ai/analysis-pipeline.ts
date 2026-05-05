@@ -189,7 +189,8 @@ async function runJsonStage<T>(
 
     try {
       const provider = createProvider(model)
-      const response = await provider.analyze({ prompt, documentText, jsonMode: true })
+      const stageMaxTokens = pipelineStage === "RISK_AND_GUIDANCE" ? 16384 : 8192
+      const response = await provider.analyze({ prompt, documentText, jsonMode: true, maxTokens: stageMaxTokens })
       tokensUsed = response.tokensUsed
       let parsedJson: unknown
       try {
