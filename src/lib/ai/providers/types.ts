@@ -5,6 +5,8 @@ export interface AnalyzeInput {
   documentText: string
   /** Strikte JSON-Ausgabe anfordern (Anbieter-spezifisch). */
   jsonMode?: boolean
+  /** Max Output-Tokens — Default 8192, Pipeline-Risk-Stage nutzt 16384. */
+  maxTokens?: number
 }
 
 export interface AIAnalysisResponse {
