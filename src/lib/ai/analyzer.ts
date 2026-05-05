@@ -43,6 +43,7 @@ export async function analyzeWithRouter(
   for (const model of chain) {
     try {
       const provider = createProvider(model)
+      // TODO: Nach Vercel Pro-Upgrade maxTokens auf 16384 erhoehen
       const response = await provider.analyze({ prompt, documentText })
       logModelMetric({
         model,
