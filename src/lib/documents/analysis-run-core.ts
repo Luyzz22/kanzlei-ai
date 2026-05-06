@@ -18,6 +18,7 @@ import {
   type ContractPipelineSuccess
 } from "@/lib/ai/analysis-pipeline"
 import { createTenantContractPromptResolver } from "@/lib/ai/prompt-governance.server"
+import { prisma } from "@/lib/prisma"
 import { CONTRACT_ANALYSIS_PROMPT_VERSION } from "@/lib/ai/schemas/contract-analysis"
 import { writeAuditEventTx } from "@/lib/audit-write"
 import { withTenant } from "@/lib/tenant-context.server"
@@ -488,6 +489,22 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
       } satisfies Prisma.InputJsonValue
     })
   })
+
+  // Auto-Push: Risiko-Bewertung an Dynamics BC senden (best-effort, non-blocking)
+  try {
+    const dynamicsConfig = await prisma.dynamicsIntegration.findUnique({
+      where: { tenantId: input.tenantId },
+      select: { syncEnabled: true, companyId: true }
+    })
+    if (dynamicsConfig?.syncEnabled && dynamicsConfig.companyId) {
+      const { pushRiskToVendor } = await import("@/lib/dynamics/risk-push")
+      await pushRiskToVendor(input.tenantId, runId, input.actorId).catch((e) => {
+        console.warn("[Dynamics Auto-Push] Fehlgeschlagen:", e instanceof Error ? e.message : e)
+      })
+    }
+  } catch {
+    // Dynamics-Integration nicht konfiguriert oder Fehler — ignorieren
+  }
 
   return { ok: true, runId }
 }
