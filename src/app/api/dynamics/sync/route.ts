@@ -1,18 +1,18 @@
+export const dynamic = "force-dynamic"
+export const maxDuration = 60
+
 import { NextRequest, NextResponse } from "next/server"
 
 import { auth } from "@/lib/auth"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { buildDynamicsClientForTenant } from "@/lib/dynamics/core"
 import { prisma } from "@/lib/prisma"
-import { writeAuditEvent } from "@/lib/audit-core"
+import { syncVendors, syncPurchaseOrders, syncPurchaseInvoices, syncAll } from "@/lib/dynamics/sync-service"
 
 /**
  * POST /api/dynamics/sync
  *
- * Body: { entity: "vendors" | "purchaseOrders" | "purchaseInvoices" }
- *
- * Credentials werden aus der gespeicherten Tenant-Config geladen —
- * NIEMALS im Request-Body (Phase-1-Anti-Pattern).
+ * Body: { entity: "vendors" | "purchaseOrders" | "purchaseInvoices" | "all" }
  */
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { entity } = await req.json().catch(() => ({}))
-    const validEntities = ["vendors", "purchaseOrders", "purchaseInvoices"]
+    const { entity } = await req.json().catch(() => ({ entity: "all" }))
+    const validEntities = ["vendors", "purchaseOrders", "purchaseInvoices", "all"]
     if (!validEntities.includes(entity)) {
       return NextResponse.json(
         { error: `Invalid entity. Allowed: ${validEntities.join(", ")}` },
@@ -35,12 +35,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Full sync shortcut
+    if (entity === "all") {
+      const result = await syncAll(ctx.tenantId, session.user.id)
+      if (result.error) {
+        return NextResponse.json({ error: result.error }, { status: 400 })
+      }
+      return NextResponse.json({ success: true, results: result.results })
+    }
+
+    // Single entity sync
     const config = await prisma.dynamicsIntegration.findUnique({
       where: { tenantId: ctx.tenantId }
     })
     if (!config) {
       return NextResponse.json(
-        { error: "Keine Dynamics-Integration konfiguriert. Bitte erst Config einrichten." },
+        { error: "Keine Dynamics-Integration konfiguriert." },
         { status: 400 }
       )
     }
@@ -54,74 +64,39 @@ export async function POST(req: NextRequest) {
     const client = await buildDynamicsClientForTenant(ctx.tenantId)
     if (!client) {
       return NextResponse.json(
-        { error: "Dynamics client konnte nicht initialisiert werden." },
+        { error: "Dynamics Client konnte nicht initialisiert werden." },
         { status: 500 }
       )
     }
 
-    const startedAt = new Date()
-    let count = 0
-
-    if (entity === "vendors") {
-      const vendors = await client.listVendors(config.companyId)
-      count = vendors.length
-    } else {
-      // purchaseOrders / purchaseInvoices: noch nicht implementiert
-      // (kommt in Block 2 — aktuell nur Stub damit UI nicht bricht)
-      count = 0
+    let result
+    switch (entity) {
+      case "vendors":
+        result = await syncVendors(ctx.tenantId, config.companyId, client, session.user.id)
+        break
+      case "purchaseOrders":
+        result = await syncPurchaseOrders(ctx.tenantId, config.companyId, client, session.user.id)
+        break
+      case "purchaseInvoices":
+        result = await syncPurchaseInvoices(ctx.tenantId, config.companyId, client, session.user.id)
+        break
     }
 
     await prisma.dynamicsIntegration.update({
       where: { tenantId: ctx.tenantId },
-      data: {
-        lastSyncAt: new Date(),
-        lastSyncStatus: "success",
-        lastSyncError: null
-      }
+      data: { lastSyncAt: new Date(), lastSyncStatus: "success", lastSyncError: null }
     })
 
-    await writeAuditEvent({
-      tenantId: ctx.tenantId,
-      actorId: session.user.id,
-      action: "dynamics.sync.run",
-      resourceType: "dynamics_integration",
-      resourceId: config.id,
-      metadata: {
-        entity,
-        count,
-        companyId: config.companyId,
-        durationMs: Date.now() - startedAt.getTime()
-      }
-    })
-
-    return NextResponse.json({
-      success: true,
-      entity,
-      count,
-      syncedAt: new Date().toISOString()
-    })
+    return NextResponse.json({ success: true, ...result })
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error"
 
-    // Persist failure state
     await prisma.dynamicsIntegration
       .update({
         where: { tenantId: ctx.tenantId },
-        data: {
-          lastSyncAt: new Date(),
-          lastSyncStatus: "error",
-          lastSyncError: msg.slice(0, 500)
-        }
+        data: { lastSyncAt: new Date(), lastSyncStatus: "error", lastSyncError: msg.slice(0, 500) }
       })
       .catch(() => {})
-
-    await writeAuditEvent({
-      tenantId: ctx.tenantId,
-      actorId: session.user.id,
-      action: "dynamics.sync.failed",
-      resourceType: "dynamics_integration",
-      metadata: { error: msg.slice(0, 500) }
-    }).catch(() => {})
 
     return NextResponse.json({ error: msg }, { status: 500 })
   }
