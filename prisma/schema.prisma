@@ -643,5 +643,87 @@ model DynamicsIntegration {
 
   tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  vendors                DynamicsVendor[]
+  purchaseOrders         DynamicsPurchaseOrder[]
+  purchaseInvoices       DynamicsPurchaseInvoice[]
+
   @@index([tenantId])
+}
+
+// =====================================================================
+// Dynamics 365 Business Central — Sync Mirror Tables
+// Phase 2: Vendors, Purchase Orders, Purchase Invoices
+// =====================================================================
+
+model DynamicsVendor {
+  id                String   @id @default(cuid())
+  tenantId          String
+  bcId              String   @db.VarChar(64)
+  number            String   @db.VarChar(32)
+  displayName       String   @db.VarChar(300)
+  addressLine1      String?  @db.VarChar(300)
+  city              String?  @db.VarChar(100)
+  country           String?  @db.VarChar(100)
+  phoneNumber       String?  @db.VarChar(64)
+  email             String?  @db.VarChar(200)
+  balance           Decimal? @db.Decimal(18, 2)
+  currencyCode      String?  @db.VarChar(10)
+  lastModifiedAt    DateTime?
+  syncedAt          DateTime @default(now())
+
+  /// Matching: verknuepfter KanzleiAI-Organisationsname (aus Vertragsanalyse)
+  matchedOrgName    String?  @db.VarChar(300)
+  matchConfidence   Float?
+
+  integration       DynamicsIntegration @relation(fields: [tenantId], references: [tenantId], onDelete: Cascade)
+
+  @@unique([tenantId, bcId])
+  @@index([tenantId, displayName])
+  @@index([tenantId, number])
+}
+
+model DynamicsPurchaseOrder {
+  id                String   @id @default(cuid())
+  tenantId          String
+  bcId              String   @db.VarChar(64)
+  number            String   @db.VarChar(32)
+  orderDate         DateTime?
+  vendorId          String?  @db.VarChar(64)
+  vendorNumber      String?  @db.VarChar(32)
+  vendorName        String?  @db.VarChar(300)
+  status            String?  @db.VarChar(32)
+  totalAmount       Decimal? @db.Decimal(18, 2)
+  currencyCode      String?  @db.VarChar(10)
+  lastModifiedAt    DateTime?
+  syncedAt          DateTime @default(now())
+
+  integration       DynamicsIntegration @relation(fields: [tenantId], references: [tenantId], onDelete: Cascade)
+
+  @@unique([tenantId, bcId])
+  @@index([tenantId, vendorId])
+  @@index([tenantId, orderDate])
+}
+
+model DynamicsPurchaseInvoice {
+  id                String   @id @default(cuid())
+  tenantId          String
+  bcId              String   @db.VarChar(64)
+  number            String   @db.VarChar(32)
+  invoiceDate       DateTime?
+  dueDate           DateTime?
+  vendorId          String?  @db.VarChar(64)
+  vendorNumber      String?  @db.VarChar(32)
+  vendorName        String?  @db.VarChar(300)
+  status            String?  @db.VarChar(32)
+  totalAmount       Decimal? @db.Decimal(18, 2)
+  remainingAmount   Decimal? @db.Decimal(18, 2)
+  currencyCode      String?  @db.VarChar(10)
+  lastModifiedAt    DateTime?
+  syncedAt          DateTime @default(now())
+
+  integration       DynamicsIntegration @relation(fields: [tenantId], references: [tenantId], onDelete: Cascade)
+
+  @@unique([tenantId, bcId])
+  @@index([tenantId, vendorId])
+  @@index([tenantId, invoiceDate])
 }
