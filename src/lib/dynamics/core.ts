@@ -232,11 +232,22 @@ type BcPurchaseInvoice = {
   lastModifiedDateTime?: string
 }
 
+export type VendorRiskPushPayload = {
+  riskScore01: number
+  findingsCount: number
+  highRiskFindings: number
+  contractTitle: string
+  analysisDate: string
+  summary: string
+}
+
 export type DynamicsApiClient = {
   listCompanies(): Promise<BcCompany[]>
   listVendors(companyId: string): Promise<BcVendor[]>
   listPurchaseOrders(companyId: string): Promise<BcPurchaseOrder[]>
   listPurchaseInvoices(companyId: string): Promise<BcPurchaseInvoice[]>
+  patchVendor(companyId: string, vendorId: string, data: Record<string, unknown>, etag?: string): Promise<void>
+  getVendorEtag(companyId: string, vendorId: string): Promise<string>
 }
 
 async function getEntraToken(
@@ -319,6 +330,40 @@ export async function buildDynamicsClientForTenant(
       }
       const data = await res.json()
       return (data.value ?? []) as BcPurchaseInvoice[]
+    },
+    async getVendorEtag(companyId: string, vendorId: string): Promise<string> {
+      const res = await fetch(`${baseUrl}/companies(${companyId})/vendors(${vendorId})`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+      })
+      if (!res.ok) {
+        throw new Error(`Dynamics API GET vendor (${res.status})`)
+      }
+      const data = await res.json()
+      return data["@odata.etag"] ?? ""
+    },
+    async patchVendor(companyId: string, vendorId: string, data: Record<string, unknown>, etag?: string): Promise<void> {
+      let finalEtag = etag ?? ""
+      if (!finalEtag) {
+        const getRes = await fetch(`${baseUrl}/companies(${companyId})/vendors(${vendorId})`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+        })
+        if (!getRes.ok) throw new Error(`Dynamics API GET vendor for ETag (${getRes.status})`)
+        const getData = await getRes.json()
+        finalEtag = getData["@odata.etag"] ?? "*"
+      }
+      const res = await fetch(`${baseUrl}/companies(${companyId})/vendors(${vendorId})`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "If-Match": finalEtag
+        },
+        body: JSON.stringify(data)
+      })
+      if (!res.ok) {
+        const body = await res.text().catch(() => "")
+        throw new Error(`Dynamics API PATCH vendor (${res.status}): ${body.slice(0, 300)}`)
+      }
     }
   }
 }
