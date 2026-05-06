@@ -190,9 +190,53 @@ type BcCompany = {
   systemVersion?: string
 }
 
+type BcVendor = {
+  id: string
+  number: string
+  displayName: string
+  addressLine1?: string
+  city?: string
+  country?: string
+  phoneNumber?: string
+  email?: string
+  balance?: number
+  currencyCode?: string
+  lastModifiedDateTime?: string
+}
+
+type BcPurchaseOrder = {
+  id: string
+  number: string
+  orderDate?: string
+  vendorId?: string
+  vendorNumber?: string
+  vendorName?: string
+  status?: string
+  totalAmountIncludingTax?: number
+  currencyCode?: string
+  lastModifiedDateTime?: string
+}
+
+type BcPurchaseInvoice = {
+  id: string
+  number: string
+  invoiceDate?: string
+  dueDate?: string
+  vendorId?: string
+  vendorNumber?: string
+  vendorName?: string
+  status?: string
+  totalAmountIncludingTax?: number
+  remainingAmount?: number
+  currencyCode?: string
+  lastModifiedDateTime?: string
+}
+
 export type DynamicsApiClient = {
   listCompanies(): Promise<BcCompany[]>
-  listVendors(companyId: string): Promise<Array<{ id: string; number: string; displayName: string }>>
+  listVendors(companyId: string): Promise<BcVendor[]>
+  listPurchaseOrders(companyId: string): Promise<BcPurchaseOrder[]>
+  listPurchaseInvoices(companyId: string): Promise<BcPurchaseInvoice[]>
 }
 
 async function getEntraToken(
@@ -247,14 +291,34 @@ export async function buildDynamicsClientForTenant(
       return (data.value ?? []) as BcCompany[]
     },
     async listVendors(companyId: string) {
-      const res = await fetch(`${baseUrl}/companies(${companyId})/vendors`, {
+      const res = await fetch(`${baseUrl}/companies(${companyId})/vendors?$top=500`, {
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
       })
       if (!res.ok) {
         throw new Error(`Dynamics API /vendors (${res.status})`)
       }
       const data = await res.json()
-      return (data.value ?? []) as Array<{ id: string; number: string; displayName: string }>
+      return (data.value ?? []) as BcVendor[]
+    },
+    async listPurchaseOrders(companyId: string) {
+      const res = await fetch(`${baseUrl}/companies(${companyId})/purchaseOrders?$top=500&$orderby=orderDate desc`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+      })
+      if (!res.ok) {
+        throw new Error(`Dynamics API /purchaseOrders (${res.status})`)
+      }
+      const data = await res.json()
+      return (data.value ?? []) as BcPurchaseOrder[]
+    },
+    async listPurchaseInvoices(companyId: string) {
+      const res = await fetch(`${baseUrl}/companies(${companyId})/purchaseInvoices?$top=500&$orderby=invoiceDate desc`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+      })
+      if (!res.ok) {
+        throw new Error(`Dynamics API /purchaseInvoices (${res.status})`)
+      }
+      const data = await res.json()
+      return (data.value ?? []) as BcPurchaseInvoice[]
     }
   }
 }
