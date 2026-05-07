@@ -95,13 +95,13 @@ const comparisonSchema = JSON.stringify({
   properties: {
     summary: { type: "string", description: "Zusammenfassung des Vergleichs in 2-3 Saetzen" },
     overallRisk: { type: "number", minimum: 0, maximum: 100, description: "Gesamtrisiko der Abweichungen: 0=identisch, 100=kritische Widersprueche" },
-    matchPercentage: { type: "number", minimum: 0, maximum: 100, description: "Prozentuale Uebereinstimmung der wesentlichen Klauseln" },
+    matchPercentage: { type: "number", minimum: 0, maximum: 100, description: "Prozentuale Übereinstimmung der wesentlichen Klauseln" },
     findings: {
       type: "array",
       items: {
         type: "object",
         properties: {
-          clause: { type: "string", description: "Name/Kategorie der Klausel (z.B. Haftung, Kuendigungsfrist)" },
+          clause: { type: "string", description: "Name/Kategorie der Klausel (z.B. Haftung, Kündigungsfrist)" },
           docA: { type: "string", description: "Relevante Passage aus Dokument A" },
           docB: { type: "string", description: "Relevante Passage aus Dokument B" },
           severity: { type: "string", enum: ["niedrig", "mittel", "hoch"] },
@@ -158,17 +158,17 @@ export async function POST(request: Request): Promise<NextResponse> {
     hasVisualElements: false
   }
 
-  const prompt = `Du bist ein Enterprise-KI-System fuer Vertragsvergleiche, spezialisiert auf den Abgleich von AGB gegen AEB (Allgemeine Einkaufsbedingungen) im DACH-Raum und international.
+  const prompt = `Du bist ein Enterprise-KI-System für Vertragsvergleiche, spezialisiert auf den Abgleich von AGB gegen AEB (Allgemeine Einkaufsbedingungen) im DACH-Raum und international.
 
-AUFGABE: Vergleiche die folgenden zwei Dokumente systematisch Klausel fuer Klausel.
+AUFGABE: Vergleiche die folgenden zwei Dokumente systematisch Klausel für Klausel.
 
 VERGLEICHS-SCHWERPUNKTE:
 1. Identifiziere alle Abweichungen zwischen Dokument A und Dokument B
 2. Bewerte jede Abweichung nach Schweregrad (niedrig/mittel/hoch)
 3. Zitiere die relevanten Passagen aus beiden Dokumenten
 4. Identifiziere Klauseln die in einem Dokument fehlen
-5. Pruefe besonders: Haftung, Gewaehrleistung, Kuendigungsfristen, Gerichtsstand, Vertragsstrafen, IP-Rechte, Datenschutz, Force Majeure
-6. Formuliere konkrete Handlungsempfehlungen fuer Nachverhandlungen
+5. Prüfe besonders: Haftung, Gewährleistung, Kündigungsfristen, Gerichtsstand, Vertragsstrafen, IP-Rechte, Datenschutz, Force Majeure
+6. Formuliere konkrete Handlungsempfehlungen für Nachverhandlungen
 
 Erkenne die Sprache automatisch und antworte in der Sprache der Dokumente.
 
@@ -178,7 +178,7 @@ ${docA}
 === DOKUMENT B (z.B. Ihre AEB / Vorgaben) ===
 ${docB}
 
-WICHTIG: Antworte ausschliesslich mit einem validen JSON-Objekt. Schema:
+WICHTIG: Antworte ausschließlich mit einem validen JSON-Objekt. Schema:
 ${comparisonSchema}`
 
   try {
