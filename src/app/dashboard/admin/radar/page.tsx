@@ -75,7 +75,7 @@ export default function RadarAdminPage() {
       </div>
 
       <div className="mt-8">
-        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurueck zur Verwaltung</Link>
+        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurück zur Verwaltung</Link>
       </div>
     </div>
   )
