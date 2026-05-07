@@ -1,4 +1,4 @@
-export type TenantPolicyMaturity = "read_only_grundlage" | "definiert" | "in_vorbereitung" | "verfuegbar"
+export type TenantPolicyMaturity = "read_only_grundlage" | "definiert" | "in_vorbereitung" | "verfügbar"
 
 export type TenantPolicyCategory = {
   id: string
@@ -15,7 +15,7 @@ export const TENANT_POLICY_MATURITY_LABELS: Record<TenantPolicyMaturity, string>
   read_only_grundlage: "Read-only Grundlage",
   definiert: "Definiert",
   in_vorbereitung: "In Vorbereitung",
-  verfuegbar: "Verfügbar"
+  verfügbar: "Verfügbar"
 }
 
 export const TENANT_POLICY_CATEGORIES: TenantPolicyCategory[] = [
@@ -24,7 +24,7 @@ export const TENANT_POLICY_CATEGORIES: TenantPolicyCategory[] = [
     title: "Zugriff & Session",
     description:
       "Grundsätze für Sitzungsdauer, erneute Authentifizierung und administrativen Zugang im Tenant-Kontext.",
-    maturity: "verfuegbar",
+    maturity: "verfügbar",
     owner: "IT-Sicherheit",
     policies: [
       "Session-Timeout pro Tenant ist als editierbare Einstellung verfügbar",
@@ -39,7 +39,7 @@ export const TENANT_POLICY_CATEGORIES: TenantPolicyCategory[] = [
     title: "Rollen & administrative Freigaben",
     description:
       "Richtlinienrahmen für Rollenänderungen, Freigabeprinzipien und nachvollziehbare Verantwortlichkeiten.",
-    maturity: "verfuegbar",
+    maturity: "verfügbar",
     owner: "Tenant-Administration",
     policies: [
       "Tenantbezogene Freigaberichtlinien für Review-Start, Freigabe und Archivierung sind editierbar",
@@ -54,7 +54,7 @@ export const TENANT_POLICY_CATEGORIES: TenantPolicyCategory[] = [
     title: "Datenschutz & Aufbewahrung",
     description:
       "Einordnung von Retention-Grundsätzen, Löschanlässen und organisatorischen Prüfpfaden für Datenschutzthemen.",
-    maturity: "verfuegbar",
+    maturity: "verfügbar",
     owner: "Datenschutz",
     policies: [
       "Standard-Aufbewahrungstage sind als tenant-gebundene Einstellung verfügbar",
@@ -84,7 +84,7 @@ export const TENANT_POLICY_CATEGORIES: TenantPolicyCategory[] = [
     title: "Nachweise & Audit",
     description:
       "Struktur für Nachweispflichten, Exportregeln und revisionsnahe Dokumentation von Governance-Entscheidungen.",
-    maturity: "verfuegbar",
+    maturity: "verfügbar",
     owner: "Compliance",
     policies: [
       "Audit-Einträge als zentrale Nachweisquelle im Tenant-Kontext verankert",
