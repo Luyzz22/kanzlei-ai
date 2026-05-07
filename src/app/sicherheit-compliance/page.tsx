@@ -1,7 +1,7 @@
 import Link from "next/link"
 import type { Metadata } from "next"
 
-export const metadata: Metadata = { title: "Sicherheit & Compliance", description: "Enterprise-Sicherheitsarchitektur: Verschluesselung, RLS, RBAC, Audit Trail, DSGVO, AVV." }
+export const metadata: Metadata = { title: "Sicherheit & Compliance", description: "Enterprise-Sicherheitsarchitektur: Verschlüsselung, RLS, RBAC, Audit Trail, DSGVO, AVV." }
 
 export default function SicherheitPage() {
   return (
@@ -24,8 +24,8 @@ export default function SicherheitPage() {
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
           <div className="grid gap-6 lg:grid-cols-2">
             {[
-              { emoji: "🔐", title: "Verschluesselung", items: ["TLS 1.3 fuer alle Datenuebertragungen", "AES-256 Verschluesselung at-rest", "HSTS mit 2 Jahren max-age + preload", "Strict-Transport-Security Header"] },
-              { emoji: "🏗️", title: "Mandantentrennung", items: ["Row-Level Security auf 12 PostgreSQL-Tabellen", "current_tenant_id() Session-Variable", "DB-Level Isolation (kein App-Level-Filter)", "Separate Tenant-IDs fuer jeden Mandanten"] },
+              { emoji: "🔐", title: "Verschlüsselung", items: ["TLS 1.3 für alle Datenuebertragungen", "AES-256 Verschlüsselung at-rest", "HSTS mit 2 Jahren max-age + preload", "Strict-Transport-Security Header"] },
+              { emoji: "🏗️", title: "Mandantentrennung", items: ["Row-Level Security auf 12 PostgreSQL-Tabellen", "current_tenant_id() Session-Variable", "DB-Level Isolation (kein App-Level-Filter)", "Separate Tenant-IDs für jeden Mandanten"] },
               { emoji: "👤", title: "Zugriffskontrolle (RBAC)", items: ["3 Rollen: Admin, Anwalt, Assistent", "Middleware-basierte Route-Guards", "Admin-Only Endpunkte geschuetzt", "JWT Sessions mit 24h MaxAge"] },
               { emoji: "📋", title: "Audit Trail", items: ["Non-blocking Event-Logging", "Akteur, Mandant, Zeitstempel pro Event", "16 Event-Typen (Login, Analyse, Export...)", "Export als CSV/DATEV"] },
               { emoji: "🛡️", title: "Security Headers", items: ["X-Frame-Options: DENY", "X-Content-Type-Options: nosniff", "Referrer-Policy: strict-origin-when-cross-origin", "Permissions-Policy: no camera/mic/geo"] },
@@ -57,9 +57,9 @@ export default function SicherheitPage() {
           <h2 className="mt-3 text-center text-display-sm text-gray-950">Regulatorische Konformitaet</h2>
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
             {[
-              { emoji: "🇪🇺", title: "DSGVO", desc: "Privacy by Design. Datenminimierung, Zweckbindung, Loeschkonzept. AVV nach Art. 28 DSGVO verfuegbar.", status: "Konform" },
-              { emoji: "🏛️", title: "GoBD-Naehe", desc: "Nachvollziehbarkeit, Unveraenderbarkeit und Historisierung aller geschaeftsrelevanten Vorgaenge.", status: "Umgesetzt" },
-              { emoji: "📊", title: "ISO 27001", desc: "Sicherheitsarchitektur orientiert an ISO 27001 Anforderungen. Dokumentation verfuegbar.", status: "Vorbereitet" },
+              { emoji: "🇪🇺", title: "DSGVO", desc: "Privacy by Design. Datenminimierung, Zweckbindung, Loeschkonzept. AVV nach Art. 28 DSGVO verfügbar.", status: "Konform" },
+              { emoji: "🏛️", title: "GoBD-Naehe", desc: "Nachvollziehbarkeit, Unveraenderbarkeit und Historisierung aller geschaeftsrelevanten Vorgänge.", status: "Umgesetzt" },
+              { emoji: "📊", title: "ISO 27001", desc: "Sicherheitsarchitektur orientiert an ISO 27001 Anforderungen. Dokumentation verfügbar.", status: "Vorbereitet" },
             ].map((comp) => (
               <div key={comp.title} className="rounded-2xl border border-gray-100 bg-white p-6 text-center">
                 <span className="text-[32px]">{comp.emoji}</span>
