@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "§ 203 StGB — Geheimhaltungsvereinbarung",
-  description: "Dedizierte Geheimhaltungsvereinbarung nach § 203 Abs. 4 StGB fuer Rechtsanwaelte, Steuerberater und andere Berufsgeheimnistraeger, die KanzleiAI als 'sonstige mitwirkende Person' einsetzen."
+  description: "Dedizierte Geheimhaltungsvereinbarung nach § 203 Abs. 4 StGB für Rechtsanwaelte, Steuerberater und andere Berufsgeheimnistraeger, die KanzleiAI als 'sonstige mitwirkende Person' einsetzen."
 }
 export const revalidate = 3600
 
@@ -22,7 +22,7 @@ export default function Paragraph203Page() {
             Geheimhaltungsvereinbarung nach § 203 StGB
           </h1>
           <p className="mt-4 max-w-3xl text-[16px] leading-relaxed text-gray-600">
-            Dedizierte Vereinbarung fuer Rechtsanwaelte, Steuerberater und andere
+            Dedizierte Vereinbarung für Rechtsanwaelte, Steuerberater und andere
             Berufsgeheimnistraeger. Erfuellt die Anforderung nach § 203 Abs. 4 StGB
             in Verbindung mit § 43e BRAO an die Einbindung &bdquo;sonstiger mitwirkender
             Personen&ldquo;.
@@ -70,12 +70,12 @@ export default function Paragraph203Page() {
               {
                 emoji: "🔒",
                 title: "Verpflichtung zur Verschwiegenheit",
-                desc: "Schriftliche Zusicherung gemaess § 203 Abs. 4 Satz 2 Nr. 1 StGB, dass alle Mitarbeiter und Sub-Prozessoren zur Geheimhaltung verpflichtet sind."
+                desc: "Schriftliche Zusicherung gemäß § 203 Abs. 4 Satz 2 Nr. 1 StGB, dass alle Mitarbeiter und Sub-Prozessoren zur Geheimhaltung verpflichtet sind."
               },
               {
                 emoji: "⚖️",
                 title: "Strafrechtlicher Hinweis",
-                desc: "Ausdrueckliche Belehrung ueber die Strafbarkeit nach § 203 StGB bei Offenbarung fremder Geheimnisse (Strafrahmen bis 1 Jahr Freiheitsstrafe)."
+                desc: "Ausdrueckliche Belehrung über die Strafbarkeit nach § 203 StGB bei Offenbarung fremder Geheimnisse (Strafrahmen bis 1 Jahr Freiheitsstrafe)."
               },
               {
                 emoji: "👥",
@@ -85,17 +85,17 @@ export default function Paragraph203Page() {
               {
                 emoji: "🛑",
                 title: "Zugriffsbeschraenkung",
-                desc: "Technische und organisatorische Massnahmen (Row-Level Security, Zero-Data-Retention-APIs, Audit-Trail), die den Zugriff auf Mandantendaten minimieren."
+                desc: "Technische und organisatorische Maßnahmen (Row-Level Security, Zero-Data-Retention-APIs, Audit-Trail), die den Zugriff auf Mandantendaten minimieren."
               },
               {
                 emoji: "🗑️",
                 title: "Datenloeschung",
-                desc: "Verpflichtung zur vollstaendigen Loeschung aller Mandantendaten nach Vertragsende innerhalb einer dokumentierten Frist."
+                desc: "Verpflichtung zur vollstaendigen Löschung aller Mandantendaten nach Vertragsende innerhalb einer dokumentierten Frist."
               },
               {
                 emoji: "📜",
                 title: "Kollisionsfaelle",
-                desc: "Verfahren fuer den Fall gesetzlicher Herausgabeverlangen (z.B. CLOUD Act, gerichtliche Anordnungen) einschliesslich Benachrichtigungspflicht."
+                desc: "Verfahren für den Fall gesetzlicher Herausgabeverlangen (z.B. CLOUD Act, gerichtliche Anordnungen) einschliesslich Benachrichtigungspflicht."
               }
             ].map((item) => (
               <article
@@ -129,7 +129,7 @@ export default function Paragraph203Page() {
               {
                 step: "1",
                 title: "Vereinbarung anfordern",
-                desc: "Der Kanzlei-Ansprechpartner fordert die Geheimhaltungsvereinbarung ueber das Formular unten oder per E-Mail an."
+                desc: "Der Kanzlei-Ansprechpartner fordert die Geheimhaltungsvereinbarung über das Formular unten oder per E-Mail an."
               },
               {
                 step: "2",
@@ -139,7 +139,7 @@ export default function Paragraph203Page() {
               {
                 step: "3",
                 title: "Ablage im Trust Center",
-                desc: "Die unterzeichnete Vereinbarung wird im persoenlichen Trust-Center-Bereich archiviert und ist jederzeit fuer interne Audits abrufbar."
+                desc: "Die unterzeichnete Vereinbarung wird im persoenlichen Trust-Center-Bereich archiviert und ist jederzeit für interne Audits abrufbar."
               },
               {
                 step: "4",
@@ -175,11 +175,11 @@ export default function Paragraph203Page() {
             <p className="mt-2 text-[13px] leading-relaxed text-gray-600">
               Das Dokument wird individuell auf Ihre Kanzlei/Rechtsabteilung
               personalisiert (Name, Sitz, Kammer-Zugehoerigkeit, Sub-Prozessoren-Auswahl).
-              Kostenfrei fuer alle KanzleiAI-Business- und Enterprise-Kunden.
+              Kostenfrei für alle KanzleiAI-Business- und Enterprise-Kunden.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <a
-                href="mailto:compliance@sbsdeutschland.de?subject=%C2%A7%20203%20StGB%20Geheimhaltungsvereinbarung%20anfordern&body=Sehr%20geehrtes%20Compliance-Team%2C%0A%0Abitte%20senden%20Sie%20mir%20die%20auf%20unsere%20Kanzlei%2FRechtsabteilung%20personalisierte%20Geheimhaltungsvereinbarung%20nach%20%C2%A7%20203%20Abs.%204%20StGB%20zu.%0A%0AKanzlei%2FUnternehmen%3A%0ASitz%3A%0AKammer%2FAufsichtsbehoerde%3A%0AAnsprechpartner%3A%0A%0AVielen%20Dank%21%0A"
+                href="mailto:compliance@sbsdeutschland.de?subject=%C2%A7%20203%20StGB%20Geheimhaltungsvereinbarung%20anfordern&body=Sehr%20geehrtes%20Compliance-Team%2C%0A%0Abitte%20senden%20Sie%20mir%20die%20auf%20unsere%20Kanzlei%2FRechtsabteilung%20personalisierte%20Geheimhaltungsvereinbarung%20nach%20%C2%A7%20203%20Abs.%204%20StGB%20zu.%0A%0AKanzlei%2FUnternehmen%3A%0ASitz%3A%0AKammer%2FAufsichtsbehörde%3A%0AAnsprechpartner%3A%0A%0AVielen%20Dank%21%0A"
                 className="inline-flex items-center gap-1.5 rounded-lg bg-[#003856] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#002a42]"
               >
                 📧 Per E-Mail anfordern
@@ -204,7 +204,7 @@ export default function Paragraph203Page() {
             {[
               {
                 law: "§ 203 Abs. 1 StGB",
-                text: "Kernvorschrift der Schweigepflicht fuer Berufsgeheimnistraeger (insb. Rechtsanwaelte, Steuerberater, Aerzte)."
+                text: "Kernvorschrift der Schweigepflicht für Berufsgeheimnistraeger (insb. Rechtsanwaelte, Steuerberater, Aerzte)."
               },
               {
                 law: "§ 203 Abs. 3 S. 2 StGB",
@@ -212,7 +212,7 @@ export default function Paragraph203Page() {
               },
               {
                 law: "§ 203 Abs. 4 StGB",
-                text: "Definiert die formalen Anforderungen an die Verpflichtung: Textform, Belehrung ueber Strafbarkeit, Einhaltung analoger Regeln fuer Sub-Beauftragte."
+                text: "Definiert die formalen Anforderungen an die Verpflichtung: Textform, Belehrung über Strafbarkeit, Einhaltung analoger Regeln für Sub-Beauftragte."
               },
               {
                 law: "§ 43e BRAO",
@@ -224,7 +224,7 @@ export default function Paragraph203Page() {
               },
               {
                 law: "BStBK FAQ-Katalog KI (Feb. 2026)",
-                text: "Bundessteuerberaterkammer-FAQ: § 203-Pruefung ist Teil einer KI-Governance-Struktur in Steuerberatungskanzleien."
+                text: "Bundessteuerberaterkammer-FAQ: § 203-Prüfung ist Teil einer KI-Governance-Struktur in Steuerberatungskanzleien."
               }
             ].map((item) => (
               <div
@@ -239,7 +239,7 @@ export default function Paragraph203Page() {
             ))}
           </div>
           <p className="mt-6 text-[11px] italic leading-relaxed text-gray-500">
-            Diese Darstellung ersetzt keine Rechtsberatung im Einzelfall. Fuer die
+            Diese Darstellung ersetzt keine Rechtsberatung im Einzelfall. Für die
             konkrete berufsrechtliche Wuerdigung Ihres KI-Einsatzes konsultieren Sie
             bitte Ihre Kammer oder einen auf Berufsrecht spezialisierten Rechtsanwalt.
           </p>
