@@ -22,7 +22,7 @@ export default function SecurityAccessPage() {
               <span className="text-[22px]">🔑</span>
               <div>
                 <h3 className="text-[15px] font-semibold text-gray-900">E-Mail + Passwort</h3>
-                <p className="text-[12px] text-gray-500">Standard-Authentifizierung fuer alle Nutzer</p>
+                <p className="text-[12px] text-gray-500">Standard-Authentifizierung für alle Nutzer</p>
               </div>
             </div>
             <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">Aktiv</span>
@@ -35,14 +35,14 @@ export default function SecurityAccessPage() {
               <span className="text-[22px]">🏢</span>
               <div>
                 <h3 className="text-[15px] font-semibold text-gray-900">Microsoft Entra ID (SSO)</h3>
-                <p className="text-[12px] text-gray-500">Single Sign-On via SAML/OIDC fuer Enterprise-Kunden</p>
+                <p className="text-[12px] text-gray-500">Single Sign-On via SAML/OIDC für Enterprise-Kunden</p>
               </div>
             </div>
             <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${ssoEnabled ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{ssoEnabled ? "Aktiv" : "Vorbereitet"}</span>
           </div>
           {!ssoEnabled && (
             <div className="mt-4 rounded-lg bg-amber-50 p-3">
-              <p className="text-[12px] text-amber-700">SSO-Konfiguration erfordert Azure AD Client ID und Secret. Kontaktieren Sie <Link href="mailto:ki@sbsdeutschland.de" className="font-medium underline">ki@sbsdeutschland.de</Link> fuer die Einrichtung.</p>
+              <p className="text-[12px] text-amber-700">SSO-Konfiguration erfordert Azure AD Client ID und Secret. Kontaktieren Sie <Link href="mailto:ki@sbsdeutschland.de" className="font-medium underline">ki@sbsdeutschland.de</Link> für die Einrichtung.</p>
             </div>
           )}
         </div>
@@ -71,7 +71,7 @@ export default function SecurityAccessPage() {
       </div>
 
       <div className="mt-8">
-        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurueck zur Verwaltung</Link>
+        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurück zur Verwaltung</Link>
       </div>
     </div>
   )
