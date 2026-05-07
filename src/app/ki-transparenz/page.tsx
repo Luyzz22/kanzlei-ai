@@ -56,7 +56,7 @@ export default function KiTransparenzPage() {
               { emoji: "👤", title: "Human-in-the-Loop", desc: "KI-Ergebnisse sind Entscheidungshilfen, keine Entscheidungen. Jede Analyse erfordert juristische Prüfung durch qualifiziertes Personal." },
               { emoji: "📋", title: "Prompt Governance", desc: "Alle KI-Prompts sind versioniert und dokumentiert. Änderungen durchlaufen einen Review-Prozess bevor sie in Produktion gehen." },
               { emoji: "🔍", title: "Nachvollziehbarkeit", desc: "Jede Analyse protokolliert das verwendete Modell, die Prompt-Version und den Zeitstempel. Ergebnisse sind reproduzierbar." },
-              { emoji: "🛡️", title: "Verschluesselte Uebermittlung", desc: "Vertragstexte werden via TLS 1.3 an KI-Provider gesendet. Keine Zwischenspeicherung auf Drittservern." },
+              { emoji: "🛡️", title: "Verschlüsselte Übermittlung", desc: "Vertragstexte werden via TLS 1.3 an KI-Provider gesendet. Keine Zwischenspeicherung auf Drittservern." },
               { emoji: "📊", title: "Qualitaetssicherung", desc: "Risiko-Scores und Findings werden gegen deutsches Recht validiert. Regelmaessige Qualitaets-Audits der KI-Ergebnisse." },
             ].map((p) => (
               <div key={p.title} className="flex items-start gap-4 rounded-xl border border-gray-100 bg-white p-5">
