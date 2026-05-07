@@ -6,7 +6,7 @@ export function OrganizationJsonLd() {
     "legalName": "SBS Deutschland GmbH & Co. KG",
     "url": "https://www.kanzlei-ai.com",
     "logo": "https://www.kanzlei-ai.com/icon.svg",
-    "description": "KI-gestuetzte Vertragsanalyse fuer juristische Teams im DACH-Markt.",
+    "description": "KI-gestuetzte Vertragsanalyse für juristische Teams im DACH-Markt.",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "In der Dell 19",
