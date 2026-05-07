@@ -30,7 +30,7 @@ const scenarios: Scenario[] = [
     difficulty: "mittel",
     objectives: ["Haftung auf 12 Monatsvergütungen begrenzen", "IP-Rechte beim Auftraggeber sichern", "Kündigungsrecht mit 3 Monaten Frist"],
     icon: "\u{1F3ED}",
-    opener: "Guten Tag. Wir haben Ihren Vertragsentwurf geprüft. Einige Punkte sehen wir anders — insbesondere die Haftungsklausel. Unsere Standardhaftung betraegt 24 Monate Auftragsvolumen, das ist branchenueblich. Zudem behalten wir uns die IP-Rechte an allen Arbeitsergebnissen vor. Dazu ist unsere Mindestlaufzeit 36 Monate."
+    opener: "Guten Tag. Wir haben Ihren Vertragsentwurf geprüft. Einige Punkte sehen wir anders — insbesondere die Haftungsklausel. Unsere Standardhaftung betraegt 24 Monate Auftragsvolumen, das ist branchenüblich. Zudem behalten wir uns die IP-Rechte an allen Arbeitsergebnissen vor. Dazu ist unsere Mindestlaufzeit 36 Monate."
   },
   {
     id: "sc-02",
