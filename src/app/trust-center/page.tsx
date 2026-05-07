@@ -15,9 +15,9 @@ const trustPillars = [
   {
     emoji: "🇪🇺",
     title: "DSGVO-Konformitaet",
-    desc: "Privacy by Design. Datenminimierung, Zweckbindung, Loeschkonzept. AVV nach Art. 28 DSGVO verfuegbar.",
+    desc: "Privacy by Design. Datenminimierung, Zweckbindung, Loeschkonzept. AVV nach Art. 28 DSGVO verfügbar.",
     href: "/datenschutz",
-    link: "Datenschutzerklaerung →"
+    link: "Datenschutzerklärung →"
   },
   {
     emoji: "🤖",
@@ -29,7 +29,7 @@ const trustPillars = [
   {
     emoji: "⚖️",
     title: "§ 203 StGB Geheimhaltung",
-    desc: "Dedizierte Geheimhaltungsvereinbarung fuer Berufsgeheimnistraeger (Rechtsanwaelte, Steuerberater). Erfuellt § 203 Abs. 4 StGB und § 43e BRAO.",
+    desc: "Dedizierte Geheimhaltungsvereinbarung für Berufsgeheimnistraeger (Rechtsanwaelte, Steuerberater). Erfuellt § 203 Abs. 4 StGB und § 43e BRAO.",
     href: "/trust/geheimhaltung-203",
     link: "Vereinbarung anfordern →"
   },
@@ -43,7 +43,7 @@ const trustPillars = [
   {
     emoji: "📋",
     title: "Sub-Prozessoren",
-    desc: "Vollstaendige Liste aller Auftragsverarbeiter nach Art. 28 DSGVO. Transparenz ueber CLOUD-Act-Betroffenheit und Datentransfer.",
+    desc: "Vollstaendige Liste aller Auftragsverarbeiter nach Art. 28 DSGVO. Transparenz über CLOUD-Act-Betroffenheit und Datentransfer.",
     href: "/trust/sub-prozessoren",
     link: "Sub-Prozessoren-Liste →"
   },
@@ -68,7 +68,7 @@ const certifications = [
 ]
 
 const securityMeasures = [
-  { label: "Verschluesselung", value: "TLS 1.3 + AES-256", emoji: "🔐" },
+  { label: "Verschlüsselung", value: "TLS 1.3 + AES-256", emoji: "🔐" },
   { label: "Mandantentrennung", value: "Row-Level Security (12 Tabellen)", emoji: "🏗️" },
   { label: "Zugriffskontrolle", value: "RBAC (Admin, Anwalt, Assistent)", emoji: "👤" },
   { label: "Session-Sicherheit", value: "JWT, 24h MaxAge", emoji: "⏱️" },
@@ -89,7 +89,7 @@ export default function TrustCenterPage() {
               <span className="text-[12px] font-medium text-gold-700">Trust Center</span>
             </div>
             <h1 className="text-display text-gray-950">Vertrauen durch Transparenz</h1>
-            <p className="mt-4 text-[17px] leading-relaxed text-gray-500">KanzleiAI wurde fuer juristische Teams gebaut, die hoechste Anforderungen an Datenschutz, Sicherheit und Nachvollziehbarkeit haben.</p>
+            <p className="mt-4 text-[17px] leading-relaxed text-gray-500">KanzleiAI wurde für juristische Teams gebaut, die hoechste Anforderungen an Datenschutz, Sicherheit und Nachvollziehbarkeit haben.</p>
           </div>
         </div>
       </section>
@@ -129,7 +129,7 @@ export default function TrustCenterPage() {
       {/* Security Measures */}
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
-          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🔧 Technische Massnahmen</p>
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🔧 Technische Maßnahmen</p>
           <h2 className="mt-3 text-center text-display-sm text-gray-950">Sicherheitsarchitektur</h2>
           <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {securityMeasures.map((m) => (
@@ -179,7 +179,7 @@ export default function TrustCenterPage() {
           <h2 className="mt-3 text-center text-display-sm text-gray-950">Compliance-Dokumentation</h2>
           <div className="mt-10 grid gap-3 sm:grid-cols-2">
             {[
-              { emoji: "📋", title: "Datenschutzerklaerung", href: "/datenschutz", desc: "10 Sektionen, DSGVO-konform" },
+              { emoji: "📋", title: "Datenschutzerklärung", href: "/datenschutz", desc: "10 Sektionen, DSGVO-konform" },
               { emoji: "📜", title: "AVV (Art. 28 DSGVO)", href: "/avv", desc: "8 Sektionen, TOM, Sub-Processors" },
               { emoji: "🛡️", title: "Sicherheit & Compliance", href: "/sicherheit-compliance", desc: "6 Security-Layer, Compliance-Status" },
               { emoji: "🤖", title: "KI-Transparenz", href: "/ki-transparenz", desc: "Modelle, Prompt Gov, Human-in-the-Loop" },
@@ -202,7 +202,7 @@ export default function TrustCenterPage() {
       <section className="border-t border-gray-200 bg-[#FAFAF7] py-20 sm:py-28">
         <div className="mx-auto max-w-3xl px-5 text-center">
           <h2 className="text-display-sm text-gray-950">Fragen zur Sicherheit?</h2>
-          <p className="mt-4 text-[16px] text-gray-500">Wir stellen Ihnen gerne weitere Dokumentation fuer Ihre interne Sicherheitspruefung zur Verfuegung.</p>
+          <p className="mt-4 text-[16px] text-gray-500">Wir stellen Ihnen gerne weitere Dokumentation für Ihre interne Sicherheitsprüfung zur Verfuegung.</p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link href="/enterprise-kontakt" className="rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42]">Sicherheitsgespraech vereinbaren</Link>
             <Link href="/avv" className="rounded-full border border-gray-200 bg-white px-7 py-3.5 text-[15px] font-medium text-gray-700 hover:bg-gray-50">AVV ansehen</Link>
