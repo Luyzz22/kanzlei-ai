@@ -5,10 +5,10 @@ import { auth } from "@/lib/auth"
 /**
  * GET /api/admin/test-anthropic
  *
- * Direkter Anthropic-API-Test zur Diagnose von Modell-Verfuegbarkeit.
+ * Direkter Anthropic-API-Test zur Diagnose von Modell-Verfügbarkeit.
  * Probiert nacheinander:
  *   1. claude-sonnet-4-6 (das aktuelle Sonnet)
- *   2. claude-sonnet-4-5 (Vorgaenger als Fallback)
+ *   2. claude-sonnet-4-5 (Vorgänger als Fallback)
  *   3. claude-3-5-sonnet-latest (alt aber stabil)
  *
  * Liefert pro Modell den exakten HTTP-Status und Fehler-Body, falls
@@ -104,9 +104,9 @@ export async function GET() {
 
   const recommendation = (() => {
     const firstWorking = results.find((r) => r.ok)
-    if (!firstWorking) return "Kein Anthropic-Modell verfuegbar — API-Key oder Account-Status pruefen"
-    if (firstWorking.model === "claude-sonnet-4-6") return "OK — claude-sonnet-4-6 ist verfuegbar und sollte als Default funktionieren"
-    return `Sonnet 4.6 nicht verfuegbar — Fallback auf ${firstWorking.model} empfohlen (ANTHROPIC_CHAT_MODEL setzen)`
+    if (!firstWorking) return "Kein Anthropic-Modell verfügbar — API-Key oder Account-Status prüfen"
+    if (firstWorking.model === "claude-sonnet-4-6") return "OK — claude-sonnet-4-6 ist verfügbar und sollte als Default funktionieren"
+    return `Sonnet 4.6 nicht verfügbar — Fallback auf ${firstWorking.model} empfohlen (ANTHROPIC_CHAT_MODEL setzen)`
   })()
 
   return NextResponse.json({
