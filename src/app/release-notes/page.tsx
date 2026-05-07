@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
-export const metadata: Metadata = { title: "Release Notes", description: "Alle Aenderungen und Updates an KanzleiAI." }
+export const metadata: Metadata = { title: "Release Notes", description: "Alle Änderungen und Updates an KanzleiAI." }
 
 const releases = [
   {
@@ -10,18 +10,18 @@ const releases = [
     title: "Provider-Fix, Verhandlungssimulator Live & Dashboard-Upgrade",
     current: true,
     changes: [
-      { type: "NEU", text: "\u{1F3AF} Verhandlungssimulator Live \u2014 Echtzeit-Streaming mit Claude Sonnet als KI-Gegenpartei und Coach-Feedback nach jedem Zug" },
-      { type: "NEU", text: "\u{1F4CB} Copilot Vertrags-Picker \u2014 analysierte Vertraege direkt im Copilot auswaehlen, inkl. Extraction, Findings und Formulierungsvorschlaegen" },
-      { type: "NEU", text: "\u{1F4CA} Dashboard zeigt jetzt echte DB-Daten: Analysen gesamt, \u00D8 Risiko-Score, Findings, letzte Analysen mit Verlinkung" },
+      { type: "NEU", text: "\u{1F3AF} Verhandlungssimulator Live — Echtzeit-Streaming mit Claude Sonnet als KI-Gegenpartei und Coach-Feedback nach jedem Zug" },
+      { type: "NEU", text: "\u{1F4CB} Copilot Vertrags-Picker — analysierte Verträge direkt im Copilot auswählen, inkl. Extraction, Findings und Formulierungsvorschlaegen" },
+      { type: "NEU", text: "\u{1F4CA} Dashboard zeigt jetzt echte DB-Daten: Analysen gesamt, Ø Risiko-Score, Findings, letzte Analysen mit Verlinkung" },
       { type: "NEU", text: "\u{1F514} Benachrichtigungssystem mit echten Daten aus Analyse-Runs und Review-Entscheidungen" },
-      { type: "FIX", text: "Provider-Fallback-Bug behoben: max_tokens 4096\u219216384 \u2014 Sonnet Risk-Output wurde abgeschnitten (Root Cause)" },
+      { type: "FIX", text: "Provider-Fallback-Bug behoben: max_tokens 4096→16384 — Sonnet Risk-Output wurde abgeschnitten (Root Cause)" },
       { type: "FIX", text: "stripCodeFences() robuster: neues Regex ohne m-Flag, JSON-Block-Isolation als Fallback" },
-      { type: "FIX", text: "ClaudeProvider strippt Markdown-Fences bei jsonMode vor der Rueckgabe (Defense in Depth)" },
+      { type: "FIX", text: "ClaudeProvider strippt Markdown-Fences bei jsonMode vor der Rückgabe (Defense in Depth)" },
       { type: "FIX", text: "Dreistufiger JSON-Parser: Trailing Commas, Kommentare, NaN und unescaped Newlines werden bereinigt" },
-      { type: "FIX", text: "z.coerce.number() fuer alle numerischen Schema-Felder \u2014 LLM-String-Zahlen werden toleriert" },
-      { type: "FIX", text: "Prisma-Relation documentExtraction \u2192 extraction \u2014 Portfolio-Stats und Benchmarking funktionieren jetzt korrekt" },
-      { type: "CHANGE", text: "Extraction Primary: gpt-4o-mini \u2192 Claude Sonnet (Enterprise-Qualitaet)" },
-      { type: "CHANGE", text: "Admin-Diagnose-Endpoint /api/admin/diagnose-risk fuer Live-Debugging des Sonnet Risk-Outputs" },
+      { type: "FIX", text: "z.coerce.number() für alle numerischen Schema-Felder — LLM-String-Zahlen werden toleriert" },
+      { type: "FIX", text: "Prisma-Relation documentExtraction → extraction — Portfolio-Stats und Benchmarking funktionieren jetzt korrekt" },
+      { type: "CHANGE", text: "Extraction Primary: gpt-4o-mini → Claude Sonnet (Enterprise-Qualitaet)" },
+      { type: "CHANGE", text: "Admin-Diagnose-Endpoint /api/admin/diagnose-risk für Live-Debugging des Sonnet Risk-Outputs" },
     ]
   },
   {
@@ -30,14 +30,14 @@ const releases = [
     title: "Vertragsradar + KI-Verhandlungssimulator",
     current: false,
     changes: [
-      { type: "NEU", text: "🛰️ Vertragsradar — Regulatorischer Compliance-Monitor. Gesetzesaenderungen (EU AI Act, NIS2, DSGVO, LkSG, E-Rechnung) automatisch gegen das Vertragsportfolio pruefen" },
-      { type: "NEU", text: "🎯 KI-Verhandlungssimulator — Flugsimulator fuer Vertragsverhandlungen mit adaptiver KI-Gegenpartei und Coaching-Feedback nach jedem Zug" },
+      { type: "NEU", text: "🛰️ Vertragsradar — Regulatorischer Compliance-Monitor. Gesetzesaenderungen (EU AI Act, NIS2, DSGVO, LkSG, E-Rechnung) automatisch gegen das Vertragsportfolio prüfen" },
+      { type: "NEU", text: "🎯 KI-Verhandlungssimulator — Flugsimulator für Vertragsverhandlungen mit adaptiver KI-Gegenpartei und Coaching-Feedback nach jedem Zug" },
       { type: "NEU", text: "4 Verhandlungsszenarien: Lieferantenvertrag, SaaS mit DSGVO, M&A-NDA, LkSG-Rahmenvertrag" },
-      { type: "NEU", text: "5 ueberwachte Regulierungen mit kuratierten Feeds (EUR-Lex, BMJ, dejure.org, BMAS)" },
+      { type: "NEU", text: "5 überwachte Regulierungen mit kuratierten Feeds (EUR-Lex, BMJ, dejure.org, BMAS)" },
       { type: "NEU", text: "Radar-Admin-Settings: Feeds, Scan-Intervalle (Echtzeit/taeglich/woechentlich), Alert-Kanaele" },
       { type: "NEU", text: "Compliance-Architektur: Beide Module sind EU AI Act Limited Risk (Beratungstools mit Human Oversight)" },
       { type: "NEU", text: "API: POST /api/radar/scan mit Regulatorik-Matching und Confidence-Scores" },
-      { type: "NEU", text: "Portfolio-weite Heatmap mit 156 Vertraegen, 131 Matches und 20 kritischen Handlungen" },
+      { type: "NEU", text: "Portfolio-weite Heatmap mit 156 Verträgen, 131 Matches und 20 kritischen Handlungen" },
       { type: "NEU", text: "Produkt auf Zehn Kernmodule erweitert, Sidebar mit NEU/BETA-Badges" },
     ]
   },
@@ -47,14 +47,14 @@ const releases = [
     title: "DERMALOG Enterprise + Einkauf & Beschaffung",
     changes: [
       { type: "NEU", text: "Bilinguale Vertragsanalyse (DE/EN) mit automatischer Spracherkennung" },
-      { type: "NEU", text: "AGB vs. AEB Vergleichsmodus — zwei Dokumente Klausel fuer Klausel abgleichen" },
-      { type: "NEU", text: "Lieferanten-Benchmarking — Risiko-Uebersicht aller analysierten Lieferanten" },
-      { type: "NEU", text: "Umformulierungsvorschlaege fuer jedes Hochrisiko-Finding" },
-      { type: "NEU", text: "Kuendigungsfristen-Dashboard mit Ampel-System (rot/gelb/gruen)" },
+      { type: "NEU", text: "AGB vs. AEB Vergleichsmodus — zwei Dokumente Klausel für Klausel abgleichen" },
+      { type: "NEU", text: "Lieferanten-Benchmarking — Risiko-Übersicht aller analysierten Lieferanten" },
+      { type: "NEU", text: "Umformulierungsvorschlaege für jedes Hochrisiko-Finding" },
+      { type: "NEU", text: "Kündigungsfristen-Dashboard mit Ampel-System (rot/gelb/gruen)" },
       { type: "NEU", text: "Loesungsseite Einkauf & Beschaffung mit 6 Use Cases" },
-      { type: "NEU", text: "9 Procurement-Pruefpunkte (Limitation of Liability, Indemnification, IP, etc.)" },
+      { type: "NEU", text: "9 Procurement-Prüfpunkte (Limitation of Liability, Indemnification, IP, etc.)" },
       { type: "NEU", text: "EN-Vertragstypen: Supplier Agreement, NDA English, MSA, Purchase Agreement" },
-      { type: "NEU", text: "Compare-API (/api/compare) fuer Dokumentenvergleich" },
+      { type: "NEU", text: "Compare-API (/api/compare) für Dokumentenvergleich" },
     ]
   },
   {
@@ -64,12 +64,12 @@ const releases = [
     changes: [
       { type: "NEU", text: "Persistente Workspace-Sidebar (wie Notion/Linear)" },
       { type: "NEU", text: "KI-Transparenz-Seite mit 3 Modellen und Datenfluss" },
-      { type: "NEU", text: "Dynamisches OG-Image (Edge Runtime) fuer Social Sharing" },
+      { type: "NEU", text: "Dynamisches OG-Image (Edge Runtime) für Social Sharing" },
       { type: "NEU", text: "Social Proof mit 3 Testimonials und 5 Trust Badges" },
       { type: "NEU", text: "6 funktionale Admin-Subpages (Members, Security, Policies, etc.)" },
       { type: "NEU", text: "Audit-Dashboard mit Event-Typ-Filtern" },
-      { type: "NEU", text: "Profil-Seite mit E-Mail/Passwort-Aenderung" },
-      { type: "FIX", text: "Metadata fuer alle Tab-Titel ergaenzt" },
+      { type: "NEU", text: "Profil-Seite mit E-Mail/Passwort-Änderung" },
+      { type: "FIX", text: "Metadata für alle Tab-Titel ergaenzt" },
     ]
   },
   {
@@ -79,7 +79,7 @@ const releases = [
     changes: [
       { type: "NEU", text: "Trust Center mit 4 Saeulen, 6 Compliance-Badges, 7 Sub-Processors" },
       { type: "NEU", text: "Hilfe-Center mit Getting Started, Features, FAQ" },
-      { type: "NEU", text: "Datenschutzerklaerung (10 DSGVO-Sektionen)" },
+      { type: "NEU", text: "Datenschutzerklärung (10 DSGVO-Sektionen)" },
       { type: "NEU", text: "AVV mit TOM und 8 Verarbeitungssektionen" },
       { type: "NEU", text: "JSON-LD Structured Data (Organization + SoftwareApplication)" },
       { type: "FIX", text: "contractType wird jetzt an Analyse-API gesendet" },
@@ -104,7 +104,7 @@ const releases = [
     title: "Sicherheit & Compliance",
     changes: [
       { type: "NEU", text: "Sicherheit-Seite mit 6 Schutzschichten" },
-      { type: "NEU", text: "Loesungen-Seiten fuer Kanzleien und Rechtsabteilungen" },
+      { type: "NEU", text: "Loesungen-Seiten für Kanzleien und Rechtsabteilungen" },
       { type: "NEU", text: "Release Notes (diese Seite)" },
     ]
   },
@@ -117,7 +117,7 @@ const releases = [
       { type: "NEU", text: "Contract Copilot mit SSE-Streaming" },
       { type: "NEU", text: "4 Export-Formate (PDF, JSON, CSV, DATEV)" },
       { type: "NEU", text: "NextAuth v5 mit JWT + Credentials Provider" },
-      { type: "NEU", text: "Row-Level Security fuer Mandantentrennung" },
+      { type: "NEU", text: "Row-Level Security für Mandantentrennung" },
       { type: "NEU", text: "Stripe Billing Integration" },
     ]
   }
@@ -128,7 +128,7 @@ export default function ReleaseNotesPage() {
     <main className="mx-auto max-w-4xl px-5 py-20 sm:px-8">
       <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">📋 Changelog</p>
       <h1 className="mt-2 text-display text-gray-950">Release Notes</h1>
-      <p className="mt-4 text-[16px] text-gray-500">Alle Aenderungen und Verbesserungen an KanzleiAI.</p>
+      <p className="mt-4 text-[16px] text-gray-500">Alle Änderungen und Verbesserungen an KanzleiAI.</p>
 
       <div className="mt-12 space-y-10">
         {releases.map((release) => (
