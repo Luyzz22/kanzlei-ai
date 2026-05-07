@@ -112,7 +112,7 @@ export default function BenachrichtigungenPage() {
       </div>
 
       <div className="mt-8 text-center">
-        <Link href="/dashboard" className="text-[12px] font-medium text-[#003856] hover:underline">{"\u2190"} Zurueck zum Dashboard</Link>
+        <Link href="/dashboard" className="text-[12px] font-medium text-[#003856] hover:underline">{"←"} Zurück zum Dashboard</Link>
       </div>
     </div>
   )
