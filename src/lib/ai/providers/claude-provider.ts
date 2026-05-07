@@ -20,8 +20,8 @@ function stripMarkdownCodeFences(text: string): string {
 
 function claudeModelId(): string {
   // Default: Claude Sonnet 4.6 (released Feb 17, 2026)
-  // Override via ENV ANTHROPIC_CHAT_MODEL fuer Pin auf bestimmte Version
-  // (z.B. claude-sonnet-4-6-20260217 fuer reproduzierbare Outputs).
+  // Override via ENV ANTHROPIC_CHAT_MODEL für Pin auf bestimmte Version
+  // (z.B. claude-sonnet-4-6-20260217 für reproduzierbare Outputs).
   return process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-sonnet-4-6"
 }
 
