@@ -139,7 +139,7 @@ async function loadHistoryForTenant(tenantId: string): Promise<HistoryEntry[]> {
     })
 
     return runs.map((run) => {
-      // Pro Stage DEN "effektiv genutzten" Decision-Eintrag waehlen:
+      // Pro Stage DEN "effektiv genutzten" Decision-Eintrag wählen:
       // Zuerst der erfolgreiche (wasSuccessful=true), sonst der letzte Versuch.
       // Das spiegelt exakt wider, was der Router in der Schnellanalyse-UI
       // als "Routing/Protokoll" zeigt.
