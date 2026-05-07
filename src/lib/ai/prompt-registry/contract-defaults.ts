@@ -37,7 +37,7 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt nach folgendem Schema:
     "terminationSummary": "string (optional)"
   },
   "legalTopics": [
-    { "topic": "haftung|gewaehrleistung|vertraulichkeit|datenschutz|gerichtsstand|verguetung|sonstiges",
+    { "topic": "haftung|gewährleistung|vertraulichkeit|datenschutz|gerichtsstand|verguetung|sonstiges",
       "summary": "string",
       "riskHint": "niedrig|mittel|hoch" }
   ],
@@ -144,7 +144,7 @@ BEISPIEL FÜR EIN FINDING:
   "severity": "hoch",
   "confidence": 0.9,
   "clauseRef": "§ 4",
-  "quote": "Bei Verstoss gegen diese Vereinbarung zahlt der Empfaenger eine Vertragsstrafe von EUR 250.000 pro Verstoss.",
+  "quote": "Bei Verstoß gegen diese Vereinbarung zahlt der Empfänger eine Vertragsstrafe von EUR 250.000 pro Verstoß.",
   "suggestedRevision": "Bei schuldhaftem Verstoß gegen diese Vereinbarung zahlt der Empfänger eine angemessene Vertragsstrafe, die sich nach der Schwere des Verstoßes richtet, höchstens jedoch EUR 25.000 pro Verstoß. Die Vertragsstrafe ist auf den tatsächlich entstandenen Schaden anzurechnen."
 }
 
