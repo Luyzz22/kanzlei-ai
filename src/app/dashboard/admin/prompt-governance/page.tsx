@@ -36,9 +36,9 @@ export default function PromptGovernancePage() {
         <div className="mt-3 space-y-2">
           {[
             { emoji: "📝", rule: "Alle Prompts sind versioniert und im Repository dokumentiert" },
-            { emoji: "👀", rule: "Prompt-Aenderungen erfordern Review vor Produktiv-Deployment" },
-            { emoji: "🧪", rule: "Neue Versionen werden gegen Referenz-Vertraege getestet" },
-            { emoji: "📊", rule: "Ergebnis-Qualitaet wird regelmaessig gegen manuelle Pruefung validiert" },
+            { emoji: "👀", rule: "Prompt-Änderungen erfordern Review vor Produktiv-Deployment" },
+            { emoji: "🧪", rule: "Neue Versionen werden gegen Referenz-Verträge getestet" },
+            { emoji: "📊", rule: "Ergebnis-Qualitaet wird regelmaessig gegen manuelle Prüfung validiert" },
             { emoji: "🚫", rule: "Keine Kundendaten im Prompt-Text — nur Vertragstext als Input" },
             { emoji: "📋", rule: "Modell-Version und Prompt-Version werden im Audit-Trail protokolliert" },
           ].map((r) => (
@@ -51,7 +51,7 @@ export default function PromptGovernancePage() {
       </div>
 
       <div className="mt-6">
-        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurueck zur Verwaltung</Link>
+        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurück zur Verwaltung</Link>
       </div>
     </div>
   )
