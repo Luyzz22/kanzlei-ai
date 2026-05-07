@@ -8,7 +8,7 @@ export type ReviewQueueEintrag = {
   bezugsdokumentId?: string
   organisation: string
   prioritaet: ReviewPrioritaet
-  zustaendig: string
+  zuständig: string
   faelligkeit: string
   entscheidungsstatus: ReviewStatus
 }
@@ -17,7 +17,7 @@ export const reviewFilteroptionen = {
   status: ["Alle Status", "Offen", "In Prüfung", "Rückfrage erforderlich", "Freigabereif", "Eskalation empfohlen"],
   prioritaet: ["Alle Prioritäten", "Hoch", "Mittel", "Niedrig"],
   organisation: ["Alle Organisationen", "Muster Holding GmbH", "Nordstern Personal GmbH", "Kanzlei Behrens & Partner"],
-  zustaendigkeit: ["Alle Zuständigkeiten", "Dr. Anna Weber", "Svenja Koch", "Laura Henning", "Compliance Office"]
+  zuständigkeit: ["Alle Zuständigkeiten", "Dr. Anna Weber", "Svenja Koch", "Laura Henning", "Compliance Office"]
 } as const
 
 export const reviewQueueDaten: ReviewQueueEintrag[] = [
@@ -28,7 +28,7 @@ export const reviewQueueDaten: ReviewQueueEintrag[] = [
     bezugsdokumentId: "DOC-2026-014",
     organisation: "Muster Holding GmbH",
     prioritaet: "Hoch",
-    zustaendig: "Svenja Koch",
+    zuständig: "Svenja Koch",
     faelligkeit: "22.03.2026",
     entscheidungsstatus: "In Prüfung"
   },
@@ -39,7 +39,7 @@ export const reviewQueueDaten: ReviewQueueEintrag[] = [
     bezugsdokumentId: "DOC-2026-021",
     organisation: "Kanzlei Behrens & Partner",
     prioritaet: "Mittel",
-    zustaendig: "Dr. Markus Stein",
+    zuständig: "Dr. Markus Stein",
     faelligkeit: "25.03.2026",
     entscheidungsstatus: "Rückfrage erforderlich"
   },
@@ -50,7 +50,7 @@ export const reviewQueueDaten: ReviewQueueEintrag[] = [
     bezugsdokumentId: "DOC-2026-035",
     organisation: "Nordstern Personal GmbH",
     prioritaet: "Hoch",
-    zustaendig: "Laura Henning",
+    zuständig: "Laura Henning",
     faelligkeit: "19.03.2026",
     entscheidungsstatus: "Eskalation empfohlen"
   },
@@ -61,7 +61,7 @@ export const reviewQueueDaten: ReviewQueueEintrag[] = [
     bezugsdokumentId: "DOC-2026-041",
     organisation: "Muster Holding GmbH",
     prioritaet: "Niedrig",
-    zustaendig: "Compliance Office",
+    zuständig: "Compliance Office",
     faelligkeit: "30.03.2026",
     entscheidungsstatus: "Offen"
   },
@@ -72,7 +72,7 @@ export const reviewQueueDaten: ReviewQueueEintrag[] = [
     bezugsdokumentId: "DOC-2025-118",
     organisation: "Kanzlei Behrens & Partner",
     prioritaet: "Mittel",
-    zustaendig: "Dr. Anna Weber",
+    zuständig: "Dr. Anna Weber",
     faelligkeit: "28.03.2026",
     entscheidungsstatus: "Freigabereif"
   }
