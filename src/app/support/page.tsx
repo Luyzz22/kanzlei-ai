@@ -1,14 +1,14 @@
 import Link from "next/link"
 import type { Metadata } from "next"
 
-export const metadata: Metadata = { title: "Support", description: "Hilfe und Kontakt fuer KanzleiAI-Nutzer." }
+export const metadata: Metadata = { title: "Support", description: "Hilfe und Kontakt für KanzleiAI-Nutzer." }
 
 export default function SupportPage() {
   return (
     <main className="mx-auto max-w-5xl px-5 py-20 sm:px-8">
       <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">💬 Support</p>
-      <h1 className="mt-2 text-display text-gray-950">Wie koennen wir helfen?</h1>
-      <p className="mt-4 text-[16px] text-gray-500">Unser Team unterstuetzt Sie bei Fragen zur Plattform, Einrichtung und Enterprise-Integration.</p>
+      <h1 className="mt-2 text-display text-gray-950">Wie können wir helfen?</h1>
+      <p className="mt-4 text-[16px] text-gray-500">Unser Team unterstützt Sie bei Fragen zur Plattform, Einrichtung und Enterprise-Integration.</p>
 
       {/* Contact Channels */}
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
@@ -24,7 +24,7 @@ export default function SupportPage() {
           <h2 className="mt-3 text-[17px] font-semibold text-gray-900">Enterprise Support</h2>
           <p className="mt-2 text-[14px] text-gray-500">Dedizierter Ansprechpartner, SLA-basiert, Onboarding-Begleitung.</p>
           <Link href="/enterprise-kontakt" className="mt-4 inline-block rounded-full bg-[#003856] px-5 py-2.5 text-[13px] font-medium text-white hover:bg-[#002a42]">Enterprise-Kontakt</Link>
-          <p className="mt-3 text-[12px] text-gray-400">Fuer Business- und Enterprise-Kunden mit priorisiertem Support</p>
+          <p className="mt-3 text-[12px] text-gray-400">Für Business- und Enterprise-Kunden mit priorisiertem Support</p>
         </div>
       </div>
 
@@ -34,7 +34,7 @@ export default function SupportPage() {
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {[
             { emoji: "📖", title: "Hilfe-Center", desc: "Getting Started, Features, FAQ", href: "/hilfe" },
-            { emoji: "📋", title: "Release Notes", desc: "Alle Updates und Aenderungen", href: "/release-notes" },
+            { emoji: "📋", title: "Release Notes", desc: "Alle Updates und Änderungen", href: "/release-notes" },
             { emoji: "🔧", title: "Systemstatus", desc: "Echtzeit-Status aller Systeme", href: "/systemstatus" },
             { emoji: "🔐", title: "Sicherheit", desc: "Sicherheitsmassnahmen und Compliance", href: "/sicherheit-compliance" },
             { emoji: "🛡️", title: "Trust Center", desc: "Datenschutz, AVV, Sub-Processors", href: "/trust-center" },
