@@ -282,14 +282,14 @@ export default function CopilotPage() {
                 <button onClick={clearContract} className="rounded-full border border-stone-200 p-1 text-stone-400 hover:bg-stone-50 hover:text-stone-600 transition-colors" title="Vertrag entfernen">
                   <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
-                <button onClick={() => setShowContractPicker(!showContractPicker)} className="rounded-full border border-stone-200 p-1 text-stone-400 hover:bg-stone-50 hover:text-stone-600 transition-colors" title="Anderen Vertrag waehlen">
+                <button onClick={() => setShowContractPicker(!showContractPicker)} className="rounded-full border border-stone-200 p-1 text-stone-400 hover:bg-stone-50 hover:text-stone-600 transition-colors" title="Anderen Vertrag wählen">
                   <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
                 </button>
               </div>
             ) : (
               <button onClick={() => setShowContractPicker(!showContractPicker)} className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-[12px] font-medium text-stone-600 transition-colors hover:bg-stone-50 hover:border-stone-300">
                 <span>&#128196;</span>
-                <span>{contractsLoading ? "Lade..." : "Vertrag waehlen"}</span>
+                <span>{contractsLoading ? "Lade..." : "Vertrag wählen"}</span>
                 <svg className="h-3 w-3 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
               </button>
             )}
@@ -297,13 +297,13 @@ export default function CopilotPage() {
             {showContractPicker && (
               <div className="absolute right-0 top-full z-50 mt-2 w-[380px] rounded-xl border border-stone-200 bg-white shadow-lg">
                 <div className="border-b border-stone-100 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">Analysierte Vertraege</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">Analysierte Verträge</p>
                   <p className="text-[10px] text-stone-400">Waehlen Sie einen Vertrag, um gezielte Fragen zu stellen</p>
                 </div>
                 <div className="max-h-[320px] overflow-y-auto p-2">
                   {availableContracts.length === 0 ? (
                     <div className="p-4 text-center">
-                      <p className="text-sm text-stone-500">{contractsLoading ? "Lade Vertraege..." : "Keine analysierten Vertraege vorhanden"}</p>
+                      <p className="text-sm text-stone-500">{contractsLoading ? "Lade Verträge..." : "Keine analysierten Verträge vorhanden"}</p>
                       {!contractsLoading && <p className="mt-1 text-xs text-stone-400">Laden Sie einen Vertrag hoch und starten Sie eine Analyse.</p>}
                     </div>
                   ) : (
