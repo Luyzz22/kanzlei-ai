@@ -8,8 +8,8 @@ const sections = [
     title: "Benutzerverwaltung",
     items: [
       { emoji: "👥", title: "Team-Mitglieder", desc: "Nutzer einladen, Rollen zuweisen und Zugriffsrechte verwalten", href: "/dashboard/admin/members", status: "Verfuegbar" },
-      { emoji: "📜", title: "Richtlinien", desc: "Organisationsrichtlinien fuer Vertragsanalyse und Dokumentenverarbeitung", href: "/dashboard/admin/policies", status: "Verfuegbar" },
-      { emoji: "✅", title: "Freigabeprozesse", desc: "Mehrstufige Freigabe-Workflows fuer analysierte Vertraege definieren", href: "/dashboard/admin/approval-policies", status: "Verfuegbar" },
+      { emoji: "📜", title: "Richtlinien", desc: "Organisationsrichtlinien für Vertragsanalyse und Dokumentenverarbeitung", href: "/dashboard/admin/policies", status: "Verfuegbar" },
+      { emoji: "✅", title: "Freigabeprozesse", desc: "Mehrstufige Freigabe-Workflows für analysierte Verträge definieren", href: "/dashboard/admin/approval-policies", status: "Verfuegbar" },
     ]
   },
   {
@@ -34,14 +34,14 @@ const sections = [
     items: [
       { emoji: "📋", title: "Audit-Log", desc: "Alle Aktionen mandantengetrennt protokolliert und exportierbar", href: "/dashboard/audit", status: "Aktiv" },
       { emoji: "📊", title: "Aktivitaeten", desc: "Detaillierte Ansicht aller Audit-Events mit Filterung und Export", href: "/dashboard/audit/aktivitaeten", status: "Verfuegbar" },
-      { emoji: "📡", title: "Systemstatus", desc: "Live-Health-Checks fuer Datenbank und KI-Provider", href: "/systemstatus", status: "Aktiv" },
+      { emoji: "📡", title: "Systemstatus", desc: "Live-Health-Checks für Datenbank und KI-Provider", href: "/systemstatus", status: "Aktiv" },
     ]
   },
   {
     title: "Abrechnung & Konto",
     items: [
       { emoji: "💳", title: "Billing & Subscription", desc: "Plan verwalten, Rechnungen einsehen, Stripe Customer Portal", href: "/dashboard/billing", status: "Aktiv" },
-      { emoji: "👤", title: "Mein Profil", desc: "E-Mail, Passwort und persoenliche Einstellungen aendern", href: "/dashboard/profil", status: "Verfuegbar" },
+      { emoji: "👤", title: "Mein Profil", desc: "E-Mail, Passwort und persoenliche Einstellungen ändern", href: "/dashboard/profil", status: "Verfuegbar" },
     ]
   },
 ]
