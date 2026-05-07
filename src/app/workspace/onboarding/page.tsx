@@ -7,25 +7,25 @@ const steps = [
   {
     emoji: "👋",
     title: "Willkommen bei KanzleiAI",
-    desc: "Die Enterprise-Plattform fuer KI-gestuetzte Vertragsanalyse. In 3 Schritten sind Sie startklar.",
+    desc: "Die Enterprise-Plattform für KI-gestuetzte Vertragsanalyse. In 3 Schritten sind Sie startklar.",
     action: null
   },
   {
     emoji: "📤",
     title: "Ersten Vertrag analysieren",
     desc: "Laden Sie einen Vertrag hoch — PDF oder Text. Die KI erkennt Sprache und Typ automatisch und liefert in unter 3 Sekunden Risiko-Score, Findings und Formulierungsvorschlaege.",
-    action: { label: "Schnellanalyse oeffnen", href: "/workspace/analyse" }
+    action: { label: "Schnellanalyse öffnen", href: "/workspace/analyse" }
   },
   {
     emoji: "🤖",
     title: "Copilot ausprobieren",
-    desc: "Stellen Sie dem KI-Assistenten Fragen zu Ihrem analysierten Vertrag. Kuendigungsfristen, Haftungsklauseln, BGB-Referenzen — alles im Kontext.",
-    action: { label: "Copilot oeffnen", href: "/workspace/copilot" }
+    desc: "Stellen Sie dem KI-Assistenten Fragen zu Ihrem analysierten Vertrag. Kündigungsfristen, Haftungsklauseln, BGB-Referenzen — alles im Kontext.",
+    action: { label: "Copilot öffnen", href: "/workspace/copilot" }
   },
   {
     emoji: "⚖️",
     title: "AGB vergleichen",
-    desc: "Laden Sie Lieferanten-AGB und Ihre eigenen Einkaufsbedingungen hoch. Die KI vergleicht Klausel fuer Klausel und identifiziert Abweichungen.",
+    desc: "Laden Sie Lieferanten-AGB und Ihre eigenen Einkaufsbedingungen hoch. Die KI vergleicht Klausel für Klausel und identifiziert Abweichungen.",
     action: { label: "Vergleich starten", href: "/workspace/vergleich" }
   },
 ]
@@ -55,7 +55,7 @@ export default function OnboardingPage() {
 
       {/* Navigation */}
       <div className="mt-12 flex items-center justify-between">
-        <button onClick={() => setCurrent(Math.max(0, current - 1))} disabled={current === 0} className="rounded-full border border-gray-200 bg-white px-5 py-2.5 text-[13px] font-medium text-gray-600 hover:bg-gray-50 disabled:invisible">← Zurueck</button>
+        <button onClick={() => setCurrent(Math.max(0, current - 1))} disabled={current === 0} className="rounded-full border border-gray-200 bg-white px-5 py-2.5 text-[13px] font-medium text-gray-600 hover:bg-gray-50 disabled:invisible">← Zurück</button>
 
         <span className="text-[12px] text-gray-400">{current + 1} / {steps.length}</span>
 
