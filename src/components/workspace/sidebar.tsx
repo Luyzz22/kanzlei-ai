@@ -14,7 +14,7 @@ const workspaceNav = [
   { label: "Analyseverlauf", href: "/workspace/history", emoji: "📋" },
   { label: "Dokumente", href: "/workspace/dokumente", emoji: "📂" },
   { label: "Upload", href: "/workspace/upload", emoji: "📤" },
-  { label: "Faelle & Mandate", href: "/workspace/faelle", emoji: "📁" },
+  { label: "Fälle & Mandate", href: "/workspace/faelle", emoji: "📁" },
   { label: "Review & Freigabe", href: "/workspace/review-queue", emoji: "✅" },
   { label: "AGB-Vergleich", href: "/workspace/vergleich", emoji: "⚖️" },
   { label: "Benchmarking", href: "/workspace/benchmarking", emoji: "📊" },
