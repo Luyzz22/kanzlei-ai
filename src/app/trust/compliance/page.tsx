@@ -58,7 +58,7 @@ const matrix: ComplianceRow[] = [
     reference: "Art. 28",
     requirement: "Auftragsverarbeitung",
     kanzleiai: "AVV nach Art. 28 DSGVO verfügbar. Unterauftragnehmer-Liste dokumentiert (Anthropic, OpenAI, Google, Vercel).",
-    evidence: "/auftragsverarbeitung",
+    evidence: "/avv",
     status: "ready",
   },
   {
@@ -193,7 +193,7 @@ export default function ComplianceOnePagerPage() {
                 Trust Center →
               </Link>
               <Link
-                href="/auftragsverarbeitung"
+                href="/avv"
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-2.5 text-[13px] font-medium text-gray-700 hover:bg-gray-50 print:hidden"
               >
                 AVV anfordern
