@@ -29,6 +29,7 @@ const faq = [
 ]
 
 export const metadata: Metadata = { title: "Hilfe & Dokumentation", description: "Erste Schritte, FAQ und Funktionsübersicht für KanzleiAI." }
+export const revalidate = 3600 // ISR: 1 Stunde
 
 export default function HilfePage() {
   return (
