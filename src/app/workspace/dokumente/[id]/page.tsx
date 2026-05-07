@@ -117,13 +117,13 @@ export default async function DokumentDetailPage({ params }: { params: { id: str
 
   // KI-Vertragsanalyse darf nur starten, wenn Textextraktion erfolgreich war
   // und ein nicht-leerer Textauszug vorliegt. runPersistedContractAnalysis
-  // prueft das serverseitig zusaetzlich — das hier ist nur das UX-Gate.
+  // prüft das serverseitig zusätzlich — das hier ist nur das UX-Gate.
   const canStartAnalysis =
     document.processingStatus === "VERARBEITET" &&
     Boolean(document.extractedTextPreview && document.extractedTextPreview.trim().length > 0)
 
   // Hinweis: Review-Berechtigung wird serverseitig in submitAnalysisFindingReviewAction
-  // erneut geprueft (Platform-Role + Tenant-Role). Hier nur UX-Gate fuer das Panel.
+  // erneut geprüft (Platform-Role + Tenant-Role). Hier nur UX-Gate für das Panel.
   const canReviewFindings = true
 
   const hasFile = Boolean(document.storageKey)
