@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
           regulationName: "NIS2-Umsetzungsgesetz",
           risk: "hoch",
           clauses: ["Cybersecurity-Anforderungen fehlen", "Keine Incident-Reporting-Pflicht"],
-          recommendation: "Cybersecurity-Annex mit NIS2 Art. 21 Pflichten ergaenzen",
+          recommendation: "Cybersecurity-Annex mit NIS2 Art. 21 Pflichten ergänzen",
           deadline: "2026-09-30",
           confidence: 0.88
         }
@@ -103,7 +103,7 @@ export async function GET() {
     regulations: [
       { id: "eu-ai-act", name: "EU AI Act", effectiveDate: "2026-08-02", jurisdiction: "EU" },
       { id: "nis2", name: "NIS2-Umsetzungsgesetz", effectiveDate: "2024-10-18", jurisdiction: "DE" },
-      { id: "dsgvo-2026", name: "DSGVO-Aenderungen 2026", effectiveDate: "2026-01-01", jurisdiction: "EU" },
+      { id: "dsgvo-2026", name: "DSGVO-Änderungen 2026", effectiveDate: "2026-01-01", jurisdiction: "EU" },
       { id: "e-rechnung", name: "E-Rechnungspflicht B2B", effectiveDate: "2027-01-01", jurisdiction: "DE" },
       { id: "lieferketten", name: "Lieferkettensorgfaltspflichtengesetz", effectiveDate: "2024-01-01", jurisdiction: "DE" }
     ]
