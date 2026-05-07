@@ -92,7 +92,7 @@ export async function upsertDynamicsConfig(
   actorId: string,
   input: DynamicsConfigInput
 ): Promise<{ success: true; id: string } | { success: false; error: string }> {
-  // Validation: strenge Format-Pruefung auf UUIDs fuer Azure-IDs
+  // Validation: strenge Format-Prüfung auf UUIDs für Azure-IDs
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
   if (!uuidPattern.test(input.azureTenantId)) {
