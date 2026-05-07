@@ -36,7 +36,7 @@ const quickActions = [
   { label: "\u{1F4CA} Benchmarking", href: "/workspace/benchmarking", desc: "Lieferanten-Risiko-Ranking und Konditionen-Vergleich", emoji: "\u{1F4C8}" },
   { label: "\u{1F4CB} Analyseverlauf", href: "/workspace/history", desc: "Vergangene Analysen einsehen und im Copilot öffnen", emoji: "\u{1F4CA}" },
   { label: "\u{1F4C1} Faelle & Mandate", href: "/workspace/faelle", desc: "Verträge mandatsbezogen organisieren", emoji: "\u{1F5C2}️" },
-  { label: "✅ Review-Queue", href: "/workspace/review-queue", desc: "Offene Prüfvorgaenge bearbeiten", emoji: "✏️" },
+  { label: "✅ Review-Queue", href: "/workspace/review-queue", desc: "Offene Prüfvorgänge bearbeiten", emoji: "✏️" },
   { label: "\u{1F4C2} Dokumente", href: "/workspace/dokumente", desc: "Alle Verträge und Dokumente einsehen", emoji: "\u{1F4C4}" },
 ]
 
