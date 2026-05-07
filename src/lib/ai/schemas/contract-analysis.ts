@@ -36,7 +36,7 @@ export const contractTermSchema = z.object({
 export const legalTopicClusterSchema = z.object({
   topic: z.enum([
     "haftung",
-    "gewaehrleistung",
+    "gewährleistung",
     "vertraulichkeit",
     "datenschutz",
     "gerichtsstand",
