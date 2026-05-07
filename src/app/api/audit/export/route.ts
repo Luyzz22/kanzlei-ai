@@ -12,9 +12,9 @@ export const dynamic = "force-dynamic"
  *
  * CSV-Export aller Audit-Events des aktuellen Tenants.
  * - Semicolon-separated (Excel-DE-Default)
- * - Inkludiert Hash-Felder fuer Integritaetspruefung
+ * - Inkludiert Hash-Felder für Integritaetsprüfung
  * - Selbst-auditiert (Export selbst erzeugt audit.export-Event)
- * - Nur fuer eingeloggte Tenant-Member
+ * - Nur für eingeloggte Tenant-Member
  */
 export async function GET() {
   const session = await auth()
@@ -47,7 +47,7 @@ export async function GET() {
     const today = new Date().toISOString().slice(0, 10)
     const filename = `kanzlei-ai-audit-${today}.csv`
 
-    // BOM fuer Excel-DE-Encoding
+    // BOM für Excel-DE-Encoding
     const BOM = "\ufeff"
     return new NextResponse(BOM + csv, {
       status: 200,
