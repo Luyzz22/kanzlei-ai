@@ -75,7 +75,7 @@ export default async function VertragsradarPage() {
             <p className="text-xs text-stone-400">betreffen Ihr Portfolio</p>
           </div>
           <div className="rounded-xl border border-stone-200 bg-white p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-stone-400">Betroffene Vertraege</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-stone-400">Betroffene Verträge</p>
             <p className="mt-1 text-2xl font-semibold text-amber-600">{totalAffected}</p>
           </div>
           <div className="rounded-xl border border-stone-200 bg-white p-5">
@@ -91,8 +91,8 @@ export default async function VertragsradarPage() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-stone-100">
               <span className="text-2xl">&#128225;</span>
             </div>
-            <h2 className="text-lg font-medium text-[#003856]">Radar aktiv &mdash; keine Vertraege geladen</h2>
-            <p className="mt-2 text-sm text-stone-500">Laden Sie Vertraege hoch, um sie automatisch gegen {REGULATION_WATCHLIST.length} Regulierungen abzugleichen.</p>
+            <h2 className="text-lg font-medium text-[#003856]">Radar aktiv &mdash; keine Verträge geladen</h2>
+            <p className="mt-2 text-sm text-stone-500">Laden Sie Verträge hoch, um sie automatisch gegen {REGULATION_WATCHLIST.length} Regulierungen abzugleichen.</p>
             <Link href="/workspace/upload" className="mt-4 inline-block rounded-lg bg-[#003856] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#00263d]">
               Vertrag hochladen
             </Link>
@@ -101,7 +101,7 @@ export default async function VertragsradarPage() {
           <div className="space-y-4">
             {matches.length === 0 && (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center">
-                <p className="text-sm font-medium text-emerald-800">Keine regulatorischen Treffer &mdash; Ihr Portfolio ist derzeit nicht von ueberwachten Aenderungen betroffen.</p>
+                <p className="text-sm font-medium text-emerald-800">Keine regulatorischen Treffer &mdash; Ihr Portfolio ist derzeit nicht von ueberwachten Änderungen betroffen.</p>
               </div>
             )}
 
@@ -140,11 +140,11 @@ export default async function VertragsradarPage() {
                     </div>
                   </div>
 
-                  {/* Betroffene Vertraege */}
+                  {/* Betroffene Verträge */}
                   {match.affectedDocuments.length > 0 && (
                     <div className="mt-4 border-t border-stone-200/50 pt-3">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                        {match.affectedDocuments.length} betroffene{match.affectedDocuments.length === 1 ? "r Vertrag" : " Vertraege"}
+                        {match.affectedDocuments.length} betroffene{match.affectedDocuments.length === 1 ? "r Vertrag" : " Verträge"}
                       </p>
                       <div className="space-y-1">
                         {match.affectedDocuments.slice(0, 5).map(doc => (
@@ -198,7 +198,7 @@ export default async function VertragsradarPage() {
         <div className="mt-8 rounded-lg border border-stone-200 bg-white p-4">
           <p className="text-xs text-stone-400">
             <span className="font-semibold">Hinweis:</span> Der Vertragsradar gleicht Ihr Portfolio automatisch gegen eine kuratierte Watchlist ab (Quellen: EUR-Lex, BGBl).
-            Dies stellt keine Rechtsberatung dar. Die Ergebnisse dienen der Information und erfordern eine juristische Pruefung.
+            Dies stellt keine Rechtsberatung dar. Die Ergebnisse dienen der Information und erfordern eine juristische Prüfung.
           </p>
         </div>
       </div>
