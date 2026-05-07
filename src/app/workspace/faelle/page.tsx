@@ -175,7 +175,7 @@ export default async function FaellePage({
   const filteredFaelle =
     filter === "offen"
       ? faelle.filter((f) => f.status === "OFFEN")
-      : filter === "in_pruefung"
+      : filter === "in_prüfung"
         ? faelle.filter((f) => f.status === "IN_PRUEFUNG")
         : filter === "abgeschlossen"
           ? faelle.filter((f) => f.status === "ABGESCHLOSSEN")
@@ -183,7 +183,7 @@ export default async function FaellePage({
 
   const totalFaelle = faelle.length
   const offenCount = faelle.filter((f) => f.status === "OFFEN").length
-  const inPruefungCount = faelle.filter((f) => f.status === "IN_PRUEFUNG").length
+  const inPrüfungCount = faelle.filter((f) => f.status === "IN_PRUEFUNG").length
   const abgeschlossenCount = faelle.filter((f) => f.status === "ABGESCHLOSSEN").length
 
   return (
@@ -227,7 +227,7 @@ export default async function FaellePage({
           <p className="mt-0.5 text-[11px] text-gray-500">Offen</p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <p className="text-[22px] font-semibold text-blue-700">{inPruefungCount}</p>
+          <p className="text-[22px] font-semibold text-blue-700">{inPrüfungCount}</p>
           <p className="mt-0.5 text-[11px] text-gray-500">In Prüfung</p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4">
@@ -241,7 +241,7 @@ export default async function FaellePage({
         {[
           { key: "alle", label: "Alle", href: "/workspace/faelle" },
           { key: "offen", label: "Offen", href: "/workspace/faelle?filter=offen" },
-          { key: "in_pruefung", label: "In Prüfung", href: "/workspace/faelle?filter=in_pruefung" },
+          { key: "in_prüfung", label: "In Prüfung", href: "/workspace/faelle?filter=in_prüfung" },
           {
             key: "abgeschlossen",
             label: "Abgeschlossen",
