@@ -24,12 +24,12 @@ export default function KiTransparenzPage() {
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🧠 KI-Modelle</p>
           <h2 className="mt-3 text-display-sm text-gray-950">Multi-Provider-Architektur</h2>
-          <p className="mt-3 text-[15px] text-gray-500">Wir setzen auf mehrere KI-Provider fuer Redundanz und bestmoegliche Ergebnisse.</p>
+          <p className="mt-3 text-[15px] text-gray-500">Wir setzen auf mehrere KI-Provider für Redundanz und bestmögliche Ergebnisse.</p>
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
             {[
-              { emoji: "🟣", name: "Claude Sonnet 4", provider: "Anthropic", role: "Primaer-Modell", desc: "Vertragsanalyse, Risikobewertung, Datenextraktion. Hoechste Qualitaet fuer juristische Texte.", status: "Aktiv" },
-              { emoji: "🟢", name: "GPT-4o", provider: "OpenAI", role: "Fallback-Modell", desc: "Automatischer Fallback bei Claude-Nichtverfuegbarkeit. Gleiche Prompt-Struktur.", status: "Fallback" },
-              { emoji: "🔵", name: "Gemini", provider: "Google", role: "Zusatz-Modell", desc: "Schnelle Voranalysen und Textklassifizierung. Kosteneffizient fuer Batch-Verarbeitung.", status: "Optional" },
+              { emoji: "🟣", name: "Claude Sonnet 4", provider: "Anthropic", role: "Primaer-Modell", desc: "Vertragsanalyse, Risikobewertung, Datenextraktion. Hoechste Qualitaet für juristische Texte.", status: "Aktiv" },
+              { emoji: "🟢", name: "GPT-4o", provider: "OpenAI", role: "Fallback-Modell", desc: "Automatischer Fallback bei Claude-Nichtverfügbarkeit. Gleiche Prompt-Struktur.", status: "Fallback" },
+              { emoji: "🔵", name: "Gemini", provider: "Google", role: "Zusatz-Modell", desc: "Schnelle Voranalysen und Textklassifizierung. Kosteneffizient für Batch-Verarbeitung.", status: "Optional" },
             ].map((m) => (
               <div key={m.name} className="rounded-2xl border border-gray-100 bg-white p-6">
                 <div className="flex items-center justify-between">
@@ -53,8 +53,8 @@ export default function KiTransparenzPage() {
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             {[
               { emoji: "🚫", title: "Kein Training mit Ihren Daten", desc: "Kein KI-Provider nutzt Ihre Vertragsdaten zum Training von Modellen. Dies ist vertraglich durch AVVs mit allen Providern abgesichert." },
-              { emoji: "👤", title: "Human-in-the-Loop", desc: "KI-Ergebnisse sind Entscheidungshilfen, keine Entscheidungen. Jede Analyse erfordert juristische Pruefung durch qualifiziertes Personal." },
-              { emoji: "📋", title: "Prompt Governance", desc: "Alle KI-Prompts sind versioniert und dokumentiert. Aenderungen durchlaufen einen Review-Prozess bevor sie in Produktion gehen." },
+              { emoji: "👤", title: "Human-in-the-Loop", desc: "KI-Ergebnisse sind Entscheidungshilfen, keine Entscheidungen. Jede Analyse erfordert juristische Prüfung durch qualifiziertes Personal." },
+              { emoji: "📋", title: "Prompt Governance", desc: "Alle KI-Prompts sind versioniert und dokumentiert. Änderungen durchlaufen einen Review-Prozess bevor sie in Produktion gehen." },
               { emoji: "🔍", title: "Nachvollziehbarkeit", desc: "Jede Analyse protokolliert das verwendete Modell, die Prompt-Version und den Zeitstempel. Ergebnisse sind reproduzierbar." },
               { emoji: "🛡️", title: "Verschluesselte Uebermittlung", desc: "Vertragstexte werden via TLS 1.3 an KI-Provider gesendet. Keine Zwischenspeicherung auf Drittservern." },
               { emoji: "📊", title: "Qualitaetssicherung", desc: "Risiko-Scores und Findings werden gegen deutsches Recht validiert. Regelmaessige Qualitaets-Audits der KI-Ergebnisse." },
