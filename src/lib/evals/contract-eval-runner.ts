@@ -150,7 +150,7 @@ export function buildSyntheticEvalPipelineSuccess(documentText: string): Contrac
     risk: {
       findings: [
         {
-          category: "kuendigung",
+          category: "kündigung",
           title: "Kündigungsfrist prüfen",
           description: "Es ist eine dreimonatige Kündigungsfrist genannt — Fristbeginn und Form klären.",
           severity: "mittel",
