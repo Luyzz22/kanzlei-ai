@@ -17,7 +17,7 @@ export default function ApiKeysPage() {
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🔑 Administration</p>
           <h1 className="mt-2 text-[1.75rem] font-semibold tracking-tight text-gray-950">API-Schluessel</h1>
-          <p className="mt-2 text-[14px] text-gray-500">API-Keys fuer die REST API erstellen und verwalten. Dokumentation unter <Link href="/developer" className="font-medium text-[#003856]">/developer</Link>.</p>
+          <p className="mt-2 text-[14px] text-gray-500">API-Keys für die REST API erstellen und verwalten. Dokumentation unter <Link href="/developer" className="font-medium text-[#003856]">/developer</Link>.</p>
         </div>
         <button onClick={() => setShowCreate(!showCreate)} className="rounded-full bg-[#003856] px-5 py-2.5 text-[13px] font-medium text-white hover:bg-[#002a42]">+ Neuer API-Key</button>
       </div>
@@ -74,7 +74,7 @@ export default function ApiKeysPage() {
       </div>
 
       <div className="mt-6">
-        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurueck zur Verwaltung</Link>
+        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurück zur Verwaltung</Link>
       </div>
     </div>
   )
