@@ -14,7 +14,7 @@ type SubProcessor = {
   location: string
   cloudActRisk: "keiner" | "mittel" | "hoch"
   dataCategories: string[]
-  avvStatus: "verfuegbar" | "integriert" | "vertraglich"
+  avvStatus: "verfügbar" | "integriert" | "vertraglich"
   scc: boolean
   website: string
 }
@@ -27,7 +27,7 @@ const categories: Array<{ title: string; emoji: string; processors: SubProcessor
       {
         name: "Vercel Inc.",
         role: "Frontend-Hosting",
-        purpose: "Bereitstellung der Web-Anwendung, Edge-Caching, CDN fuer statische Inhalte.",
+        purpose: "Bereitstellung der Web-Anwendung, Edge-Caching, CDN für statische Inhalte.",
         location: "Frankfurt am Main (fra1)",
         cloudActRisk: "hoch",
         dataCategories: ["Session-Cookies", "IP-Adressen (anonymisiert)", "HTTP-Request-Metadaten"],
@@ -41,7 +41,7 @@ const categories: Array<{ title: string; emoji: string; processors: SubProcessor
         purpose: "PostgreSQL-Datenbank mit tenant-spezifischer Row-Level Security. Speicherung von Vertragsmetadaten, Analyse-Ergebnissen, Audit-Logs.",
         location: "Frankfurt (eu-central-1)",
         cloudActRisk: "hoch",
-        dataCategories: ["Vertragstexte (verschluesselt)", "Analyse-Ergebnisse", "Audit-Events", "Nutzerdaten"],
+        dataCategories: ["Vertragstexte (verschlüsselt)", "Analyse-Ergebnisse", "Audit-Events", "Nutzerdaten"],
         avvStatus: "integriert",
         scc: true,
         website: "https://neon.tech/legal/dpa"
@@ -67,10 +67,10 @@ const categories: Array<{ title: string; emoji: string; processors: SubProcessor
         name: "Anthropic PBC",
         role: "Primaeres KI-Modell (claude-sonnet-4.6)",
         purpose: "Vertragsanalyse-Pipeline: Risiko-Bewertung und Formulierungsvorschlaege. Kein Training mit Kundendaten (Zero-Data-Retention-API).",
-        location: "AWS us-east-1 (US) — EU-Hosting aktuell nicht verfuegbar",
+        location: "AWS us-east-1 (US) — EU-Hosting aktuell nicht verfügbar",
         cloudActRisk: "hoch",
         dataCategories: ["Extrahierter Vertragstext (Textauszug, max. 16000 Zeichen)"],
-        avvStatus: "verfuegbar",
+        avvStatus: "verfügbar",
         scc: true,
         website: "https://www.anthropic.com/legal/commercial-terms"
       },
@@ -81,7 +81,7 @@ const categories: Array<{ title: string; emoji: string; processors: SubProcessor
         location: "Azure EU-Region (weu) bei Enterprise-Tier, sonst US",
         cloudActRisk: "hoch",
         dataCategories: ["Extrahierter Vertragstext", "Prompt-Metadaten"],
-        avvStatus: "verfuegbar",
+        avvStatus: "verfügbar",
         scc: true,
         website: "https://openai.com/policies/data-processing-addendum/"
       },
@@ -92,7 +92,7 @@ const categories: Array<{ title: string; emoji: string; processors: SubProcessor
         location: "Google Cloud EU (europe-west3)",
         cloudActRisk: "hoch",
         dataCategories: ["PDF-Binaerdaten (nur bei OCR-Fallback)", "Extrahierter Text"],
-        avvStatus: "verfuegbar",
+        avvStatus: "verfügbar",
         scc: true,
         website: "https://cloud.google.com/terms/data-processing-addendum"
       }
@@ -193,7 +193,7 @@ export default function SubProzessorenPage() {
           <p className="mt-4 max-w-3xl text-[16px] leading-relaxed text-gray-600">
             Vollstaendige Liste aller Auftragsverarbeiter, die KanzleiAI zur Erbringung
             seiner Dienstleistungen einsetzt. Jeder Sub-Prozessor ist vertraglich zur
-            Einhaltung der DSGVO verpflichtet. Standard-Vertragsklauseln (SCC) gemaess
+            Einhaltung der DSGVO verpflichtet. Standard-Vertragsklauseln (SCC) gemäß
             EU-Kommission-Beschluss 2021/914 liegen vor.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -217,17 +217,17 @@ export default function SubProzessorenPage() {
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
             <h2 className="text-[15px] font-semibold text-amber-900">
-              ⚠️ Hinweis CLOUD Act (US-Behoerden-Zugriff)
+              ⚠️ Hinweis CLOUD Act (US-Behörden-Zugriff)
             </h2>
             <p className="mt-2 text-[13px] leading-relaxed text-amber-800">
               Einige Sub-Prozessoren sind US-Konzernen zugeordnet und unterliegen damit
               dem US-amerikanischen CLOUD Act. Auch bei physischer Datenspeicherung in
-              der EU kann theoretisch ein Herausgabeverlangen durch US-Behoerden erfolgen.
-              Fuer Mandate mit besonders hohen Vertraulichkeitsanforderungen (z.B.
+              der EU kann theoretisch ein Herausgabeverlangen durch US-Behörden erfolgen.
+              Für Mandate mit besonders hohen Vertraulichkeitsanforderungen (z.B.
               oeffentliche Hand, regulierte Branchen, strafrechtlich relevante Mandate)
               bieten wir einen <Link href="/trust/eu-ai-act" className="underline">
               EU-Souveraenitaets-Modus
-              </Link> mit europaeischen LLM-Providern ohne US-Nexus als Option.
+              </Link> mit europäischen LLM-Providern ohne US-Nexus als Option.
             </p>
           </div>
         </div>
@@ -314,7 +314,7 @@ export default function SubProzessorenPage() {
       <section className="border-t border-gray-200 bg-white py-12">
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
           <h2 className="text-[1.25rem] font-semibold tracking-tight text-[#003856]">
-            Aenderungen an der Sub-Prozessoren-Liste
+            Änderungen an der Sub-Prozessoren-Liste
           </h2>
           <p className="mt-3 text-[14px] leading-relaxed text-gray-600">
             Kunden werden mindestens 30 Tage vor Aufnahme eines neuen Sub-Prozessors
@@ -327,7 +327,7 @@ export default function SubProzessorenPage() {
               href="/datenschutz"
               className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50"
             >
-              ← Datenschutzerklaerung
+              ← Datenschutzerklärung
             </Link>
             <Link
               href="/trust-center"
