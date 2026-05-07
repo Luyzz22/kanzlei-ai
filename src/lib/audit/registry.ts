@@ -6,7 +6,7 @@ import "server-only"
  * Zentrale Klassifizierung aller im System emittierten Audit-Action-Strings.
  * Pro Aktion:
  * - category:  Filter-Gruppe in der UI
- * - severity:  Risikoeinstufung fuer KPI "Hochrisiko-Events"
+ * - severity:  Risikoeinstufung für KPI "Hochrisiko-Events"
  * - label:     Anzeigename in der Timeline (DE)
  * - emoji:     Visueller Anker
  *
