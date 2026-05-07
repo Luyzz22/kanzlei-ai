@@ -34,11 +34,11 @@ export default function PrivacyRetentionPage() {
 
       <div className="mt-8 rounded-2xl border border-red-200 bg-white p-6">
         <h3 className="text-[15px] font-semibold text-red-700">Datenloeschung anfragen</h3>
-        <p className="mt-2 text-[13px] text-gray-600">DSGVO Art. 17: Sie haben das Recht auf Loeschung Ihrer Daten. Kontaktieren Sie <Link href="mailto:ki@sbsdeutschland.de" className="font-medium text-[#003856]">ki@sbsdeutschland.de</Link> fuer eine Loeschanfrage. Die Loeschung wird innerhalb von 30 Tagen bearbeitet und im Audit-Trail dokumentiert.</p>
+        <p className="mt-2 text-[13px] text-gray-600">DSGVO Art. 17: Sie haben das Recht auf Löschung Ihrer Daten. Kontaktieren Sie <Link href="mailto:ki@sbsdeutschland.de" className="font-medium text-[#003856]">ki@sbsdeutschland.de</Link> für eine Loeschanfrage. Die Löschung wird innerhalb von 30 Tagen bearbeitet und im Audit-Trail dokumentiert.</p>
       </div>
 
       <div className="mt-6">
-        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurueck zur Verwaltung</Link>
+        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurück zur Verwaltung</Link>
       </div>
     </div>
   )
