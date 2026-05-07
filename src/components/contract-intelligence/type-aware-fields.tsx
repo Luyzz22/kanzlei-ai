@@ -26,7 +26,7 @@ export function TypeAwareFieldsList({ fields, values }: Props) {
 
   const categoryLabels: Record<string, string> = {
     term: "Vertragslaufzeit",
-    termination: "Kuendigung",
+    termination: "Kündigung",
     liability: "Haftung",
     ip: "Geistiges Eigentum",
     data_protection: "Datenschutz",
@@ -72,7 +72,7 @@ export function TypeAwareFieldsList({ fields, values }: Props) {
                         <p className="mt-1 text-[10px] text-gray-400">Marktstandard: {field.marketStandard}</p>
                       )}
                       {field.marketStandard && (status === "missing" || status === "not_provided") && (
-                        <p className="mt-1 text-[10px] text-amber-700"><span className="font-medium">Marktueblich:</span> {field.marketStandard}</p>
+                        <p className="mt-1 text-[10px] text-amber-700"><span className="font-medium">Marktüblich:</span> {field.marketStandard}</p>
                       )}
                     </div>
                     {status === "missing" && field.applicability === "required" && (
@@ -88,7 +88,7 @@ export function TypeAwareFieldsList({ fields, values }: Props) {
 
       <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
         <p className="text-[11px] text-blue-700">
-          <span className="font-semibold">Vertragstyp-spezifische Anzeige:</span> Felder die fuer diesen Vertragstyp irrelevant sind (z.B. AVV bei NDA) werden ausgeblendet. Fehlende Pflichtfelder werden hervorgehoben.
+          <span className="font-semibold">Vertragstyp-spezifische Anzeige:</span> Felder die für diesen Vertragstyp irrelevant sind (z.B. AVV bei NDA) werden ausgeblendet. Fehlende Pflichtfelder werden hervorgehoben.
         </p>
       </div>
     </div>
