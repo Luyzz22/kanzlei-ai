@@ -16,8 +16,8 @@ import { createCipheriv, createDecipheriv, randomBytes, createHash } from "node:
  * Master-Key kommt aus ENV DYNAMICS_ENCRYPTION_KEY:
  * - Base64-encoded 32-Byte-Key, generiert mit: `openssl rand -base64 32`
  * - Darf NICHT im Repo liegen, NICHT im Log auftauchen
- * - Bei Key-Rotation: alte verschluesselte Secrets bleiben lesbar, solange
- *   der alte Key noch greifbar ist (v2-Prefix fuer neue Secrets einfuehren)
+ * - Bei Key-Rotation: alte verschlüsselte Secrets bleiben lesbar, solange
+ *   der alte Key noch greifbar ist (v2-Prefix für neue Secrets einfuehren)
  */
 
 const SCHEMA_VERSION = "v1"
@@ -103,8 +103,8 @@ export function decryptSecret(envelope: string): string {
 
 /**
  * Generiert einen Fingerprint eines Secrets (erste 4 Zeichen SHA-256 Hex),
- * damit wir im UI anzeigen koennen "Secret erkannt (...abc1)" ohne den
- * Klartext jemals zurueckzugeben.
+ * damit wir im UI anzeigen können "Secret erkannt (...abc1)" ohne den
+ * Klartext jemals zurückzugeben.
  */
 export function secretFingerprint(plaintext: string): string {
   return createHash("sha256").update(plaintext).digest("hex").slice(0, 8)
