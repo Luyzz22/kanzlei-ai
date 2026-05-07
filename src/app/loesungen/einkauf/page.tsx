@@ -1,7 +1,7 @@
 import Link from "next/link"
 import type { Metadata } from "next"
 
-export const metadata: Metadata = { title: "Fuer Einkauf & Beschaffung", description: "KI-Vertragsanalyse fuer Einkaufsabteilungen: Lieferantenvertraege, NDAs, AGB-Abgleich, Kuendigungsfristen-Monitoring." }
+export const metadata: Metadata = { title: "Für Einkauf & Beschaffung", description: "KI-Vertragsanalyse für Einkaufsabteilungen: Lieferantenverträge, NDAs, AGB-Abgleich, Kündigungsfristen-Monitoring." }
 export const revalidate = 3600 // ISR: 1 Stunde
 
 export default function EinkaufPage() {
@@ -14,8 +14,8 @@ export default function EinkaufPage() {
               <span className="text-[14px]">🛒</span>
               <span className="text-[12px] font-medium text-gold-700">Einkauf & Beschaffung</span>
             </div>
-            <h1 className="text-display text-gray-950">KI-Vertragsanalyse fuer den Einkauf</h1>
-            <p className="mt-4 text-[17px] leading-relaxed text-gray-500">Lieferantenvertraege in Sekunden pruefen, Risiken identifizieren und Konditionen vergleichen — in Deutsch und Englisch.</p>
+            <h1 className="text-display text-gray-950">KI-Vertragsanalyse für den Einkauf</h1>
+            <p className="mt-4 text-[17px] leading-relaxed text-gray-500">Lieferantenverträge in Sekunden prüfen, Risiken identifizieren und Konditionen vergleichen — in Deutsch und Englisch.</p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link href="/enterprise-kontakt" className="rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42]">Demo anfragen</Link>
               <Link href="/workspace/analyse" className="rounded-full border border-gray-200 bg-white px-7 py-3.5 text-[15px] font-medium text-gray-700 hover:bg-gray-50">Jetzt testen</Link>
@@ -28,15 +28,15 @@ export default function EinkaufPage() {
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <p className="text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">📋 Anwendungsfaelle</p>
-          <h2 className="mt-3 text-center text-display-sm text-gray-950">Optimiert fuer Einkaufsabteilungen</h2>
+          <h2 className="mt-3 text-center text-display-sm text-gray-950">Optimiert für Einkaufsabteilungen</h2>
           <div className="mt-10 grid gap-6 lg:grid-cols-2">
             {[
-              { emoji: "📦", title: "Lieferantenvertraege (DE/EN)", desc: "Analyse von Supplier Agreements, Rahmenvertraegen und Einkaufsvertraegen. Automatische Spracherkennung — deutsche und englische Vertraege werden mit sprachspezifischen Risikokatalogen geprueft.", features: ["Limitation of Liability erkennen", "Haftungsbeschraenkungen bewerten", "Preisanpassungsklauseln identifizieren", "Gerichtsstand + anwendbares Recht pruefen"] },
-              { emoji: "🔒", title: "NDA-Analyse (DE/EN)", desc: "Geheimhaltungsvereinbarungen systematisch pruefen: Vertraulichkeitsdefinition, Laufzeit, Vertragsstrafen, Ausnahmen und Rueckgabepflichten.", features: ["Zu weite Vertraulichkeitsdefinition erkennen", "Unbefristete Laufzeiten flaggen", "Verhaeltnismaessigkeit der Vertragsstrafen", "Fehlende Standardausnahmen identifizieren"] },
-              { emoji: "⚖️", title: "AGB vs. AEB Abgleich", desc: "Lieferanten-AGB automatisch gegen Ihre eigenen Allgemeinen Einkaufsbedingungen pruefen. Abweichungen, Widersprueche und fehlende Klauseln werden identifiziert.", features: ["Tabellarischer Klausel-Vergleich", "Severity-Bewertung pro Abweichung", "Fehlende Klauseln erkennen", "Widersprueche zwischen AGB und AEB"] },
-              { emoji: "📅", title: "Kuendigungsfristen-Monitoring", desc: "Alle vertraglichen Fristen auf einen Blick: Kuendigungsfristen, Auto-Renewal, Verlaengerungszeitraeume, naechste Kuendigungstermine.", features: ["Ampel-System (rot/gelb/gruen)", "Auto-Renewal Warnung", "Export als CSV fuer ERP", "Kalendarische Uebersicht"] },
-              { emoji: "📊", title: "Lieferanten-Benchmarking", desc: "Konditionen mehrerer Lieferantenvertraege vergleichen: Preise, SLAs, Haftung, Kuendigungsfristen, Gewaehrleistung — alles in einer Uebersicht.", features: ["Risiko-Score pro Lieferant", "Konditionen-Vergleichstabelle", "Ø Risiko-Trend ueber Zeit", "Export fuer Management-Reporting"] },
-              { emoji: "✏️", title: "Umformulierungsvorschlaege", desc: "Fuer jedes identifizierte Hochrisiko liefert die KI einen konkreten Formulierungsvorschlag, der das Risiko adressiert — direkt einsetzbar in Verhandlungen.", features: ["Alternative Klauseln fuer jedes Risiko", "Angepasst an DE/EN Recht", "Copilot fuer individuelle Rueckfragen", "Export als Word-Vorlage (geplant)"] },
+              { emoji: "📦", title: "Lieferantenverträge (DE/EN)", desc: "Analyse von Supplier Agreements, Rahmenverträgen und Einkaufsverträgen. Automatische Spracherkennung — deutsche und englische Verträge werden mit sprachspezifischen Risikokatalogen geprüft.", features: ["Limitation of Liability erkennen", "Haftungsbeschraenkungen bewerten", "Preisanpassungsklauseln identifizieren", "Gerichtsstand + anwendbares Recht prüfen"] },
+              { emoji: "🔒", title: "NDA-Analyse (DE/EN)", desc: "Geheimhaltungsvereinbarungen systematisch prüfen: Vertraulichkeitsdefinition, Laufzeit, Vertragsstrafen, Ausnahmen und Rückgabepflichten.", features: ["Zu weite Vertraulichkeitsdefinition erkennen", "Unbefristete Laufzeiten flaggen", "Verhältnismaessigkeit der Vertragsstrafen", "Fehlende Standardausnahmen identifizieren"] },
+              { emoji: "⚖️", title: "AGB vs. AEB Abgleich", desc: "Lieferanten-AGB automatisch gegen Ihre eigenen Allgemeinen Einkaufsbedingungen prüfen. Abweichungen, Widersprueche und fehlende Klauseln werden identifiziert.", features: ["Tabellarischer Klausel-Vergleich", "Severity-Bewertung pro Abweichung", "Fehlende Klauseln erkennen", "Widersprueche zwischen AGB und AEB"] },
+              { emoji: "📅", title: "Kündigungsfristen-Monitoring", desc: "Alle vertraglichen Fristen auf einen Blick: Kündigungsfristen, Auto-Renewal, Verlängerungszeitraeume, naechste Kündigungstermine.", features: ["Ampel-System (rot/gelb/gruen)", "Auto-Renewal Warnung", "Export als CSV für ERP", "Kalendarische Übersicht"] },
+              { emoji: "📊", title: "Lieferanten-Benchmarking", desc: "Konditionen mehrerer Lieferantenverträge vergleichen: Preise, SLAs, Haftung, Kündigungsfristen, Gewährleistung — alles in einer Übersicht.", features: ["Risiko-Score pro Lieferant", "Konditionen-Vergleichstabelle", "Ø Risiko-Trend über Zeit", "Export für Management-Reporting"] },
+              { emoji: "✏️", title: "Umformulierungsvorschlaege", desc: "Für jedes identifizierte Hochrisiko liefert die KI einen konkreten Formulierungsvorschlag, der das Risiko adressiert — direkt einsetzbar in Verhandlungen.", features: ["Alternative Klauseln für jedes Risiko", "Angepasst an DE/EN Recht", "Copilot für individuelle Rueckfragen", "Export als Word-Vorlage (geplant)"] },
             ].map((uc) => (
               <div key={uc.title} className="rounded-2xl border border-gray-100 bg-white p-7">
                 <span className="text-[28px]">{uc.emoji}</span>
@@ -81,9 +81,9 @@ export default function EinkaufPage() {
           <h2 className="mt-3 text-center text-display-sm text-gray-950">Passt in Ihren Beschaffungsprozess</h2>
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
             {[
-              { emoji: "🏢", title: "Microsoft Dynamics", desc: "Vertraege aus Dynamics importieren, Analyseergebnisse zurueckschreiben. API-basierte Integration.", status: "In Entwicklung" },
-              { emoji: "📤", title: "DATEV Export", desc: "Analyseergebnisse im DATEV-Format 510 fuer Ihre Buchhaltung exportieren.", status: "Verfuegbar" },
-              { emoji: "🔔", title: "Slack / Teams", desc: "Automatische Benachrichtigungen bei Hochrisiko-Vertraegen via Webhook.", status: "Verfuegbar" },
+              { emoji: "🏢", title: "Microsoft Dynamics", desc: "Verträge aus Dynamics importieren, Analyseergebnisse zurückschreiben. API-basierte Integration.", status: "In Entwicklung" },
+              { emoji: "📤", title: "DATEV Export", desc: "Analyseergebnisse im DATEV-Format 510 für Ihre Buchhaltung exportieren.", status: "Verfuegbar" },
+              { emoji: "🔔", title: "Slack / Teams", desc: "Automatische Benachrichtigungen bei Hochrisiko-Verträgen via Webhook.", status: "Verfuegbar" },
             ].map((int) => (
               <div key={int.title} className="rounded-xl border border-gray-100 bg-white p-5">
                 <div className="flex items-center justify-between">
@@ -102,8 +102,8 @@ export default function EinkaufPage() {
       <section className="border-t border-gray-200 bg-[#FAFAF7] py-20 sm:py-28">
         <div className="mx-auto max-w-3xl px-5 text-center">
           <span className="text-[28px]">🛒</span>
-          <h2 className="mt-3 text-display-sm text-gray-950">Bereit fuer Ihren Einkauf?</h2>
-          <p className="mx-auto mt-4 max-w-xl text-[16px] leading-relaxed text-gray-500">Testen Sie KanzleiAI mit Ihren eigenen Lieferantenvertraegen. Kostenloser Pilot, individuelle Anpassung.</p>
+          <h2 className="mt-3 text-display-sm text-gray-950">Bereit für Ihren Einkauf?</h2>
+          <p className="mx-auto mt-4 max-w-xl text-[16px] leading-relaxed text-gray-500">Testen Sie KanzleiAI mit Ihren eigenen Lieferantenverträgen. Kostenloser Pilot, individuelle Anpassung.</p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link href="/enterprise-kontakt" className="rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42]">Pilotprojekt starten</Link>
             <Link href="/preise" className="rounded-full border border-gray-200 bg-white px-7 py-3.5 text-[15px] font-medium text-gray-700 hover:bg-gray-50">Preise ansehen</Link>
