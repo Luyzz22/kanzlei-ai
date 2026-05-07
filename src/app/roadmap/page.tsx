@@ -62,9 +62,9 @@ export default function RoadmapPage() {
                 {[
                   { item: "Contract-Type-Aware Data Model", desc: "NDA/SaaS/AVV — adaptive Felder" },
                   { item: "Multi-Dimensionales Risiko", desc: "Legal/Financial/Operational/Compliance" },
-                  { item: "Signature-Blocker Flagging", desc: "Hartes Ja/Nein-Signal fuer Entscheider" },
+                  { item: "Signature-Blocker Flagging", desc: "Hartes Ja/Nein-Signal für Entscheider" },
                   { item: "Strukturelles vs. Substantielles Matching", desc: "Form vs. Inhalt getrennt bewertet" },
-                  { item: "Markt-Standard-Klausel-Pruefung", desc: "Was fehlt im Vertrag?" },
+                  { item: "Markt-Standard-Klausel-Prüfung", desc: "Was fehlt im Vertrag?" },
                   { item: "Copy-Paste Ersatzklauseln", desc: "Fallback-Templates pro Klauseltyp" },
                   { item: "EUR-Lex Live-Feed", desc: "Echtzeit Regulatorik-Updates" },
                   { item: "Custom Playbook-Editor", desc: "Eigene Standards definieren" }
@@ -114,7 +114,7 @@ export default function RoadmapPage() {
           {/* Strategic Pillars */}
           <div className="mt-20">
             <h2 className="text-center text-[24px] font-semibold tracking-tight text-gray-950">Strategische Saeulen</h2>
-            <p className="mt-2 text-center text-[14px] text-gray-500">Was bleibt konstant ueber alle Versionen</p>
+            <p className="mt-2 text-center text-[14px] text-gray-500">Was bleibt konstant über alle Versionen</p>
             <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 { emoji: "🇩🇪", title: "DACH-First", desc: "Deutsches Recht, deutsche Sprache, EU-Hosting — keine US-Centric-Tools" },
@@ -137,11 +137,11 @@ export default function RoadmapPage() {
             <p className="mt-2 text-[14px] text-gray-500">Was wir nach Q1 2027 angehen — basierend auf Customer-Feedback</p>
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               {[
-                { emoji: "🌐", title: "PEPPOL Integration", desc: "Volle B2B-E-Rechnung-Anbindung fuer EU-weiten Rechnungsverkehr" },
-                { emoji: "📊", title: "Vertrags-Performance Analytics", desc: "KPI-Dashboards: Welche Vertraege sind profitabel? Welche Klauseln werden oft verletzt?" },
+                { emoji: "🌐", title: "PEPPOL Integration", desc: "Volle B2B-E-Rechnung-Anbindung für EU-weiten Rechnungsverkehr" },
+                { emoji: "📊", title: "Vertrags-Performance Analytics", desc: "KPI-Dashboards: Welche Verträge sind profitabel? Welche Klauseln werden oft verletzt?" },
                 { emoji: "🔮", title: "Predictive Compliance", desc: "Vorhersage zukuenftiger Compliance-Risiken aus Vertragsstruktur" },
                 { emoji: "🤖", title: "Autonomous Drafting Agent", desc: "Erste Vertragsentwuerfe vollstaendig autonom — Mensch reviewt nur" },
-                { emoji: "📚", title: "Knowledge Graph", desc: "Verkettetes Wissen ueber Vertraege, Klauseln, Praezedenzen, Lieferanten" },
+                { emoji: "📚", title: "Knowledge Graph", desc: "Verkettetes Wissen über Verträge, Klauseln, Praezedenzen, Lieferanten" },
                 { emoji: "🎓", title: "Continuous Learning", desc: "Plattform lernt aus jedem Review und verbessert ihre Empfehlungen" }
               ].map((m) => (
                 <div key={m.title} className="flex gap-3">
@@ -157,7 +157,7 @@ export default function RoadmapPage() {
 
           {/* CTA */}
           <div className="mt-16 text-center">
-            <p className="text-[14px] text-gray-500">Welche Features sind fuer Ihr Unternehmen am wichtigsten?</p>
+            <p className="text-[14px] text-gray-500">Welche Features sind für Ihr Unternehmen am wichtigsten?</p>
             <Link href="/enterprise-kontakt" className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42]">
               📞 Roadmap-Gespraech vereinbaren
             </Link>
