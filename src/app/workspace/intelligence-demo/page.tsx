@@ -93,7 +93,7 @@ export default function IntelligenceDemoPage() {
           <h1 className="mt-2 text-[1.75rem] font-semibold tracking-tight text-gray-950">Multi-Dimensional Analysis</h1>
           <p className="mt-1 text-[14px] text-gray-500">Type-aware Felder · 4-dimensionale Risiko-Engine · Fallback-Klauseln · Signature-Blocking</p>
         </div>
-        <Link href="/produkt/roadmap" className="rounded-full border border-gray-200 bg-white px-4 py-2 text-[12px] font-medium text-gray-600 hover:bg-gray-50">📍 Produkt-Roadmap →</Link>
+        <Link href="/roadmap" className="rounded-full border border-gray-200 bg-white px-4 py-2 text-[12px] font-medium text-gray-600 hover:bg-gray-50">📍 Produkt-Roadmap →</Link>
       </div>
 
       {/* Type Selector */}
