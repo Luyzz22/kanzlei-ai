@@ -24,7 +24,7 @@ export type ExtractDocumentTextResult = {
 
 /**
  * Maximale Zeichen, die im Document.extractedTextPreview gespeichert werden.
- * Gross genug fuer eine belastbare KI-Vertragsanalyse, klein genug,
+ * Gross genug für eine belastbare KI-Vertragsanalyse, klein genug,
  * um Speicher-/PII-Fussabdruck zu minimieren.
  */
 const MAX_PREVIEW_CHARS = 16000
@@ -37,20 +37,20 @@ const MAX_PREVIEW_CHARS = 16000
 const MIN_VIABLE_TEXT_LENGTH = 50
 
 /**
- * Harte Obergrenze fuer Dateien, die wir an Gemini Vision (OCR) schicken.
+ * Harte Obergrenze für Dateien, die wir an Gemini Vision (OCR) schicken.
  * Groesser als 20 MB wuerde den Lambda-Budget-Rahmen sprengen und die
  * Vercel-Function-Timeouts (60s Hobby / 300s Pro) reissen.
  */
 const OCR_MAX_FILE_BYTES = 20 * 1024 * 1024
 
 /**
- * Aktiviert OCR-Fallback ueber Gemini Vision bei PDFs ohne Text-Layer.
+ * Aktiviert OCR-Fallback über Gemini Vision bei PDFs ohne Text-Layer.
  * Steuerbar per ENV, damit Self-Hoster / Test-Umgebungen ohne
  * GEMINI_API_KEY nicht in Fehler laufen.
  */
 function isOcrFallbackEnabled(): boolean {
   const hasKey = Boolean(process.env.GEMINI_API_KEY?.trim())
-  // Explizit opt-out moeglich (Default: aktiv, wenn Key vorhanden)
+  // Explizit opt-out möglich (Default: aktiv, wenn Key vorhanden)
   const flag = process.env.KANZLEI_PDF_OCR_ENABLED?.trim().toLowerCase()
   if (flag === "false" || flag === "0") return false
   return hasKey
@@ -93,7 +93,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
 /**
  * DOCX-Extraktion via mammoth (Microsoft-Word-XML -> reiner Text).
  *
- * Mammoth ist die Industrie-Standardwahl fuer DOCX-Extraktion in
+ * Mammoth ist die Industrie-Standardwahl für DOCX-Extraktion in
  * Node-Serverless-Umgebungen: kein nativer Code, keine System-Deps,
  * robuste Fehlerbehandlung.
  */
@@ -105,7 +105,7 @@ async function extractDocxText(buffer: Buffer): Promise<string> {
   const mammoth = mammothModule.default ?? mammothModule
 
   // mammoth.extractRawText liefert reinen Text ohne Formatierung.
-  // Exakt das, was wir fuer die Analyse-Pipeline brauchen.
+  // Exakt das, was wir für die Analyse-Pipeline brauchen.
   const result: { value: string; messages: Array<{ type: string; message: string }> } =
     await mammoth.extractRawText({ buffer })
 
@@ -113,27 +113,27 @@ async function extractDocxText(buffer: Buffer): Promise<string> {
 }
 
 /**
- * OCR-Fallback via Gemini Vision fuer gescannte PDFs ohne Text-Layer.
+ * OCR-Fallback via Gemini Vision für gescannte PDFs ohne Text-Layer.
  *
  * Gemini 1.5 Flash/Pro akzeptiert PDFs direkt als inline-Input
- * (bis 20 MB). Kein Zwischenschritt ueber Bildkonvertierung noetig.
+ * (bis 20 MB). Kein Zwischenschritt über Bildkonvertierung noetig.
  *
  * Kostenrahmen: gemini-1.5-flash ist ~75% billiger als gemini-1.5-pro
- * bei vergleichbarer OCR-Qualitaet fuer deutschen Rechtstext.
+ * bei vergleichbarer OCR-Qualitaet für deutschen Rechtstext.
  */
 async function ocrPdfViaGemini(buffer: Buffer): Promise<string> {
   if (!process.env.GEMINI_API_KEY?.trim()) {
-    throw new Error("GEMINI_API_KEY ist nicht gesetzt — OCR-Fallback nicht verfuegbar.")
+    throw new Error("GEMINI_API_KEY ist nicht gesetzt — OCR-Fallback nicht verfügbar.")
   }
 
   if (buffer.byteLength > OCR_MAX_FILE_BYTES) {
     throw new Error(
-      `PDF ist zu gross fuer OCR (${Math.round(buffer.byteLength / 1024 / 1024)} MB, Limit ${OCR_MAX_FILE_BYTES / 1024 / 1024} MB).`
+      `PDF ist zu gross für OCR (${Math.round(buffer.byteLength / 1024 / 1024)} MB, Limit ${OCR_MAX_FILE_BYTES / 1024 / 1024} MB).`
     )
   }
 
   const geminiModule = await import("@google/generative-ai")
-  // Runtime unterstuetzt inlineData und generationConfig — Typ-Decl ist
+  // Runtime unterstützt inlineData und generationConfig — Typ-Decl ist
   // im Projekt bewusst minimal. Daher typed cast.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const client = new geminiModule.GoogleGenerativeAI(process.env.GEMINI_API_KEY) as any
@@ -147,7 +147,7 @@ async function ocrPdfViaGemini(buffer: Buffer): Promise<string> {
   const base64 = buffer.toString("base64")
 
   // Gemini akzeptiert PDFs direkt als inlineData mit mimeType "application/pdf".
-  // Kein OCR-Zwischenschritt ueber Page-Rasterisierung noetig.
+  // Kein OCR-Zwischenschritt über Page-Rasterisierung noetig.
   const response = await model.generateContent([
     {
       inlineData: {
@@ -159,8 +159,8 @@ async function ocrPdfViaGemini(buffer: Buffer): Promise<string> {
       text: [
         "Extrahiere den vollstaendigen Text dieses Dokuments in Klartext.",
         "Behalte die urspruengliche Reihenfolge und Absatzstruktur bei.",
-        "Fuege KEINE eigenen Kommentare, Zusammenfassungen oder Erklaerungen hinzu.",
-        "Gib nur den extrahierten Text zurueck, keine Markdown-Formatierung."
+        "Fuege KEINE eigenen Kommentare, Zusammenfassungen oder Erklärungen hinzu.",
+        "Gib nur den extrahierten Text zurück, keine Markdown-Formatierung."
       ].join(" ")
     }
   ])
@@ -186,7 +186,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
       status: "unsupported",
       mode: "unsupported",
       textPreview: null,
-      errorHint: `Dateiformat ${input.mimeType ?? "unbekannt"} wird nicht unterstuetzt. Erlaubt: PDF, DOCX und TXT.`
+      errorHint: `Dateiformat ${input.mimeType ?? "unbekannt"} wird nicht unterstützt. Erlaubt: PDF, DOCX und TXT.`
     }
   }
 
@@ -227,7 +227,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
           status: "failed",
           mode: "docx-mammoth",
           textPreview: null,
-          errorHint: "DOCX enthaelt keinen extrahierbaren Text (moeglicherweise nur eingebettete Bilder)."
+          errorHint: "DOCX enthaelt keinen extrahierbaren Text (möglicherweise nur eingebettete Bilder)."
         }
       }
       return buildResult(normalized, "docx-mammoth")
@@ -250,7 +250,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
       return buildResult(normalized, "pdf-text-layer")
     }
 
-    // Text-Layer leer -> OCR-Fallback, falls verfuegbar und konfiguriert
+    // Text-Layer leer -> OCR-Fallback, falls verfügbar und konfiguriert
     if (isOcrFallbackEnabled()) {
       try {
         const ocrText = await ocrPdfViaGemini(buffer)
@@ -262,7 +262,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
           status: "failed",
           mode: "pdf-ocr-gemini",
           textPreview: null,
-          errorHint: "OCR lieferte keinen verwertbaren Text. Das PDF ist moeglicherweise leer, beschaedigt oder schlecht gescannt."
+          errorHint: "OCR lieferte keinen verwertbaren Text. Das PDF ist möglicherweise leer, beschaedigt oder schlecht gescannt."
         }
       } catch (ocrErr) {
         return {
@@ -274,12 +274,12 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
       }
     }
 
-    // Kein OCR verfuegbar -> klarer Hinweis fuer Nutzer
+    // Kein OCR verfügbar -> klarer Hinweis für Nutzer
     return {
       status: "failed",
       mode: "pdf-text-layer",
       textPreview: null,
-      errorHint: "Das PDF enthaelt keinen extrahierbaren Text-Layer (moeglicherweise gescannt). Bitte eine OCR-Variante der Datei erneut hochladen."
+      errorHint: "Das PDF enthaelt keinen extrahierbaren Text-Layer (möglicherweise gescannt). Bitte eine OCR-Variante der Datei erneut hochladen."
     }
   } catch (e) {
     return {
@@ -297,7 +297,7 @@ function buildResult(text: string, mode: ExtractionMode): ExtractDocumentTextRes
       status: "failed",
       mode,
       textPreview: null,
-      errorHint: `Extrahierter Text ist zu kurz (${text.length} Zeichen) fuer eine belastbare Analyse.`
+      errorHint: `Extrahierter Text ist zu kurz (${text.length} Zeichen) für eine belastbare Analyse.`
     }
   }
 
