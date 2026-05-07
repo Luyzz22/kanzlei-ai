@@ -28,9 +28,9 @@ const scenarios: Scenario[] = [
     contractType: "Lieferantenvertrag",
     counterparty: "Techvendor GmbH (hart, erfahren)",
     difficulty: "mittel",
-    objectives: ["Haftung auf 12 Monatsverguetungen begrenzen", "IP-Rechte beim Auftraggeber sichern", "Kuendigungsrecht mit 3 Monaten Frist"],
+    objectives: ["Haftung auf 12 Monatsvergütungen begrenzen", "IP-Rechte beim Auftraggeber sichern", "Kündigungsrecht mit 3 Monaten Frist"],
     icon: "\u{1F3ED}",
-    opener: "Guten Tag. Wir haben Ihren Vertragsentwurf geprueft. Einige Punkte sehen wir anders \u2014 insbesondere die Haftungsklausel. Unsere Standardhaftung betraegt 24 Monate Auftragsvolumen, das ist branchenueblich. Zudem behalten wir uns die IP-Rechte an allen Arbeitsergebnissen vor. Dazu ist unsere Mindestlaufzeit 36 Monate."
+    opener: "Guten Tag. Wir haben Ihren Vertragsentwurf geprüft. Einige Punkte sehen wir anders — insbesondere die Haftungsklausel. Unsere Standardhaftung betraegt 24 Monate Auftragsvolumen, das ist branchenueblich. Zudem behalten wir uns die IP-Rechte an allen Arbeitsergebnissen vor. Dazu ist unsere Mindestlaufzeit 36 Monate."
   },
   {
     id: "sc-02",
@@ -39,8 +39,8 @@ const scenarios: Scenario[] = [
     counterparty: "US-Cloud-Provider (kompromissbereit)",
     difficulty: "schwer",
     objectives: ["EU-Datenhaltung vertraglich garantieren", "AVV nach Art. 28 DSGVO anpassen", "Aktuelle SCCs vereinbaren"],
-    icon: "\u2601\uFE0F",
-    opener: "Hi, thanks for reaching out about the data processing terms. Our standard DPA covers most GDPR requirements. Data is stored in our global network \u2014 we can route to EU but cannot guarantee exclusive EU hosting. Our subprocessor list is updated quarterly on our website."
+    icon: "☁️",
+    opener: "Hi, thanks for reaching out about the data processing terms. Our standard DPA covers most GDPR requirements. Data is stored in our global network — we can route to EU but cannot guarantee exclusive EU hosting. Our subprocessor list is updated quarterly on our website."
   },
   {
     id: "sc-03",
@@ -48,9 +48,9 @@ const scenarios: Scenario[] = [
     contractType: "NDA",
     counterparty: "Investmentbank (professionell, schnell)",
     difficulty: "einfach",
-    objectives: ["Beidseitige Geheimhaltungspflichten sicherstellen", "Laufzeit auf 3 Jahre begrenzen", "Standard-Ausnahmen fuer bekannte Informationen"],
+    objectives: ["Beidseitige Geheimhaltungspflichten sicherstellen", "Laufzeit auf 3 Jahre begrenzen", "Standard-Ausnahmen für bekannte Informationen"],
     icon: "\u{1F91D}",
-    opener: "Vielen Dank fuer Ihr Interesse an der Transaktion. Wir haben Ihnen unsere Standard-NDA zugesandt. Diese ist einseitig \u2014 nur Sie als Empfaenger werden gebunden. Die Laufzeit ist unbefristet. Bitte unterzeichnen Sie bis Freitag, damit wir den Datenraum oeffnen koennen."
+    opener: "Vielen Dank für Ihr Interesse an der Transaktion. Wir haben Ihnen unsere Standard-NDA zugesandt. Diese ist einseitig — nur Sie als Empfänger werden gebunden. Die Laufzeit ist unbefristet. Bitte unterzeichnen Sie bis Freitag, damit wir den Datenraum öffnen können."
   },
   {
     id: "sc-04",
@@ -60,7 +60,7 @@ const scenarios: Scenario[] = [
     difficulty: "expert",
     objectives: ["LkSG-Sorgfaltspflichten vertraglich verankern", "Audit-Recht in der Lieferkette sichern", "Code of Conduct als Vertragsbestandteil"],
     icon: "\u{1F30D}",
-    opener: "Wir haben Ihre zusaetzlichen Klauseln erhalten. Ehrlich gesagt sehen wir keinen Bedarf fuer diese umfangreichen Pruefrechte. Unsere Produktionsstandards entsprechen lokalen Gesetzen. Ein Audit-Recht in unserer Lieferkette koennen wir nicht gewaehren \u2014 das ist vertraulich. Den Code of Conduct koennen wir zur Kenntnis nehmen, aber nicht als Vertragsbestandteil akzeptieren."
+    opener: "Wir haben Ihre zusätzlichen Klauseln erhalten. Ehrlich gesagt sehen wir keinen Bedarf für diese umfangreichen Prüfrechte. Unsere Produktionsstandards entsprechen lokalen Gesetzen. Ein Audit-Recht in unserer Lieferkette können wir nicht gewähren — das ist vertraulich. Den Code of Conduct können wir zur Kenntnis nehmen, aber nicht als Vertragsbestandteil akzeptieren."
   },
 ]
 
@@ -180,7 +180,7 @@ export default function VerhandlungPage() {
         }
       }
     } catch {
-      setMessages(m => [...m, { role: "coach", content: "Verbindungsfehler \u2014 bitte erneut versuchen.", timestamp: ts() }])
+      setMessages(m => [...m, { role: "coach", content: "Verbindungsfehler — bitte erneut versuchen.", timestamp: ts() }])
       setStreamBuffer("")
     } finally {
       setStreaming(false)
@@ -247,8 +247,8 @@ export default function VerhandlungPage() {
               <h3 className="text-sm font-semibold text-[#003856]">So funktioniert die Simulation</h3>
               <div className="mt-3 grid gap-4 sm:grid-cols-3">
                 {[
-                  { n: "1", t: "Szenario waehlen", d: "Realitaetsnahe Situationen aus echten Vertragsverhandlungen" },
-                  { n: "2", t: "Live verhandeln", d: "Claude spielt Ihre Gegenpartei \u2014 reagiert adaptiv auf Ihre Argumente" },
+                  { n: "1", t: "Szenario wählen", d: "Realitaetsnahe Situationen aus echten Vertragsverhandlungen" },
+                  { n: "2", t: "Live verhandeln", d: "Claude spielt Ihre Gegenpartei — reagiert adaptiv auf Ihre Argumente" },
                   { n: "3", t: "Coaching erhalten", d: "Nach jedem Zug Score-Bewertung mit konkreten Verbesserungsvorschlaegen" },
                 ].map(s => (
                   <div key={s.n} className="flex items-start gap-3">
@@ -330,7 +330,7 @@ export default function VerhandlungPage() {
               <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !streaming) { e.preventDefault(); sendMove() } }} placeholder="Ihr Verhandlungszug... (Tipp: BGB-Referenzen, Marktdaten und konkrete Alternativen erhoehen Ihren Score)" className="w-full resize-none bg-transparent px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none" rows={2} disabled={streaming} />
               <div className="flex items-center justify-between pt-1">
                 <div className="flex gap-1.5">
-                  {["\u00A7 BGB-Argument", "Marktvergleich", "Kompromissvorschlag"].map(tag => (
+                  {["§ BGB-Argument", "Marktvergleich", "Kompromissvorschlag"].map(tag => (
                     <button key={tag} onClick={() => setInput(i => i + (i ? " " : "") + tag + ": ")} disabled={streaming} className="rounded-full border border-stone-200 px-2.5 py-1 text-[10px] font-medium text-stone-500 transition-colors hover:bg-stone-50 disabled:opacity-40">{tag}</button>
                   ))}
                 </div>
@@ -361,7 +361,7 @@ export default function VerhandlungPage() {
         )}
 
         <div className="mt-6 rounded-lg border border-stone-200 bg-white p-3 text-center">
-          <p className="text-xs text-stone-400">Trainings-Tool \u2014 keine Rechtsberatung \u00B7 KI-Gegenpartei: Claude Sonnet \u00B7 <Link href="/ki-transparenz" className="font-medium text-[#003856] hover:underline">KI-Transparenz</Link></p>
+          <p className="text-xs text-stone-400">Trainings-Tool — keine Rechtsberatung · KI-Gegenpartei: Claude Sonnet · <Link href="/ki-transparenz" className="font-medium text-[#003856] hover:underline">KI-Transparenz</Link></p>
         </div>
       </div>
     </div>
