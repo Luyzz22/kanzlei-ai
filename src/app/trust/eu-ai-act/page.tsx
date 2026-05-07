@@ -83,7 +83,7 @@ export default function EuAiActPage() {
             EU AI Act Compliance
           </h1>
           <p className="mt-4 max-w-3xl text-[16px] leading-relaxed text-gray-600">
-            KanzleiAI-Einordnung nach der EU-Verordnung ueber kuenstliche Intelligenz.
+            KanzleiAI-Einordnung nach der EU-Verordnung über kuenstliche Intelligenz.
             Risiko-Klassifizierung, Transparenzpflichten, General Purpose AI (GPAI)
             Modell-Dokumentation und Nachweise zur Einhaltung der Hochrisiko-Anforderungen
             ab 2. August 2026.
@@ -104,7 +104,7 @@ export default function EuAiActPage() {
                   Ab diesem Datum gelten die Hochrisiko-Anforderungen nach Annex III der
                   KI-Verordnung. Versto&szlig;-Bu&szlig;gelder: bis 35 Mio. EUR oder 7%
                   des weltweiten Jahresumsatzes. KanzleiAI als Deployer (Betreiber)
-                  erfuellt die Vorgaben und unterstuetzt Kunden bei der eigenen
+                  erfuellt die Vorgaben und unterstützt Kunden bei der eigenen
                   Compliance-Dokumentation.
                 </p>
               </div>
@@ -133,8 +133,8 @@ export default function EuAiActPage() {
               </div>
               <p className="mt-2 text-[12px] leading-relaxed text-amber-800">
                 Einsatz bei automatisierten Beschaeftigungsentscheidungen:
-                Arbeitsvertraege-Pruefung, die direkt zu Einstellungs- oder
-                Kuendigungsentscheidungen fuehrt.
+                Arbeitsverträge-Prüfung, die direkt zu Einstellungs- oder
+                Kündigungsentscheidungen fuehrt.
               </p>
               <p className="mt-2 text-[11px] text-amber-700">
                 Pflichten: Risiko-Management, Daten-Governance, technische Dokumentation,
@@ -151,11 +151,11 @@ export default function EuAiActPage() {
                 </h3>
               </div>
               <p className="mt-2 text-[12px] leading-relaxed text-blue-800">
-                Standard-Vertragspruefung ohne beschaeftigungsrechtliche Automatisierung:
+                Standard-Vertragsprüfung ohne beschaeftigungsrechtliche Automatisierung:
                 NDA, SaaS-Vertrag, Lieferantenvertrag, Kaufvertrag, Mietvertrag.
               </p>
               <p className="mt-2 text-[11px] text-blue-700">
-                Pflichten: Transparenzpflicht gegenueber Endnutzern (KI-Nutzung
+                Pflichten: Transparenzpflicht gegenüber Endnutzern (KI-Nutzung
                 offenlegen), KI-generierte Inhalte kennzeichnen.
               </p>
             </div>
@@ -265,13 +265,13 @@ export default function EuAiActPage() {
                 article: "Art. 9",
                 title: "Risiko-Managementsystem",
                 status: "Umgesetzt",
-                desc: "Kontinuierliche Risiko-Identifikation ueber gesamten Lebenszyklus. Dokumentiert in der internen Risiko-Matrix."
+                desc: "Kontinuierliche Risiko-Identifikation über gesamten Lebenszyklus. Dokumentiert in der internen Risiko-Matrix."
               },
               {
                 article: "Art. 10",
                 title: "Daten-Governance",
                 status: "Umgesetzt",
-                desc: "Verarbeitete Daten kommen ausschliesslich vom Kunden. Kein Training mit Mandantendaten. Datenminimierung auf Preview-Laenge (16k Zeichen)."
+                desc: "Verarbeitete Daten kommen ausschließlich vom Kunden. Kein Training mit Mandantendaten. Datenminimierung auf Preview-Laenge (16k Zeichen)."
               },
               {
                 article: "Art. 11",
@@ -283,7 +283,7 @@ export default function EuAiActPage() {
                 article: "Art. 12",
                 title: "Protokollierung",
                 status: "Umgesetzt",
-                desc: "Hash-verketteter Audit-Trail ueber jede KI-Entscheidung. Akteur, Zeitstempel, Modell, Prompt-Version, Input-Hash, Output-Hash."
+                desc: "Hash-verketteter Audit-Trail über jede KI-Entscheidung. Akteur, Zeitstempel, Modell, Prompt-Version, Input-Hash, Output-Hash."
               },
               {
                 article: "Art. 13",
@@ -301,13 +301,13 @@ export default function EuAiActPage() {
                 article: "Art. 15",
                 title: "Genauigkeit & Cybersicherheit",
                 status: "In Vorbereitung (Q3 2026)",
-                desc: "Benchmark-Suite gegen 50+ Referenzvertraege im Aufbau. ISO 27001-Zertifizierung in 6-9 Monaten geplant."
+                desc: "Benchmark-Suite gegen 50+ Referenzverträge im Aufbau. ISO 27001-Zertifizierung in 6-9 Monaten geplant."
               },
               {
                 article: "Art. 26",
                 title: "Pflichten von Deployern",
                 status: "Dokumentiert",
-                desc: "Betreiber-Handbuch fuer Kanzlei-Kunden (Checkliste, Logs, Meldepflicht bei Zwischenfaellen) als PDF-Download verfuegbar."
+                desc: "Betreiber-Handbuch für Kanzlei-Kunden (Checkliste, Logs, Meldepflicht bei Zwischenfaellen) als PDF-Download verfügbar."
               }
             ].map((item) => (
               <div
@@ -350,7 +350,7 @@ export default function EuAiActPage() {
             Fragen zur EU AI Act Compliance?
           </h2>
           <p className="mt-3 text-[14px] leading-relaxed text-gray-600">
-            Fuer Enterprise-Kunden stellen wir auf Anfrage ein detailliertes Technical
+            Für Enterprise-Kunden stellen wir auf Anfrage ein detailliertes Technical
             Dossier bereit, das alle Anforderungen nach Annex III-4.a EU AI Act
             dokumentiert. Enthalten: Risiko-Assessment, Daten-Governance-Konzept,
             Prompt-Engineering-Dokumentation, Provider-Matrix, Benchmark-Ergebnisse.
