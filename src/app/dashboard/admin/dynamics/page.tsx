@@ -131,7 +131,7 @@ export default function DynamicsAdminPage() {
 
   const saveConfig = async () => {
     if (!form.clientSecret && !config?.isConfigured) {
-      setSaveMessage("Client Secret erforderlich fuer Erstkonfiguration")
+      setSaveMessage("Client Secret erforderlich für Erstkonfiguration")
       return
     }
     setSaving(true)
@@ -152,7 +152,7 @@ export default function DynamicsAdminPage() {
         // Server akzeptiert Upsert nur mit Secret — wenn User nichts eingetippt hat,
         // re-senden wir nicht (Update-Felder ausserhalb Secret erfordern API-Erweiterung)
         setSaveMessage(
-          "Bitte Client Secret erneut eingeben (aus Sicherheitsgruenden wird es nicht aus der DB zurueckgegeben)"
+          "Bitte Client Secret erneut eingeben (aus Sicherheitsgruenden wird es nicht aus der DB zurückgegeben)"
         )
         setSaving(false)
         return
@@ -183,7 +183,7 @@ export default function DynamicsAdminPage() {
   }
 
   const deleteConfig = async () => {
-    if (!confirm("Dynamics-Integration wirklich entfernen? Alle gespeicherten Credentials werden geloescht.")) {
+    if (!confirm("Dynamics-Integration wirklich entfernen? Alle gespeicherten Credentials werden gelöscht.")) {
       return
     }
     await fetch("/api/dynamics/config", { method: "DELETE" })
@@ -220,7 +220,7 @@ export default function DynamicsAdminPage() {
           </h1>
           <p className="mt-2 text-[14px] text-gray-500">
             Business Central via OAuth 2.0 (Entra ID) + REST API v2.0. Credentials werden
-            AES-256-GCM-verschluesselt in der Datenbank abgelegt.
+            AES-256-GCM-verschlüsselt in der Datenbank abgelegt.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -315,7 +315,7 @@ export default function DynamicsAdminPage() {
                     onChange={(e) => setForm((f) => ({ ...f, clientSecret: e.target.value }))}
                     placeholder={
                       config?.isConfigured
-                        ? "•••••••• (nur eingeben um Secret zu aendern)"
+                        ? "•••••••• (nur eingeben um Secret zu ändern)"
                         : "Client Secret"
                     }
                     className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 font-mono text-[13px] text-gray-900 placeholder:text-gray-300 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200"
@@ -355,7 +355,7 @@ export default function DynamicsAdminPage() {
             {testResult.kind === "success" && testResult.companies.length > 0 && (
               <div className="mt-4">
                 <label className="mb-1 block text-[12px] font-medium text-gray-700">
-                  Company auswaehlen
+                  Company auswählen
                 </label>
                 <select
                   value={form.companyId}
@@ -369,7 +369,7 @@ export default function DynamicsAdminPage() {
                   }}
                   className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-900"
                 >
-                  <option value="">— Bitte waehlen —</option>
+                  <option value="">— Bitte wählen —</option>
                   {testResult.companies.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.displayName} ({c.name})
@@ -441,7 +441,7 @@ export default function DynamicsAdminPage() {
                 </ul>
               )}
               <p className="mt-2 text-[11px] text-emerald-700">
-                Bitte jetzt eine Company oben auswaehlen und Konfiguration speichern.
+                Bitte jetzt eine Company oben auswählen und Konfiguration speichern.
               </p>
             </div>
           )}
@@ -481,7 +481,7 @@ export default function DynamicsAdminPage() {
             )}
             {config?.isConfigured && !config.companyId && (
               <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
-                Bitte erst eine Company auswaehlen (Tab &quot;Credentials&quot;).
+                Bitte erst eine Company auswählen (Tab &quot;Credentials&quot;).
               </p>
             )}
             {config?.isConfigured && config.companyId && (
@@ -556,7 +556,7 @@ export default function DynamicsAdminPage() {
 
       <div className="mt-8 text-[12px] text-gray-500">
         <Link href="/dashboard/admin" className="hover:underline">
-          ← Zurueck zur Admin-Uebersicht
+          ← Zurück zur Admin-Übersicht
         </Link>
       </div>
     </div>
