@@ -61,7 +61,7 @@ export default async function Image() {
             lineHeight: 1.4,
           }}
         >
-          KI-Vertragsanalyse fuer juristische Teams im DACH-Markt
+          KI-Vertragsanalyse für juristische Teams im DACH-Markt
         </p>
 
         {/* Features */}
