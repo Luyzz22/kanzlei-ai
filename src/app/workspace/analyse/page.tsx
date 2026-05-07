@@ -310,7 +310,7 @@ export default function AnalysePage() {
 
           <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
             <p className="text-[13px] font-medium text-gray-700">💡 16 Vertragstypen DE/EN</p>
-            <p className="mt-1 text-[12px] text-gray-500">8 deutsche + 8 englische Vertragstypen mit spezialisierten Pruefkatalogen. <a href="/vertragstypen" className="font-medium text-[#003856] hover:text-[#00507a]">Alle Vertragstypen ansehen →</a></p>
+            <p className="mt-1 text-[12px] text-gray-500">8 deutsche + 8 englische Vertragstypen mit spezialisierten Prüfkatalogen. <a href="/vertragstypen" className="font-medium text-[#003856] hover:text-[#00507a]">Alle Vertragstypen ansehen →</a></p>
           </div>
         </div>
       ) : (
@@ -384,13 +384,13 @@ export default function AnalysePage() {
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {parsed.deadlines.noticePeriodDays !== undefined && (
                   <div className={`rounded-xl border p-3 ${parsed.deadlines.noticePeriodDays < 30 ? "border-red-200 bg-red-50" : parsed.deadlines.noticePeriodDays < 90 ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"}`}>
-                    <p className="text-[11px] font-medium text-gray-500">Kuendigungsfrist</p>
+                    <p className="text-[11px] font-medium text-gray-500">Kündigungsfrist</p>
                     <p className="mt-0.5 text-[16px] font-semibold text-gray-900">{parsed.deadlines.noticePeriodDays} Tage</p>
                   </div>
                 )}
                 {parsed.deadlines.autoRenewal !== undefined && (
                   <div className={`rounded-xl border p-3 ${parsed.deadlines.autoRenewal ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"}`}>
-                    <p className="text-[11px] font-medium text-gray-500">Auto-Verlaengerung</p>
+                    <p className="text-[11px] font-medium text-gray-500">Auto-Verlängerung</p>
                     <p className="mt-0.5 text-[16px] font-semibold text-gray-900">{parsed.deadlines.autoRenewal ? `Ja${parsed.deadlines.renewalTermMonths ? ` (${parsed.deadlines.renewalTermMonths} Monate)` : ""}` : "Nein"}</p>
                   </div>
                 )}
@@ -408,13 +408,13 @@ export default function AnalysePage() {
                 )}
                 {parsed.deadlines.nextCancellationDate && (
                   <div className="rounded-xl border border-red-200 bg-red-50 p-3">
-                    <p className="text-[11px] font-medium text-gray-500">Naechster Kuendigungstermin</p>
+                    <p className="text-[11px] font-medium text-gray-500">Naechster Kündigungstermin</p>
                     <p className="mt-0.5 text-[14px] font-semibold text-red-700">{parsed.deadlines.nextCancellationDate}</p>
                   </div>
                 )}
                 {parsed.deadlines.warrantyPeriodMonths !== undefined && (
                   <div className="rounded-xl border border-gray-200 bg-white p-3">
-                    <p className="text-[11px] font-medium text-gray-500">Gewaehrleistung</p>
+                    <p className="text-[11px] font-medium text-gray-500">Gewährleistung</p>
                     <p className="mt-0.5 text-[14px] font-semibold text-gray-900">{parsed.deadlines.warrantyPeriodMonths} Monate</p>
                   </div>
                 )}
