@@ -47,18 +47,18 @@ const SAMPLE_VALUES: Record<string, Record<string, string | null>> = {
 const SAMPLE_FINDINGS: Record<string, RiskFinding[]> = {
   nda: [
     { id: "nda-1", category: "legal", severity: "high", blockingSignature: false, title: "Permitted Purpose nicht definiert", description: "Der spezifische Zweck der Informationsweitergabe ist nicht festgelegt", recommendation: "Konkreten Zweck einfuegen", legalReference: "Standard NDA practice" },
-    { id: "nda-2", category: "legal", severity: "medium", blockingSignature: false, title: "Injunctive Relief fehlt", description: "Keine Regelung zu einstweiligem Rechtsschutz", recommendation: "Standard-Klausel ergaenzen" },
-    { id: "nda-3", category: "operational", severity: "low", blockingSignature: false, title: "Residuals Clause fehlt", description: "Keine Regelung zu unbeabsichtigt erinnerten Informationen", recommendation: "Bei Tech-Engagements ergaenzen" },
+    { id: "nda-2", category: "legal", severity: "medium", blockingSignature: false, title: "Injunctive Relief fehlt", description: "Keine Regelung zu einstweiligem Rechtsschutz", recommendation: "Standard-Klausel ergänzen" },
+    { id: "nda-3", category: "operational", severity: "low", blockingSignature: false, title: "Residuals Clause fehlt", description: "Keine Regelung zu unbeabsichtigt erinnerten Informationen", recommendation: "Bei Tech-Engagements ergänzen" },
   ],
   saas: [
-    { id: "saas-1", category: "compliance", severity: "critical", blockingSignature: true, title: "AVV (DSGVO Art. 28) fehlt", description: "Kein Auftragsverarbeitungsvertrag — DSGVO-Verstoss", recommendation: "AVV als Anlage ergaenzen vor Unterzeichnung", legalReference: "DSGVO Art. 28 Abs. 3" },
-    { id: "saas-2", category: "operational", severity: "critical", blockingSignature: true, title: "SLA fehlt komplett", description: "Keine Verfuegbarkeitszusage, keine Service-Credits", recommendation: "Mindest-SLA 99,5% mit Credits aufnehmen" },
-    { id: "saas-3", category: "legal", severity: "high", blockingSignature: false, title: "Indemnification nur fuer IP", description: "Freistellung deckt nur IP-Ansprueche, nicht Datenpannen", recommendation: "Indemnification auf DSGVO-Verstoesse erweitern" },
-    { id: "saas-4", category: "financial", severity: "medium", blockingSignature: false, title: "Liability Cap entspricht Marktstandard", description: "12 Monate Fees ist branchenueblich", recommendation: "Optional: bei kritischer Software auf 24 Monate erhoehen" },
+    { id: "saas-1", category: "compliance", severity: "critical", blockingSignature: true, title: "AVV (DSGVO Art. 28) fehlt", description: "Kein Auftragsverarbeitungsvertrag — DSGVO-Verstoß", recommendation: "AVV als Anlage ergänzen vor Unterzeichnung", legalReference: "DSGVO Art. 28 Abs. 3" },
+    { id: "saas-2", category: "operational", severity: "critical", blockingSignature: true, title: "SLA fehlt komplett", description: "Keine Verfügbarkeitszusage, keine Service-Credits", recommendation: "Mindest-SLA 99,5% mit Credits aufnehmen" },
+    { id: "saas-3", category: "legal", severity: "high", blockingSignature: false, title: "Indemnification nur für IP", description: "Freistellung deckt nur IP-Ansprueche, nicht Datenpannen", recommendation: "Indemnification auf DSGVO-Verstoesse erweitern" },
+    { id: "saas-4", category: "financial", severity: "medium", blockingSignature: false, title: "Liability Cap entspricht Marktstandard", description: "12 Monate Fees ist branchenüblich", recommendation: "Optional: bei kritischer Software auf 24 Monate erhoehen" },
   ],
   avv: [
-    { id: "avv-1", category: "compliance", severity: "critical", blockingSignature: true, title: "TOM nicht spezifiziert", description: "Technische und organisatorische Massnahmen fehlen", recommendation: "TOM-Anlage mit Verschluesselung, Zugriffskontrolle, Backup-Konzept", legalReference: "DSGVO Art. 32" },
-    { id: "avv-2", category: "compliance", severity: "critical", blockingSignature: true, title: "Breach Notification fehlt", description: "Keine Frist fuer Meldung von Datenpannen", recommendation: "24-72h Meldepflicht ergaenzen", legalReference: "DSGVO Art. 33" },
+    { id: "avv-1", category: "compliance", severity: "critical", blockingSignature: true, title: "TOM nicht spezifiziert", description: "Technische und organisatorische Maßnahmen fehlen", recommendation: "TOM-Anlage mit Verschlüsselung, Zugriffskontrolle, Backup-Konzept", legalReference: "DSGVO Art. 32" },
+    { id: "avv-2", category: "compliance", severity: "critical", blockingSignature: true, title: "Breach Notification fehlt", description: "Keine Frist für Meldung von Datenpannen", recommendation: "24-72h Meldepflicht ergänzen", legalReference: "DSGVO Art. 33" },
     { id: "avv-3", category: "legal", severity: "high", blockingSignature: false, title: "Drittland-Subprozessoren ohne SCCs", description: "AWS und Anthropic sind US-Anbieter ohne explizite SCC-Referenz", recommendation: "SCC 2021/914 referenzieren" },
   ]
 }
@@ -166,7 +166,7 @@ export default function IntelligenceDemoPage() {
 
             {notApplicable.length > 0 && (
               <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50 p-4">
-                <h4 className="text-[12px] font-semibold uppercase tracking-wider text-gray-400">Ausgeblendet (nicht relevant fuer {schema.shortName})</h4>
+                <h4 className="text-[12px] font-semibold uppercase tracking-wider text-gray-400">Ausgeblendet (nicht relevant für {schema.shortName})</h4>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {notApplicable.map((f) => (
                     <span key={f.key} className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[11px] text-gray-500">
@@ -245,7 +245,7 @@ export default function IntelligenceDemoPage() {
             { title: "Modul 1: Type-aware Felder", desc: "Vertragstyp-spezifische Schemas. AVV erscheint nur bei SaaS, nicht bei NDA. Null-Werte werden klar ausgewiesen." },
             { title: "Modul 2: Multi-Dimensional Risk", desc: "Legal Blocking Risk separat von Economic/Operational. 4 Risikokategorien. Signature-Blocking-Flag." },
             { title: "Modul 3: Fallback-Klauseln", desc: "Pro Vertragstyp Standard-Ersatzklauseln zum Copy-Pasten — Enterprise-tier konform." },
-            { title: "Modul 4: Roadmap V1.0 → V3.0", desc: "Phasen-Plan fuer skalierbaren Ausbau. Siehe Produkt-Roadmap." },
+            { title: "Modul 4: Roadmap V1.0 → V3.0", desc: "Phasen-Plan für skalierbaren Ausbau. Siehe Produkt-Roadmap." },
           ].map((m) => (
             <div key={m.title} className="rounded-lg border border-gray-100 bg-white p-3">
               <p className="text-[12px] font-semibold text-gray-900">{m.title}</p>
