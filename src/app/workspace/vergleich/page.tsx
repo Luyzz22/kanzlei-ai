@@ -82,7 +82,7 @@ export default function VergleichPage() {
                   <div>
                     <span className="text-[28px]">📤</span>
                     <p className="mt-2 text-[13px] text-gray-500">PDF hier ablegen</p>
-                    <button onClick={() => refA.current?.click()} className="mt-2 rounded-full bg-[#003856] px-4 py-2 text-[12px] font-medium text-white hover:bg-[#002a42]">Datei waehlen</button>
+                    <button onClick={() => refA.current?.click()} className="mt-2 rounded-full bg-[#003856] px-4 py-2 text-[12px] font-medium text-white hover:bg-[#002a42]">Datei wählen</button>
                     <input ref={refA} type="file" accept=".pdf,.txt" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFileA(f); setTextA("") } }} />
                   </div>
                 )}
@@ -104,7 +104,7 @@ export default function VergleichPage() {
                   <div>
                     <span className="text-[28px]">📤</span>
                     <p className="mt-2 text-[13px] text-gray-500">PDF hier ablegen</p>
-                    <button onClick={() => refB.current?.click()} className="mt-2 rounded-full bg-[#003856] px-4 py-2 text-[12px] font-medium text-white hover:bg-[#002a42]">Datei waehlen</button>
+                    <button onClick={() => refB.current?.click()} className="mt-2 rounded-full bg-[#003856] px-4 py-2 text-[12px] font-medium text-white hover:bg-[#002a42]">Datei wählen</button>
                     <input ref={refB} type="file" accept=".pdf,.txt" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFileB(f); setTextB("") } }} />
                   </div>
                 )}
@@ -133,7 +133,7 @@ export default function VergleichPage() {
               <p className={`mt-1 text-[32px] font-bold ${result.overallRisk >= 70 ? "text-red-700" : result.overallRisk >= 40 ? "text-amber-700" : "text-emerald-700"}`}>{result.overallRisk}</p>
             </div>
             <div className="rounded-2xl border border-gray-200 bg-white p-5 text-center">
-              <p className="text-[11px] font-semibold uppercase text-gray-500">Uebereinstimmung</p>
+              <p className="text-[11px] font-semibold uppercase text-gray-500">Übereinstimmung</p>
               <p className="mt-1 text-[32px] font-bold text-[#003856]">{result.matchPercentage}%</p>
             </div>
             <div className="rounded-2xl border border-gray-200 bg-white p-5 text-center">
