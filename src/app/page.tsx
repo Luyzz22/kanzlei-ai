@@ -213,7 +213,7 @@ export default function LandingPage() {
             {[
               { step: "1", emoji: "📤", title: "Vertrag hochladen", desc: "PDF, DOCX oder Text einfuegen. Die KI erkennt Sprache und Vertragstyp automatisch — Deutsch und Englisch.", time: "5 Sekunden" },
               { step: "2", emoji: "🧠", title: "KI analysiert", desc: "Multi-Provider-Pipeline (Claude + GPT-4o + Gemini) extrahiert Daten, bewertet Risiken, identifiziert Klauseln und generiert Formulierungsvorschlaege.", time: "< 3 Sekunden" },
-              { step: "3", emoji: "📊", title: "Ergebnis nutzen", desc: "Risiko-Score, Findings mit Vorschlaegen, Kuendigungsfristen-Ampel, Copilot-Chat, PDF-Export oder DATEV-Import.", time: "Sofort verfuegbar" },
+              { step: "3", emoji: "📊", title: "Ergebnis nutzen", desc: "Risiko-Score, Findings mit Vorschlägen, Kündigungsfristen-Ampel, Copilot-Chat, PDF-Export oder DATEV-Import.", time: "Sofort verfügbar" },
             ].map((s) => (
               <div key={s.step} className="relative rounded-2xl border border-gray-100 bg-white p-7 text-center transition-all hover:border-gold-300 hover:shadow-card">
                 <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#003856] text-[15px] font-bold text-white">{s.step}</span>
@@ -432,11 +432,11 @@ export default function LandingPage() {
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
           <p className="text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">💬 Vertrauen</p>
-          <h2 className="mt-3 text-center text-display-sm text-gray-950">Gebaut fuer juristische Teams</h2>
+          <h2 className="mt-3 text-center text-display-sm text-gray-950">Gebaut für juristische Teams</h2>
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
             {[
-              { quote: "Die Kombination aus Risiko-Score und BGB-Referenzen spart uns bei der Erstpruefung erheblich Zeit.", role: "Partner, Wirtschaftskanzlei", location: "Frankfurt" },
-              { quote: "Mandantentrennung auf DB-Ebene war fuer uns ein Muss. Die RLS-Architektur hat uns ueberzeugt.", role: "IT-Leiter, Grosskanzlei", location: "Muenchen" },
+              { quote: "Die Kombination aus Risiko-Score und BGB-Referenzen spart uns bei der Erstprüfung erheblich Zeit.", role: "Partner, Wirtschaftskanzlei", location: "Frankfurt" },
+              { quote: "Mandantentrennung auf DB-Ebene war für uns ein Muss. Die RLS-Architektur hat uns überzeugt.", role: "IT-Leiter, Großkanzlei", location: "München" },
               { quote: "Der DATEV-Export integriert sich nahtlos in unsere bestehende Buchhaltung.", role: "Rechtsabteilung, Mittelstand", location: "Hamburg" },
             ].map((t, i) => (
               <div key={i} className="rounded-2xl border border-gray-100 bg-white p-6">
