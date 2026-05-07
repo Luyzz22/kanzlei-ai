@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 
 const scimEndpoints = [
-  { method: "GET", path: "/api/scim/v2/ServiceProviderConfig", desc: "SCIM-Konfiguration und unterstuetzte Features" },
+  { method: "GET", path: "/api/scim/v2/ServiceProviderConfig", desc: "SCIM-Konfiguration und unterstützte Features" },
   { method: "GET", path: "/api/scim/v2/Schemas", desc: "User- und Group-Schema-Definition" },
   { method: "GET", path: "/api/scim/v2/Users", desc: "Alle provisionierten Nutzer auflisten" },
   { method: "POST", path: "/api/scim/v2/Users", desc: "Neuen Nutzer anlegen (JIT Provisioning)" },
@@ -13,14 +13,14 @@ const scimEndpoints = [
   { method: "DELETE", path: "/api/scim/v2/Users/:id", desc: "Nutzer deaktivieren (Soft Delete)" },
   { method: "GET", path: "/api/scim/v2/Groups", desc: "Rollengruppen auflisten (Admin, Anwalt, Assistent)" },
   { method: "GET", path: "/api/scim/v2/Groups/:id", desc: "Einzelne Gruppe mit Mitgliedern" },
-  { method: "PATCH", path: "/api/scim/v2/Groups/:id", desc: "Gruppenmitgliedschaft aendern" },
+  { method: "PATCH", path: "/api/scim/v2/Groups/:id", desc: "Gruppenmitgliedschaft ändern" },
 ]
 
 const setupSteps = [
   { step: "1", title: "Bearer Token generieren", desc: "Sicheres Token (min. 32 Zeichen) generieren und als SCIM_BEARER_TOKENS Env Var in Vercel setzen.", code: "openssl rand -base64 32" },
   { step: "2", title: "Tenant zuweisen", desc: "SCIM_TENANT_SLUG Env Var auf den Ziel-Tenant setzen (z.B. 'dermalog-purchasing').", code: "SCIM_TENANT_SLUG=dermalog-purchasing" },
   { step: "3", title: "Identity Provider konfigurieren", desc: "Im IdP (Entra ID, Okta, OneLogin) die SCIM-Provisioning-URL und das Bearer Token eintragen.", code: "Base URL: https://www.kanzlei-ai.com/api/scim/v2" },
-  { step: "4", title: "Gruppenmap anlegen", desc: "Optional: SCIM_GROUP_ADMIN, SCIM_GROUP_ANWALT, SCIM_GROUP_ASSISTENT Env Vars setzen fuer Rollen-Mapping.", code: "SCIM_GROUP_ADMIN=KanzleiAI.Admin" },
+  { step: "4", title: "Gruppenmap anlegen", desc: "Optional: SCIM_GROUP_ADMIN, SCIM_GROUP_ANWALT, SCIM_GROUP_ASSISTENT Env Vars setzen für Rollen-Mapping.", code: "SCIM_GROUP_ADMIN=KanzleiAI.Admin" },
 ]
 
 export default function ScimPage() {
@@ -32,7 +32,7 @@ export default function ScimPage() {
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">👥 Identity</p>
           <h1 className="mt-2 text-[1.75rem] font-semibold tracking-tight text-gray-950">SCIM v2 Provisioning</h1>
-          <p className="mt-2 text-[14px] text-gray-500">Automatische Nutzerverwaltung ueber Microsoft Entra ID, Okta oder OneLogin. RFC 7643/7644 konform.</p>
+          <p className="mt-2 text-[14px] text-gray-500">Automatische Nutzerverwaltung über Microsoft Entra ID, Okta oder OneLogin. RFC 7643/7644 konform.</p>
         </div>
         <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5">
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -54,7 +54,7 @@ export default function ScimPage() {
       {activeTab === "setup" && (
         <div className="mt-6 space-y-4">
           <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
-            <p className="text-[13px] text-blue-800">💡 SCIM (System for Cross-domain Identity Management) ermoeglicht es Identity Providern wie Microsoft Entra ID, Nutzer automatisch anzulegen, zu aktualisieren und zu deaktivieren — ohne manuelles Onboarding.</p>
+            <p className="text-[13px] text-blue-800">💡 SCIM (System for Cross-domain Identity Management) ermöglicht es Identity Providern wie Microsoft Entra ID, Nutzer automatisch anzulegen, zu aktualisieren und zu deaktivieren — ohne manuelles Onboarding.</p>
           </div>
           {setupSteps.map((s) => (
             <div key={s.step} className="rounded-xl border border-gray-100 bg-white p-5">
@@ -90,7 +90,7 @@ export default function ScimPage() {
 
       {activeTab === "mapping" && (
         <div className="mt-6 space-y-4">
-          <p className="text-[13px] text-gray-500">SCIM-Gruppen werden auf KanzleiAI-Rollen gemappt. Konfigurierbar ueber Env Vars.</p>
+          <p className="text-[13px] text-gray-500">SCIM-Gruppen werden auf KanzleiAI-Rollen gemappt. Konfigurierbar über Env Vars.</p>
           <div className="overflow-hidden rounded-xl border border-gray-200">
             {[
               { group: "KanzleiAI.Admin", role: "ADMIN", desc: "Vollzugriff + Verwaltung + Admin-Panel", color: "bg-red-100 text-red-700" },
@@ -113,7 +113,7 @@ export default function ScimPage() {
       )}
 
       <div className="mt-8">
-        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurueck zur Verwaltung</Link>
+        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurück zur Verwaltung</Link>
       </div>
     </div>
   )
