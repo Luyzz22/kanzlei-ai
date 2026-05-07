@@ -6,7 +6,7 @@ import Link from "next/link"
 const CONSENT_KEY = "kanzlei_ai_cookie_consent"
 
 const cookieCategories = [
-  { id: "essential", label: "Essenziell", desc: "Fuer die Grundfunktion der Anwendung erforderlich (Auth-Session, CSRF-Schutz).", required: true },
+  { id: "essential", label: "Essenziell", desc: "Für die Grundfunktion der Anwendung erforderlich (Auth-Session, CSRF-Schutz).", required: true },
   { id: "functional", label: "Funktional", desc: "Erweiterte Funktionen wie Analyse-Verlauf, Dashboard-Einstellungen und Sprachpraeferenzen.", required: false },
   { id: "analytics", label: "Analyse", desc: "Anonymisierte Nutzungsstatistiken zur Verbesserung der Plattform. Keine personenbezogenen Daten.", required: false },
 ]
@@ -31,7 +31,7 @@ export default function CookieEinstellungenPage() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-20 sm:px-8">
       <h1 className="text-[1.75rem] font-semibold tracking-tight text-gray-950">Cookie-Einstellungen</h1>
-      <p className="mt-2 text-[14px] text-gray-500">Verwalten Sie Ihre Cookie-Praeferenzen. Essenzielle Cookies koennen nicht deaktiviert werden.</p>
+      <p className="mt-2 text-[14px] text-gray-500">Verwalten Sie Ihre Cookie-Präferenzen. Essenzielle Cookies können nicht deaktiviert werden.</p>
 
       <div className="mt-10 space-y-4">
         {cookieCategories.map((cat) => (
@@ -57,7 +57,7 @@ export default function CookieEinstellungenPage() {
 
       <div className="mt-8 rounded-xl border border-gray-100 bg-gray-50 p-5">
         <h3 className="text-[14px] font-semibold text-gray-900">Weitere Informationen</h3>
-        <p className="mt-2 text-[13px] text-gray-500">Details zur Datenverarbeitung finden Sie in unserer <Link href="/datenschutz" className="font-medium text-[#003856]">Datenschutzerklaerung</Link>. Bei Fragen wenden Sie sich an <Link href="mailto:ki@sbsdeutschland.de" className="font-medium text-[#003856]">ki@sbsdeutschland.de</Link>.</p>
+        <p className="mt-2 text-[13px] text-gray-500">Details zur Datenverarbeitung finden Sie in unserer <Link href="/datenschutz" className="font-medium text-[#003856]">Datenschutzerklärung</Link>. Bei Fragen wenden Sie sich an <Link href="mailto:ki@sbsdeutschland.de" className="font-medium text-[#003856]">ki@sbsdeutschland.de</Link>.</p>
       </div>
     </main>
   )
