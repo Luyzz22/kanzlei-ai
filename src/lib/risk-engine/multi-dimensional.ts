@@ -135,11 +135,11 @@ export function calculateMatchScore(structural: number, substantive: number): Ma
   } else if (substantive >= 70 && structural < 70) {
     interpretation = "Inhaltlich kompatibel, formal anders strukturiert — anpassbar"
   } else if (substantive < 70 && structural >= 85) {
-    interpretation = "Formal aehnlich, aber inhaltliche Abweichungen — kritisch pruefen"
+    interpretation = "Formal aehnlich, aber inhaltliche Abweichungen — kritisch prüfen"
   } else if (substantive < 50) {
     interpretation = "Substantielle Abweichung — Nachverhandlung erforderlich"
   } else {
-    interpretation = "Teilkompatibilitaet — selektiver Einsatz moeglich"
+    interpretation = "Teilkompatibilitaet — selektiver Einsatz möglich"
   }
 
   return { structural, substantive, weighted, interpretation }
@@ -170,7 +170,7 @@ export function getSignatureStatusLabel(status: SignatureStatus): { label: strin
       }
     case "not-signable":
       return {
-        label: "Nicht unterschreibbar ohne Aenderung",
+        label: "Nicht unterschreibbar ohne Änderung",
         color: "red",
         icon: "✕",
         description: "Kritische Mängel oder Signature Blocker — Unterzeichnung nicht empfohlen."
@@ -196,7 +196,7 @@ export function getDimensionLabel(dim: RiskDimension): { label: string; emoji: s
       return {
         label: "Operatives Risiko",
         emoji: "⚙️",
-        description: "Umsetzungsrisiko im Alltag — SLAs, Verfuegbarkeit, Prozess-Komplexitaet"
+        description: "Umsetzungsrisiko im Alltag — SLAs, Verfügbarkeit, Prozess-Komplexitaet"
       }
     case "compliance":
       return {
