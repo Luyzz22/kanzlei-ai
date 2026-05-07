@@ -54,7 +54,7 @@ export default function ProfilPage() {
 
       {/* Change Email */}
       <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-6">
-        <h2 className="text-[15px] font-semibold text-gray-900">E-Mail-Adresse aendern</h2>
+        <h2 className="text-[15px] font-semibold text-gray-900">E-Mail-Adresse ändern</h2>
         <p className="mt-1 text-[12px] text-gray-500">Ihre aktuelle E-Mail: {user?.email}</p>
         <div className="mt-4 space-y-3">
           <input type="email" placeholder="Neue E-Mail-Adresse" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-400 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
@@ -63,15 +63,15 @@ export default function ProfilPage() {
             disabled={!email.includes("@")}
             className="rounded-full bg-[#003856] px-6 py-2.5 text-[13px] font-medium text-white hover:bg-[#002a42] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {emailSaved ? "✓ Anfrage gesendet" : "E-Mail aendern"}
+            {emailSaved ? "✓ Anfrage gesendet" : "E-Mail ändern"}
           </button>
-          {emailSaved && <p className="text-[12px] text-emerald-600">Ihr Administrator wird benachrichtigt. E-Mail-Aenderungen erfordern eine Bestaetigung.</p>}
+          {emailSaved && <p className="text-[12px] text-emerald-600">Ihr Administrator wird benachrichtigt. E-Mail-Änderungen erfordern eine Bestaetigung.</p>}
         </div>
       </div>
 
       {/* Change Password */}
       <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-6">
-        <h2 className="text-[15px] font-semibold text-gray-900">Passwort aendern</h2>
+        <h2 className="text-[15px] font-semibold text-gray-900">Passwort ändern</h2>
         <div className="mt-4 space-y-3">
           <input type="password" placeholder="Aktuelles Passwort" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-400 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
           <input type="password" placeholder="Neues Passwort (min. 8 Zeichen)" value={newPw} onChange={(e) => setNewPw(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-400 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200" />
@@ -84,7 +84,7 @@ export default function ProfilPage() {
             disabled={!currentPw || newPw.length < 8 || newPw !== confirmPw}
             className="rounded-full bg-[#003856] px-6 py-2.5 text-[13px] font-medium text-white hover:bg-[#002a42] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {pwSaved ? "✓ Passwort geaendert" : "Passwort aendern"}
+            {pwSaved ? "✓ Passwort geändert" : "Passwort ändern"}
           </button>
           {pwSaved && <p className="text-[12px] text-emerald-600">Passwort wurde aktualisiert. Bitte melden Sie sich erneut an.</p>}
         </div>
@@ -96,7 +96,7 @@ export default function ProfilPage() {
           <span className="text-[22px]">🔑</span>
           <div>
             <h3 className="text-[14px] font-semibold text-amber-900">Enterprise SSO</h3>
-            <p className="mt-1 text-[13px] text-amber-700">Wenn Ihr Unternehmen Microsoft Entra ID (Azure AD) nutzt, wird Ihr Passwort ueber den Identity Provider verwaltet. Kontaktieren Sie Ihren IT-Administrator fuer SSO-Aenderungen.</p>
+            <p className="mt-1 text-[13px] text-amber-700">Wenn Ihr Unternehmen Microsoft Entra ID (Azure AD) nutzt, wird Ihr Passwort über den Identity Provider verwaltet. Kontaktieren Sie Ihren IT-Administrator für SSO-Änderungen.</p>
           </div>
         </div>
       </div>
@@ -109,7 +109,7 @@ export default function ProfilPage() {
 
       {/* Back */}
       <div className="mt-6">
-        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurueck zur Verwaltung</Link>
+        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurück zur Verwaltung</Link>
       </div>
     </div>
   )
