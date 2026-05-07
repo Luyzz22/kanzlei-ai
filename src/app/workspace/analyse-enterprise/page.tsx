@@ -15,11 +15,11 @@ const DEMO_CONTRACTS: { id: string; name: string; type: ContractTypeId; findings
     name: "SaaS-Vertrag — Cloud Analytics Platform",
     type: "saas",
     findings: [
-      { id: "f1", dimension: "compliance", severity: "kritisch", title: "AVV fehlt komplett", description: "Bei Verarbeitung personenbezogener Daten ist ein AVV nach Art. 28 DSGVO zwingend erforderlich.", isSignatureBlocker: true, recommendedAction: "AVV gemaess Art. 28 DSGVO als Anlage ergaenzen — Standardformulierung verfuegbar.", bgbReference: "Art. 28 DSGVO" },
-      { id: "f2", dimension: "legal", severity: "kritisch", title: "Haftungsbegrenzung uneingeschraenkt", description: "Die unbegrenzte Haftung ist nach AGB-Recht (§ 309 Nr. 7 BGB) unwirksam und stellt ein erhebliches finanzielles Risiko dar.", isSignatureBlocker: true, recommendedAction: "Haftungsobergrenze auf 12 Monatsentgelte begrenzen, Ausnahmen fuer Vorsatz und grobe Fahrlaessigkeit", bgbReference: "§ 309 Nr. 7 BGB" },
-      { id: "f3", dimension: "operational", severity: "hoch", title: "Keine SLA-Garantie", description: "Verfuegbarkeit, Reaktionszeiten und Service Credits fehlen.", isSignatureBlocker: false, recommendedAction: "SLA-Anhang mit 99,5% Verfuegbarkeit und Service Credits ergaenzen" },
-      { id: "f4", dimension: "compliance", severity: "hoch", title: "Datenexport nicht gewaehrleistet", description: "Bei Vertragsende ist nicht klar geregelt wie der Kunde seine Daten zurueckerhaelt.", isSignatureBlocker: false, recommendedAction: "Datenportabilitaetsklausel mit 30-Tage-Aufbewahrung ergaenzen" },
-      { id: "f5", dimension: "financial", severity: "mittel", title: "Automatische Verlaengerung ohne Hinweis", description: "Vertrag verlaengert sich automatisch um 12 Monate ohne Hinweispflicht.", isSignatureBlocker: false, recommendedAction: "Hinweispflicht 90 Tage vor Verlaengerung einbauen" }
+      { id: "f1", dimension: "compliance", severity: "kritisch", title: "AVV fehlt komplett", description: "Bei Verarbeitung personenbezogener Daten ist ein AVV nach Art. 28 DSGVO zwingend erforderlich.", isSignatureBlocker: true, recommendedAction: "AVV gemäß Art. 28 DSGVO als Anlage ergänzen — Standardformulierung verfügbar.", bgbReference: "Art. 28 DSGVO" },
+      { id: "f2", dimension: "legal", severity: "kritisch", title: "Haftungsbegrenzung uneingeschraenkt", description: "Die unbegrenzte Haftung ist nach AGB-Recht (§ 309 Nr. 7 BGB) unwirksam und stellt ein erhebliches finanzielles Risiko dar.", isSignatureBlocker: true, recommendedAction: "Haftungsobergrenze auf 12 Monatsentgelte begrenzen, Ausnahmen für Vorsatz und grobe Fahrlässigkeit", bgbReference: "§ 309 Nr. 7 BGB" },
+      { id: "f3", dimension: "operational", severity: "hoch", title: "Keine SLA-Garantie", description: "Verfügbarkeit, Reaktionszeiten und Service Credits fehlen.", isSignatureBlocker: false, recommendedAction: "SLA-Anhang mit 99,5% Verfügbarkeit und Service Credits ergänzen" },
+      { id: "f4", dimension: "compliance", severity: "hoch", title: "Datenexport nicht gewährleistet", description: "Bei Vertragsende ist nicht klar geregelt wie der Kunde seine Daten zurückerhaelt.", isSignatureBlocker: false, recommendedAction: "Datenportabilitätsklausel mit 30-Tage-Aufbewahrung ergänzen" },
+      { id: "f5", dimension: "financial", severity: "mittel", title: "Automatische Verlängerung ohne Hinweis", description: "Vertrag verlaengert sich automatisch um 12 Monate ohne Hinweispflicht.", isSignatureBlocker: false, recommendedAction: "Hinweispflicht 90 Tage vor Verlängerung einbauen" }
     ],
     detectedClauses: ["sla-uptime"],
     matchScore: { structural: 78, substantive: 42 }
@@ -29,8 +29,8 @@ const DEMO_CONTRACTS: { id: string; name: string; type: ContractTypeId; findings
     name: "NDA — Investment Round Series B",
     type: "nda",
     findings: [
-      { id: "n1", dimension: "legal", severity: "mittel", title: "Geheimhaltungsdauer kurz", description: "5 Jahre Geheimhaltungsdauer — branchenueblich aber bei sensiblen IP-Themen optional 7 Jahre.", isSignatureBlocker: false, recommendedAction: "Verlaengerung auf 7 Jahre erwaegen, optional fuer Trade Secrets unbegrenzt" },
-      { id: "n2", dimension: "legal", severity: "niedrig", title: "Non-Solicitation fehlt", description: "Mitarbeiter-Abwerbeverbot waere bei M&A-Verhandlungen sinnvoll.", isSignatureBlocker: false, recommendedAction: "12-Monats Non-Solicitation Klausel ergaenzen" }
+      { id: "n1", dimension: "legal", severity: "mittel", title: "Geheimhaltungsdauer kurz", description: "5 Jahre Geheimhaltungsdauer — branchenüblich aber bei sensiblen IP-Themen optional 7 Jahre.", isSignatureBlocker: false, recommendedAction: "Verlängerung auf 7 Jahre erwägen, optional für Trade Secrets unbegrenzt" },
+      { id: "n2", dimension: "legal", severity: "niedrig", title: "Non-Solicitation fehlt", description: "Mitarbeiter-Abwerbeverbot waere bei M&A-Verhandlungen sinnvoll.", isSignatureBlocker: false, recommendedAction: "12-Monats Non-Solicitation Klausel ergänzen" }
     ],
     detectedClauses: ["injunctive-relief", "no-obligation-to-proceed", "return-of-information", "residuals-clause"]
   }
@@ -90,7 +90,7 @@ export default function EnterpriseAnalysisPage() {
       <div className="mt-8 space-y-8">
         <section>
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-gold-700">Modul 2 · Signature Decision</h2>
-          <p className="mt-1 mb-3 text-[12px] text-gray-500">Die wichtigste Information fuer Entscheider — kann unterschrieben werden?</p>
+          <p className="mt-1 mb-3 text-[12px] text-gray-500">Die wichtigste Information für Entscheider — kann unterschrieben werden?</p>
           <SignatureStatusCard status={riskScore.signatureStatus} signatureBlockers={riskScore.signatureBlockers} />
         </section>
 
@@ -126,13 +126,13 @@ export default function EnterpriseAnalysisPage() {
 
         <section>
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-gold-700">Modul 3 · Fehlende Klauseln + Ersatzformulierungen</h2>
-          <p className="mt-1 mb-3 text-[12px] text-gray-500">Markt-Standard-Pruefung mit Copy-Paste-Templates</p>
+          <p className="mt-1 mb-3 text-[12px] text-gray-500">Markt-Standard-Prüfung mit Copy-Paste-Templates</p>
           <ClauseGapDisplay gaps={gaps} />
         </section>
 
         <section>
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-gold-700">Modul 1 · Type-Aware Sektionen</h2>
-          <p className="mt-1 mb-3 text-[12px] text-gray-500">Bei einem {profile.shortName} werden nur die relevanten Sektionen angezeigt — keine leeren Felder fuer irrelevante Bereiche</p>
+          <p className="mt-1 mb-3 text-[12px] text-gray-500">Bei einem {profile.shortName} werden nur die relevanten Sektionen angezeigt — keine leeren Felder für irrelevante Bereiche</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {visibleSections.map((s) => (
               <div key={s.id} className="rounded-lg border border-gray-100 bg-white px-4 py-3">
@@ -147,7 +147,7 @@ export default function EnterpriseAnalysisPage() {
             ))}
           </div>
           <p className="mt-3 text-[11px] text-gray-400">
-            {profile.sections.filter(s => !s.visible).length} Sektionen ausgeblendet (nicht relevant fuer {profile.shortName})
+            {profile.sections.filter(s => !s.visible).length} Sektionen ausgeblendet (nicht relevant für {profile.shortName})
           </p>
         </section>
       </div>
