@@ -8,12 +8,12 @@ export default function PoliciesPage() {
     <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
       <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">📜 Administration</p>
       <h1 className="mt-2 text-[1.75rem] font-semibold tracking-tight text-gray-950">Organisationsrichtlinien</h1>
-      <p className="mt-2 text-[14px] text-gray-500">Richtlinien fuer Vertragsanalyse, Dokumentenverarbeitung und KI-Nutzung.</p>
+      <p className="mt-2 text-[14px] text-gray-500">Richtlinien für Vertragsanalyse, Dokumentenverarbeitung und KI-Nutzung.</p>
 
       <div className="mt-10 space-y-4">
         {[
-          { emoji: "🧠", title: "KI-Nutzungsrichtlinie", desc: "Welche Vertragstypen duerfen automatisch analysiert werden? Welche erfordern manuelle Pruefung?", status: "Aktiv", rules: ["Alle 16 Vertragstypen (DE/EN) fuer KI-Analyse freigegeben", "Hochrisiko-Vertraege (Score >= 70) erfordern manuellen Review", "Ergebnisse sind Entscheidungshilfen, keine Entscheidungen"] },
-          { emoji: "📄", title: "Dokumenten-Policy", desc: "Zulaessige Dateiformate, maximale Dateigroesse und Aufbewahrungsfristen.", status: "Aktiv", rules: ["PDF und TXT zugelassen (max. 120.000 Zeichen)", "Dokumente werden mandantengetrennt gespeichert", "Loeschung nach Vertragsende oder auf Anfrage"] },
+          { emoji: "🧠", title: "KI-Nutzungsrichtlinie", desc: "Welche Vertragstypen duerfen automatisch analysiert werden? Welche erfordern manuelle Prüfung?", status: "Aktiv", rules: ["Alle 16 Vertragstypen (DE/EN) für KI-Analyse freigegeben", "Hochrisiko-Verträge (Score >= 70) erfordern manuellen Review", "Ergebnisse sind Entscheidungshilfen, keine Entscheidungen"] },
+          { emoji: "📄", title: "Dokumenten-Policy", desc: "Zulaessige Dateiformate, maximale Dateigroesse und Aufbewahrungsfristen.", status: "Aktiv", rules: ["PDF und TXT zugelassen (max. 120.000 Zeichen)", "Dokumente werden mandantengetrennt gespeichert", "Löschung nach Vertragsende oder auf Anfrage"] },
           { emoji: "📤", title: "Export-Richtlinie", desc: "Wer darf Analyseergebnisse exportieren und in welchen Formaten?", status: "Aktiv", rules: ["Admin und Anwalt: PDF, JSON, CSV, DATEV", "Assistent: nur PDF-Export", "Alle Exporte werden im Audit-Trail protokolliert"] },
           { emoji: "🔔", title: "Benachrichtigungs-Policy", desc: "Welche Events loesen automatische Benachrichtigungen aus?", status: "Aktiv", rules: ["Hochrisiko-Analysen (Score >= 70) → Slack + n8n", "Neue Team-Mitglieder → Admin-Benachrichtigung", "Fehlgeschlagene Logins → Audit-Log"] },
         ].map((pol) => (
@@ -41,7 +41,7 @@ export default function PoliciesPage() {
       </div>
 
       <div className="mt-8">
-        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurueck zur Verwaltung</Link>
+        <Link href="/dashboard/admin" className="text-[13px] font-medium text-[#003856] hover:text-[#00507a]">← Zurück zur Verwaltung</Link>
       </div>
     </div>
   )
