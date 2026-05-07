@@ -230,7 +230,7 @@ export function DocumentEvidencePackageView({ evidencePackage }: DocumentEvidenc
               <article key={category.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-slate-900">{category.title}</p>
-                  <StatusBadge label={category.maturityLabel} tone={category.maturity === "verfuegbar" ? "success" : "info"} />
+                  <StatusBadge label={category.maturityLabel} tone={category.maturity === "verfügbar" ? "success" : "info"} />
                 </div>
                 <p className="mt-1 text-sm text-slate-700">{category.relevanceReason}</p>
                 <p className="mt-1 text-xs text-slate-500">Verantwortungsbereich: {category.owner}</p>
