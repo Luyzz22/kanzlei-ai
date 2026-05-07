@@ -111,7 +111,7 @@ export async function getWorkspaceDocumentById(tenantId: string, documentId: str
       // WICHTIG: findFirst statt findUnique, weil wir den Query um tenantId
       // erweitern muessen. findUnique akzeptiert nur @unique-Felder als where.
       // Der Index (id, tenantId) macht das trotzdem effizient; die id-Gleichheit
-      // greift sofort, tenantId ist eine zusaetzliche Filter-Bedingung.
+      // greift sofort, tenantId ist eine zusätzliche Filter-Bedingung.
       where: { id: documentId, tenantId },
       select: {
         id: true,
