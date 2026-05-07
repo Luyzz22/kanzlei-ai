@@ -58,10 +58,10 @@ export default function LoesungenPage() {
             {/* Einkauf */}
             <div className="group rounded-2xl border border-gray-200 bg-white p-8 transition-all hover:border-gold-300 hover:shadow-elevated">
               <span className="text-[36px]">🛒</span>
-              <h2 className="mt-4 text-[22px] font-semibold text-gray-950">Fuer Einkauf & Beschaffung</h2>
-              <p className="mt-3 text-[15px] leading-relaxed text-gray-500">Lieferantenvertraege und NDAs in Deutsch und Englisch pruefen, Konditionen vergleichen und Kuendigungsfristen im Blick behalten.</p>
+              <h2 className="mt-4 text-[22px] font-semibold text-gray-950">Für Einkauf & Beschaffung</h2>
+              <p className="mt-3 text-[15px] leading-relaxed text-gray-500">Lieferantenverträge und NDAs in Deutsch und Englisch prüfen, Konditionen vergleichen und Kündigungsfristen im Blick behalten.</p>
               <ul className="mt-6 space-y-3">
-                {["Lieferantenvertraege (DE/EN)", "NDA-Analyse bilingual", "AGB vs. AEB Abgleich", "Kuendigungsfristen-Monitoring", "Umformulierungsvorschlaege", "Microsoft Dynamics Integration"].map((f) => (
+                {["Lieferantenverträge (DE/EN)", "NDA-Analyse bilingual", "AGB vs. AEB Abgleich", "Kündigungsfristen-Monitoring", "Umformulierungsvorschlaege", "Microsoft Dynamics Integration"].map((f) => (
                   <li key={f} className="flex items-center gap-2.5 text-[14px] text-gray-600">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold-100 text-[10px] text-gold-700">✓</span>
                     {f}
