@@ -14,7 +14,9 @@ from functools import wraps
 logger = logging.getLogger(__name__)
 
 # Shared Secret (gleich auf allen Apps)
-JWT_SECRET = os.getenv("JWT_SECRET", os.getenv("SECRET_KEY", "sbs-deutschland-shared-secret-2025"))
+JWT_SECRET = os.getenv("JWT_SECRET") or os.getenv("SECRET_KEY")
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET or SECRET_KEY must be set")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 24 * 7  # 7 Tage
 COOKIE_NAME = "sbs_auth_token"
