@@ -3,14 +3,17 @@ import "server-only"
 import { PromptDefinitionStatus, PromptTaskStage, type PromptDefinition } from "@prisma/client"
 
 import {
+  buildClassificationPromptBody,
   buildExtractionPromptBody,
   buildRiskAndGuidancePromptBody,
+  CONTRACT_CLASSIFICATION_PROMPT_KEY,
   CONTRACT_EXTRACTION_PROMPT_KEY,
   CONTRACT_PROMPT_BUNDLE_KEY,
   CONTRACT_RISK_PROMPT_KEY,
   CONTRACT_ANALYSIS_PROMPT_VERSION
 } from "@/lib/ai/prompt-registry/contract-defaults"
 import type { ContractPromptResolver } from "@/lib/ai/analysis-pipeline"
+import type { ClassificationStagePayload } from "@/lib/ai/schemas/contract-analysis"
 import { prisma } from "@/lib/prisma"
 
 export type ResolvedPromptPart = {
@@ -73,6 +76,7 @@ export async function resolveExtractionPromptInput(params: {
   tenantId: string
   contractTypeHint: string
   normalizedDocument: string
+  classification?: ClassificationStagePayload | null
 }): Promise<ResolvedPromptPart> {
   const { extraction } = await loadReleaseRows()
   const def = pickDefinition(extraction, params.tenantId, params.contractTypeHint)
@@ -80,14 +84,14 @@ export async function resolveExtractionPromptInput(params: {
     return {
       key: CONTRACT_EXTRACTION_PROMPT_KEY,
       version: CONTRACT_ANALYSIS_PROMPT_VERSION,
-      text: buildExtractionPromptBody(params.normalizedDocument, CONTRACT_ANALYSIS_PROMPT_VERSION),
+      text: buildExtractionPromptBody(params.normalizedDocument, CONTRACT_ANALYSIS_PROMPT_VERSION, params.classification),
       source: "registry_default"
     }
   }
   return {
     key: def.key,
     version: def.version,
-    text: buildExtractionPromptBody(params.normalizedDocument, def.version),
+    text: buildExtractionPromptBody(params.normalizedDocument, def.version, params.classification),
     source: "database",
     definitionId: def.id
   }
@@ -98,6 +102,7 @@ export async function resolveRiskPromptInput(params: {
   contractTypeHint: string
   normalizedDocument: string
   extractionSummary: string
+  classification?: ClassificationStagePayload | null
 }): Promise<ResolvedPromptPart> {
   const { risk } = await loadReleaseRows()
   const def = pickDefinition(risk, params.tenantId, params.contractTypeHint)
@@ -108,7 +113,8 @@ export async function resolveRiskPromptInput(params: {
       text: buildRiskAndGuidancePromptBody(
         params.normalizedDocument,
         params.extractionSummary,
-        CONTRACT_ANALYSIS_PROMPT_VERSION
+        CONTRACT_ANALYSIS_PROMPT_VERSION,
+        params.classification
       ),
       source: "registry_default"
     }
@@ -116,7 +122,7 @@ export async function resolveRiskPromptInput(params: {
   return {
     key: def.key,
     version: def.version,
-    text: buildRiskAndGuidancePromptBody(params.normalizedDocument, params.extractionSummary, def.version),
+    text: buildRiskAndGuidancePromptBody(params.normalizedDocument, params.extractionSummary, def.version, params.classification),
     source: "database",
     definitionId: def.id
   }
@@ -124,18 +130,26 @@ export async function resolveRiskPromptInput(params: {
 
 export function createTenantContractPromptResolver(tenantId: string, documentTypeHint: string): ContractPromptResolver {
   return {
-    resolveExtraction: async (normalizedDocument: string) =>
+    resolveClassification: async (normalizedDocument: string) => ({
+      key: CONTRACT_CLASSIFICATION_PROMPT_KEY,
+      version: CONTRACT_ANALYSIS_PROMPT_VERSION,
+      text: buildClassificationPromptBody(normalizedDocument, CONTRACT_ANALYSIS_PROMPT_VERSION),
+      source: "registry_default" as const
+    }),
+    resolveExtraction: async (normalizedDocument: string, classification?: ClassificationStagePayload | null) =>
       resolveExtractionPromptInput({
         tenantId,
         contractTypeHint: documentTypeHint,
-        normalizedDocument
+        normalizedDocument,
+        classification
       }),
-    resolveRisk: async (normalizedDocument: string, extractionSummary: string, contractTypeLabel: string) =>
+    resolveRisk: async (normalizedDocument: string, extractionSummary: string, contractTypeLabel: string, classification?: ClassificationStagePayload | null) =>
       resolveRiskPromptInput({
         tenantId,
         contractTypeHint: contractTypeLabel || documentTypeHint,
         normalizedDocument,
-        extractionSummary
+        extractionSummary,
+        classification
       })
   }
 }
