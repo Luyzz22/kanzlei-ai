@@ -1,11 +1,15 @@
 /**
  * Zentrale Prompt-Templates für Vertragsanalyse — keine verstreuten Inline-Prompts in der Pipeline.
  * Versionen und Keys müssen mit PromptDefinition-Seed und DB-Releases übereinstimmen.
+ *
+ * v3 (2026-05-11): Vertragstypklassifikation (Step 0) + Kontextinjektion in Extraction & Risk.
  */
 import { CONTRACT_ANALYSIS_PROMPT_VERSION } from "@/lib/ai/schemas/contract-analysis"
+import type { ClassificationStagePayload } from "@/lib/ai/schemas/contract-analysis"
 
 export const CONTRACT_PROMPT_BUNDLE_KEY = "contract_analysis.default"
 
+export const CONTRACT_CLASSIFICATION_PROMPT_KEY = "contract.classification.default"
 export const CONTRACT_EXTRACTION_PROMPT_KEY = "contract.extraction.default"
 export const CONTRACT_RISK_PROMPT_KEY = "contract.risk_guidance.default"
 
@@ -13,13 +17,144 @@ export { CONTRACT_ANALYSIS_PROMPT_VERSION }
 /** @deprecated Nutze CONTRACT_ANALYSIS_PROMPT_VERSION */
 export const CONTRACT_PROMPT_TEMPLATE_VERSION = CONTRACT_ANALYSIS_PROMPT_VERSION
 
-const baseDe = (version: string) => `Du bist ein KI-System zur Unterstützung von Anwältinnen und Anwälten im DACH-Raum.
+const baseDe = (promptKey: string, version: string) => `Du bist ein KI-System zur Unterstützung von Anwältinnen und Anwälten im DACH-Raum.
 Antworte sachlich, auf Deutsch, ohne Rechtsberatung im Sinne des RDG zu simulieren.
-Markiere Unsicherheiten klar. Prompt-Key: ${CONTRACT_EXTRACTION_PROMPT_KEY} · Version: ${version}.`
+Markiere Unsicherheiten klar. Prompt-Key: ${promptKey} · Version: ${version}.`
 
-export function buildExtractionPromptBody(normalizedDocument: string, version: string = CONTRACT_ANALYSIS_PROMPT_VERSION): string {
-  return `${baseDe(version)}
+// =======================================================================
+// CLASSIFICATION PROMPT (Step 0 — NEU)
+// =======================================================================
 
+export function buildClassificationPromptBody(
+  normalizedDocument: string,
+  version: string = CONTRACT_ANALYSIS_PROMPT_VERSION
+): string {
+  return `${baseDe(CONTRACT_CLASSIFICATION_PROMPT_KEY, version)}
+
+AUFGABE: Klassifiziere den folgenden Vertrag nach den unten definierten Dimensionen.
+Dies ist die ERSTE Stufe der Analyse-Pipeline — die Ergebnisse bestimmen den rechtlichen
+Bewertungsrahmen für alle nachfolgenden Analyse-Schritte.
+
+DIESE KLASSIFIKATION IST ENTSCHEIDEND: Ob eine Klausel nach §§ 305–310 BGB
+(AGB-Inhaltskontrolle) oder als frei ausgehandelte Individualvereinbarung zu beurteilen ist,
+verändert die gesamte Risikoanalyse fundamental.
+
+Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt nach folgendem Schema:
+
+{
+  "contractClassification": "AGB | Individualvertrag | Mischform",
+  "classificationConfidence": "number (0-1)",
+  "classificationReasoning": "string (Begründung: welche Indikatoren für/gegen AGB sprechen)",
+  "agbIndicators": ["string (bei Mischform: welche Klauseln AGB-typisch sind)"],
+
+  "partyConstellation": "B2B | B2C | Oeffentliche_Hand",
+  "partyConstellationReasoning": "string (Begründung)",
+
+  "clientRole": "Auftraggeber | Lieferant | Neutral",
+
+  "industryClassification": "Produktion | Dienstleistung | Finanzprodukt | International | Sonstige",
+  "internationalElement": "boolean (internationaler Bezug vorhanden?)",
+  "cisgExcluded": "boolean oder null (CISG explizit ausgeschlossen?)",
+
+  "applicableNorms": [
+    {
+      "norm": "string (z.B. '§§ 305-310 BGB', 'ProdHaftG', 'HGB', 'VOB/B')",
+      "relevance": "primär | sekundär | prüfenswert",
+      "note": "string (optional, warum relevant)"
+    }
+  ],
+
+  "agbKontrolleAnwendbar": "boolean (AGB-Inhaltskontrolle nach §§ 305-310 BGB anwendbar?)",
+  "agbKontrollmassstab": "string oder null (z.B. 'Voller B2C-Schutz (§ 310 Abs. 3 BGB)' oder 'Eingeschränkt B2B (§ 310 Abs. 1 BGB)' oder null bei Individualvertrag)",
+
+  "classificationSummary": "string (kompakte Zusammenfassung für nachfolgende Pipeline-Stages, max 3 Sätze)",
+
+  "modelNotes": "string (optional)"
+}
+
+KLASSIFIKATIONSREGELN:
+
+1. AGB-ERKENNUNG (§ 305 Abs. 1 BGB):
+   - AGB: Vorformulierte Vertragsbedingungen, die für eine Vielzahl von Verträgen konzipiert sind
+   - Indikatoren FÜR AGB: standardisierte Formulierungen, einseitig begünstigend, "unsere Bedingungen",
+     nummerierte Klauselwerke, Verweis auf separate AGB-Dokumente, fehlende individuelle Anpassung
+   - Indikatoren GEGEN AGB: individuelle Verhandlungsspuren (handschriftliche Ergänzungen, "wie besprochen"),
+     beidseitig ausgewogene Regelungen, spezifische Bezüge auf konkrete Geschäftsvorfälle
+
+2. MISCHFORM: Wenn der Vertrag sowohl AGB-Klauseln als auch individuell ausgehandelte Passagen enthält,
+   führe in "agbIndicators" auf, welche Teile AGB-typisch sind.
+
+3. PARTEIKONSTELLATION:
+   - B2B: Beide Vertragspartner sind Kaufleute/Unternehmer im Sinne des HGB
+   - B2C: Mindestens ein Vertragspartner ist Verbraucher (§ 13 BGB) — verschärfter AGB-Schutz (§ 310 Abs. 3)
+   - Oeffentliche_Hand: Ein Vertragspartner ist öffentlicher Auftraggeber — VOB/VOL ggf. anwendbar
+
+4. BRANCHENEINORDNUNG:
+   - Produktion: Kauf-/Lieferverträge, Werkverträge → ProdHaftG, §§ 433 ff., §§ 631 ff. BGB
+   - Dienstleistung: Dienstverträge, Beratung, SaaS → §§ 611 ff., §§ 631 ff. BGB
+   - Finanzprodukt: Kredit, Leasing, Versicherung → KWG, VVG, MaRisk
+   - International: CISG, Incoterms, Rechtswahl, Gerichtsstandsvereinbarungen
+   - Sonstige: Alles andere (z.B. NDA, Gesellschaftsvertrag)
+
+5. ANWENDBARE NORMEN: Identifiziere alle relevanten Rechtsgrundlagen und klassifiziere sie:
+   - primär: Direkt anwendbar und zentral für die Vertragsbewertung
+   - sekundär: Ergänzend anwendbar
+   - prüfenswert: Möglicherweise relevant, aber Prüfung erforderlich
+
+VERTRAGSTEXT:
+${normalizedDocument}`
+}
+
+// =======================================================================
+// EXTRACTION PROMPT (Step 1)
+// =======================================================================
+
+/**
+ * Baut den Klassifikations-Kontext-Block, der in Extraction und Risk injiziert wird.
+ * Wenn keine Klassifikation vorliegt (Rückwärtskompatibilität), wird ein leerer String zurückgegeben.
+ */
+function buildClassificationContextBlock(classification?: ClassificationStagePayload | null): string {
+  if (!classification) return ""
+
+  const agbNote = classification.agbKontrolleAnwendbar
+    ? `AGB-Inhaltskontrolle nach §§ 305-310 BGB ist anwendbar. Kontrollmaßstab: ${classification.agbKontrollmassstab ?? "standard"}.`
+    : "Keine AGB-Inhaltskontrolle — Individualvertrag."
+
+  const normsStr = classification.applicableNorms
+    .filter(n => n.relevance === "primär")
+    .map(n => `${n.norm}${n.note ? ` (${n.note})` : ""}`)
+    .join(", ")
+
+  return `
+VORAB-KLASSIFIKATION (Step 0 — obligatorisch beachten):
+- Vertragstyp: ${classification.contractClassification} (Konfidenz: ${(classification.classificationConfidence * 100).toFixed(0)}%)
+- Parteikonstellation: ${classification.partyConstellation}
+- Mandantenrolle: ${classification.clientRole}
+- Branche: ${classification.industryClassification}${classification.internationalElement ? " (internationaler Bezug)" : ""}
+- ${agbNote}
+- Primär anwendbare Normen: ${normsStr || "Keine spezifischen identifiziert"}
+- Zusammenfassung: ${classification.classificationSummary}
+
+WICHTIG: Bewerte Klauseln im Kontext dieser Klassifikation. ${
+  classification.contractClassification === "AGB"
+    ? "Prüfe jede Klausel an §§ 307-309 BGB (AGB-Inhaltskontrolle). Unwirksame AGB-Klauseln sind als severity=hoch einzustufen."
+    : classification.contractClassification === "Mischform"
+      ? "Prüfe individuell ausgehandelte Klauseln am allgemeinen Maßstab, AGB-typische Klauseln an §§ 307-309 BGB."
+      : "Individualvertrag: Klauseln sind grundsätzlich wirksam, sofern keine Sittenwidrigkeit (§ 138 BGB) oder Treu und Glauben (§ 242 BGB) verletzt wird."
+}
+
+`
+}
+
+export function buildExtractionPromptBody(
+  normalizedDocument: string,
+  version: string = CONTRACT_ANALYSIS_PROMPT_VERSION,
+  classification?: ClassificationStagePayload | null
+): string {
+  const classCtx = buildClassificationContextBlock(classification)
+
+  return `${baseDe(CONTRACT_EXTRACTION_PROMPT_KEY, version)}
+${classCtx}
 AUFGABE: Strukturierte Extraktion aus dem Vertragstext — vollständig und präzise.
 
 Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt nach folgendem Schema:
@@ -87,13 +222,20 @@ VERTRAGSTEXT:
 ${normalizedDocument}`
 }
 
+// =======================================================================
+// RISK & GUIDANCE PROMPT (Step 2)
+// =======================================================================
+
 export function buildRiskAndGuidancePromptBody(
   normalizedDocument: string,
   extractionSummary: string,
-  version: string = CONTRACT_ANALYSIS_PROMPT_VERSION
+  version: string = CONTRACT_ANALYSIS_PROMPT_VERSION,
+  classification?: ClassificationStagePayload | null
 ): string {
-  return `${baseDe(version)}
+  const classCtx = buildClassificationContextBlock(classification)
 
+  return `${baseDe(CONTRACT_RISK_PROMPT_KEY, version)}
+${classCtx}
 VORAB-EXTRAKTION (Kontext aus Stage 1):
 ${extractionSummary}
 
@@ -135,6 +277,52 @@ PFLICHT — FÜR JEDES FINDING:
 3. "clauseRef": Deutsche Zitierweise, z.B. "§ 4", "§ 3 Abs. 1 Satz 2", "§ 1 und § 3 Abs. 2".
 
 4. "confidence": Deine Sicherheit (0.0–1.0) über die Richtigkeit des Findings.
+${classification?.contractClassification === "AGB" ? `
+5. AGB-SPEZIFISCH (da Vertragstyp = AGB):
+   - Prüfe JEDE Klausel gegen §§ 307-309 BGB.
+   - Bei § 309 BGB (Klauselverbote ohne Wertungsmöglichkeit): severity="hoch", expliziter Hinweis auf Unwirksamkeit.
+   - Bei § 308 BGB (Klauselverbote mit Wertungsmöglichkeit): severity mindestens "mittel".
+   - Bei § 307 BGB (Generalklausel): Bewerte nach Transparenz- und Angemessenheitsgebot.
+   - Begründe in "description" IMMER den konkreten AGB-Verstoß mit Paragraphen.
+` : classification?.contractClassification === "Mischform" ? `
+5. MISCHFORM-SPEZIFISCH:
+   - Differenziere zwischen AGB-Klauseln und individuell ausgehandelten Klauseln.
+   - AGB-Klauseln: Prüfe gegen §§ 307-309 BGB.
+   - Individuell ausgehandelte Klauseln: Prüfe nur am Maßstab von § 138 BGB und § 242 BGB.
+   - Kennzeichne in "description", ob die Klausel als AGB oder individuell eingestuft wird.
+` : ""}
+OBLIGATORISCHES ANALYSE-SEGMENT: DATENSCHUTZ (B.2)
+Prüfe den Vertrag IMMER auf folgende Datenschutz-Dimensionen — unabhängig vom Vertragstyp.
+Wenn der Vertrag Begriffe wie "Kundendaten", "personenbezogene Daten", "Mitarbeiterdaten",
+"Geheimhaltung", "Vertraulichkeit", "Datenweitergabe", "Subunternehmer", "Cloud",
+"Verarbeitung" oder "Speicherung" enthält, erzeuge MINDESTENS ein Finding der Kategorie "Datenschutz":
+
+1. DSGVO-KOLLISION: Kollidiert eine Geheimhaltungspflicht mit dem Auskunftsrecht (Art. 15 DSGVO)
+   oder der Löschpflicht (Art. 17 DSGVO)? Ist eine AVV nach Art. 28 DSGVO erforderlich?
+   Werden Daten in Drittländer übermittelt (Art. 44 ff. DSGVO)?
+2. GESCHGEHG-KONFORMITÄT: Definiert der Vertrag angemessene Schutzmaßnahmen (§ 2 Nr. 1 lit. b GeschGehG)?
+   Sind die geschützten Informationen ausreichend konkret bezeichnet?
+   Ist die Reverse-Engineering-Ausnahme (§ 3 Abs. 1 Nr. 2 GeschGehG) berücksichtigt?
+3. ZEITLICHE BEGRENZUNG: Unbegrenzte Geheimhaltungspflichten sind rechtlich problematisch.
+   Empfehlung: max. 5 Jahre post-contractual (mit Ausnahmen für echte Geschäftsgeheimnisse).
+4. DIFFERENZIERUNG: Pauschale Geheimhaltungsklauseln ohne Unterscheidung zwischen personenbezogenen
+   und nicht-personenbezogenen Daten sind rechtlich angreifbar.
+
+Wenn eine AVV fehlt und der Vertrag Verarbeitung personenbezogener Daten impliziert: severity="hoch".
+
+OBLIGATORISCHES ANALYSE-SEGMENT: STRAFRECHT (B.3)
+Prüfe den Vertrag auf Klauseln, deren Durchsetzung Straftatbestände erfüllen könnte.
+Insbesondere bei:
+- Eigenmächtigem Betreten von Betriebsgeländen → § 123 StGB (Hausfriedensbruch)
+- Eigenmächtiger Wegnahme von Waren/Sicherheiten → § 242 StGB (Diebstahl), § 858 BGB (Verbotene Eigenmacht)
+- Druckausübung auf Personal/Vertragspartner → § 240 StGB (Nötigung), § 253 StGB (Erpressung)
+- Verwertung vertraulicher Informationen → § 203 StGB (Geheimnisverrat), § 23 GeschGehG
+
+Wenn eine Klausel strafrechtlich relevantes Verhalten legitimieren könnte:
+- severity IMMER "hoch"
+- In "description" den konkreten Straftatbestand mit Paragraphen benennen
+- In "suggestedRevision" eine Klausel formulieren, die die legitimen Interessen schützt,
+  ohne strafrechtliche Risiken zu schaffen
 
 BEISPIEL FÜR EIN FINDING:
 {
@@ -149,8 +337,9 @@ BEISPIEL FÜR EIN FINDING:
 }
 
 WEITERE REGELN:
-- Mindestens 3, maximal 12 Findings.
+- Mindestens 3, maximal 15 Findings.
 - Priorisiere nach Geschäftsrisiko, nicht nach formalen Mängeln.
+- Datenschutz- und Strafrechts-Findings sind KEINE optionalen Extras — sie gehören zu den Kern-Findings.
 - Ausgabe ist reines JSON, keine Markdown-Code-Fences.
 - Nutze aus der Vorab-Extraktion bekannte Klauselbezüge.
 
@@ -158,8 +347,13 @@ VERTRAGSTEXT:
 ${normalizedDocument}`
 }
 
+// =======================================================================
+// Bundle Helpers
+// =======================================================================
+
 export type DefaultContractPromptBundle = {
   bundleKey: typeof CONTRACT_PROMPT_BUNDLE_KEY
+  classification: { key: typeof CONTRACT_CLASSIFICATION_PROMPT_KEY; version: string; text: string }
   extraction: { key: typeof CONTRACT_EXTRACTION_PROMPT_KEY; version: string; text: string }
   risk: { key: typeof CONTRACT_RISK_PROMPT_KEY; version: string; text: string }
 }
@@ -167,19 +361,25 @@ export type DefaultContractPromptBundle = {
 export function buildDefaultContractPromptBundle(
   normalizedDocument: string,
   extractionSummary: string,
-  version: string = CONTRACT_ANALYSIS_PROMPT_VERSION
+  version: string = CONTRACT_ANALYSIS_PROMPT_VERSION,
+  classification?: ClassificationStagePayload | null
 ): DefaultContractPromptBundle {
   return {
     bundleKey: CONTRACT_PROMPT_BUNDLE_KEY,
+    classification: {
+      key: CONTRACT_CLASSIFICATION_PROMPT_KEY,
+      version,
+      text: buildClassificationPromptBody(normalizedDocument, version)
+    },
     extraction: {
       key: CONTRACT_EXTRACTION_PROMPT_KEY,
       version,
-      text: buildExtractionPromptBody(normalizedDocument, version)
+      text: buildExtractionPromptBody(normalizedDocument, version, classification)
     },
     risk: {
       key: CONTRACT_RISK_PROMPT_KEY,
       version,
-      text: buildRiskAndGuidancePromptBody(normalizedDocument, extractionSummary, version)
+      text: buildRiskAndGuidancePromptBody(normalizedDocument, extractionSummary, version, classification)
     }
   }
 }
