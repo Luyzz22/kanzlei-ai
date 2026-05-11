@@ -7,7 +7,7 @@ import {
   sortModelsByProviderPriority
 } from "@/lib/ai/provider-availability"
 
-export type PipelineStage = "EXTRACTION" | "RISK_AND_GUIDANCE"
+export type PipelineStage = "CLASSIFICATION" | "EXTRACTION" | "RISK_AND_GUIDANCE"
 
 export type RouterContext = {
   documentLength: number
@@ -59,6 +59,15 @@ export function selectPrimaryModelForStage(stage: PipelineStage, ctx: RouterCont
     return ModelType.LLAMA_COMPAT
   }
 
+  // CLASSIFICATION: schneller Step, bevorzugt Claude (präzise Rechtsklassifikation)
+  // Für lange Dokumente: Gemini wegen Kontextfenster
+  if (stage === "CLASSIFICATION") {
+    if (longDoc) {
+      return envModelToType("LONG_DOCUMENT_MODEL", ModelType.GEMINI_2_5_PRO)
+    }
+    return ModelType.CLAUDE_SONNET_4
+  }
+
   if (stage === "EXTRACTION") {
     if (longDoc) {
       const long = envModelToType("LONG_DOCUMENT_MODEL", ModelType.GEMINI_2_5_PRO)
@@ -77,7 +86,8 @@ export function selectPrimaryModelForStage(stage: PipelineStage, ctx: RouterCont
 }
 
 export function getFallbackChainForStage(primary: ModelType, stage: PipelineStage): ModelType[] {
-  if (stage === "EXTRACTION") {
+  // Classification hat dieselbe Fallback-Logik wie Extraction
+  if (stage === "CLASSIFICATION" || stage === "EXTRACTION") {
     switch (primary) {
       case ModelType.GEMINI_2_5_PRO:
         return [ModelType.GPT_4O_MINI, ModelType.CLAUDE_SONNET_4, ModelType.LLAMA_COMPAT]
@@ -117,6 +127,17 @@ export function buildModelExecutionPlan(stage: PipelineStage, ctx: RouterContext
 
 export function getSelectionReasonForStage(stage: PipelineStage, model: ModelType, ctx: RouterContext): string {
   const longDoc = ctx.documentLength >= longDocumentThreshold()
+
+  if (stage === "CLASSIFICATION") {
+    if (model === ModelType.CLAUDE_SONNET_4) {
+      return "Vertragstypklassifikation: Claude bevorzugt für präzise rechtliche Einordnung (§§ 305-310 BGB)."
+    }
+    if (model === ModelType.GEMINI_2_5_PRO && longDoc) {
+      return "Langes Dokument: Gemini-Kontextfenster für Klassifikation."
+    }
+    return "Klassifikationsstufe: Fallback oder alternativer Anbieter."
+  }
+
   if (stage === "EXTRACTION") {
     if (model === ModelType.GEMINI_2_5_PRO && longDoc) {
       return "Langes Dokument: bevorzugt Modell mit großem Kontextfenster (Extraktion)."
