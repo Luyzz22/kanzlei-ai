@@ -1,23 +1,101 @@
 import { z } from "zod"
 
 /** Version der Prompts / Erwartungsstruktur — bei Schema-Änderungen erhöhen. */
-export const CONTRACT_ANALYSIS_PROMPT_VERSION = "2026-04-24"
+export const CONTRACT_ANALYSIS_PROMPT_VERSION = "2026-05-11"
 
 /**
- * UNIFIED ANALYSIS SCHEMA v2 (2026-04-24)
+ * UNIFIED ANALYSIS SCHEMA v3 (2026-05-11)
  *
- * Ziel: Single source of truth für beide Analyse-Pipelines (Schnellanalyse
- * und Dokument-Workflow). Alle Felder nullable/optional, damit alte
- * Pipeline-Versionen weiterhin valide sind (Backward Compat).
+ * Neu in v3:
+ * - Classification Stage (Step 0): Vertragstypklassifikation, Parteikonstellation,
+ *   Mandantenrolle, Brancheneinordnung, anwendbare Normen-Matrix
+ * - Kontextinjektion in Extraction und Risk Stages
  *
- * Neu in v2:
- * - findings[].quote              — Klauselzitat aus dem Vertrag
- * - findings[].suggestedRevision  — Konkreter Formulierungsvorschlag
- * - extraction.structuredData     — Kunde/Anbieter/AVV/Haftung/IP/etc.
- * - extraction.deadlines          — Kündigungsfristen, Laufzeiten, etc.
+ * Backward-kompatibel: Alle v2-Felder bleiben nullable/optional.
  */
 
 const severityLiteral = z.enum(["niedrig", "mittel", "hoch"])
+
+// =======================================================================
+// CLASSIFICATION STAGE (Step 0) — NEU
+// =======================================================================
+
+export const contractClassificationEnum = z.enum([
+  "AGB",
+  "Individualvertrag",
+  "Mischform"
+])
+
+export const partyConstellationEnum = z.enum([
+  "B2B",
+  "B2C",
+  "Oeffentliche_Hand"
+])
+
+export const clientRoleEnum = z.enum([
+  "Auftraggeber",
+  "Lieferant",
+  "Neutral"
+])
+
+export const industryClassificationEnum = z.enum([
+  "Produktion",
+  "Dienstleistung",
+  "Finanzprodukt",
+  "International",
+  "Sonstige"
+])
+
+export const classificationStageSchema = z.object({
+  /** AGB (einseitig vorformuliert, § 305 BGB), Individualvertrag, Mischform */
+  contractClassification: contractClassificationEnum,
+  /** Konfidenz der Vertragstyp-Klassifikation (0-1) */
+  classificationConfidence: z.coerce.number().min(0).max(1),
+  /** Begründung für die Klassifikation */
+  classificationReasoning: z.string().min(1).max(2000),
+  /** Welche Klauseln als AGB-typisch identifiziert wurden (bei Mischform) */
+  agbIndicators: z.array(z.string().max(500)).max(10).optional(),
+
+  /** B2B (beide Vollkaufleute), B2C (ein Verbraucher), Öffentliche Hand */
+  partyConstellation: partyConstellationEnum,
+  /** Begründung für die Parteikonstellation */
+  partyConstellationReasoning: z.string().max(1000).optional(),
+
+  /** Mandantenrolle: Auftraggeber/Käufer, Lieferant/Verkäufer, Neutral */
+  clientRole: clientRoleEnum,
+
+  /** Brancheneinordnung für branchenspezifische Normen */
+  industryClassification: industryClassificationEnum,
+  /** Ob internationaler Bezug vorliegt (CISG, Incoterms etc.) */
+  internationalElement: z.boolean(),
+  /** CISG ausgeschlossen? */
+  cisgExcluded: z.boolean().nullable().optional(),
+
+  /** Anwendbare Rechtsnormen-Matrix */
+  applicableNorms: z.array(z.object({
+    norm: z.string().max(200),
+    relevance: z.enum(["primär", "sekundär", "prüfenswert"]),
+    note: z.string().max(500).optional()
+  })).max(20),
+
+  /** Kontrolle nach §§ 305-310 BGB anwendbar? */
+  agbKontrolleAnwendbar: z.boolean(),
+
+  /** Welcher AGB-Kontroll-Maßstab gilt? */
+  agbKontrollmassstab: z.string().max(500).nullable().optional(),
+
+  /** Zusammenfassendes Klassifikations-Statement für nachfolgende Stages */
+  classificationSummary: z.string().min(1).max(1500),
+
+  /** Model-Notizen */
+  modelNotes: z.string().max(1000).optional()
+})
+
+export type ClassificationStagePayload = z.infer<typeof classificationStageSchema>
+
+// =======================================================================
+// EXTRACTION STAGE (Step 1) — unverändert
+// =======================================================================
 
 export const contractPartySchema = z.object({
   name: z.string().min(1).max(400),
@@ -88,6 +166,10 @@ export const extractionStageSchema = z.object({
   modelNotes: z.string().max(2000).optional()
 })
 
+// =======================================================================
+// RISK & GUIDANCE STAGE (Step 2) — unverändert
+// =======================================================================
+
 export const pipelineFindingSchema = z.object({
   category: z.string().min(1).max(64),
   title: z.string().min(1).max(240),
@@ -114,11 +196,16 @@ export type ExtractionStagePayload = z.infer<typeof extractionStageSchema>
 export type RiskAndGuidanceStagePayload = z.infer<typeof riskAndGuidanceStageSchema>
 
 export const fullContractAnalysisSchema = z.object({
+  classification: classificationStageSchema.optional(),
   extraction: extractionStageSchema,
   risk: riskAndGuidanceStageSchema
 })
 
 export type FullContractAnalysisPayload = z.infer<typeof fullContractAnalysisSchema>
+
+// =======================================================================
+// JSON-Parsing Utilities
+// =======================================================================
 
 /**
  * Entfernt Markdown-Code-Fences (```json ... ```) aus LLM-Antworten.
