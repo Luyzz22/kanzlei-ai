@@ -1,6 +1,7 @@
 import { hashTextSha256, type ContractPipelineSuccess } from "@/lib/ai/analysis-pipeline"
 import {
   CONTRACT_ANALYSIS_PROMPT_VERSION,
+  CONTRACT_CLASSIFICATION_PROMPT_KEY,
   CONTRACT_EXTRACTION_PROMPT_KEY,
   CONTRACT_PROMPT_BUNDLE_KEY,
   CONTRACT_RISK_PROMPT_KEY
@@ -138,6 +139,7 @@ export function scoreContractEvalCase(
 /** Deterministische Pipeline-Antwort für CI / lokale Runs ohne API (EVAL_MOCK=true). */
 export function buildSyntheticEvalPipelineSuccess(documentText: string): ContractPipelineSuccess {
   return {
+    classification: null,
     extraction: {
       contractType: "Mietvertrag Wohnraum",
       parties: [{ name: "Vermieter Müller" }, { name: "Mieter Schmidt" }],
@@ -175,6 +177,9 @@ export function buildSyntheticEvalPipelineSuccess(documentText: string): Contrac
     aggregateConfidence: 0.8,
     promptMetadata: {
       bundleKey: CONTRACT_PROMPT_BUNDLE_KEY,
+      classificationKey: CONTRACT_CLASSIFICATION_PROMPT_KEY,
+      classificationVersion: CONTRACT_ANALYSIS_PROMPT_VERSION,
+      classificationSource: "registry_default",
       extractionKey: CONTRACT_EXTRACTION_PROMPT_KEY,
       extractionVersion: CONTRACT_ANALYSIS_PROMPT_VERSION,
       extractionSource: "registry_default",
