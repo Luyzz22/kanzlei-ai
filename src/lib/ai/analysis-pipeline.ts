@@ -9,8 +9,10 @@ import {
   type RouterContext
 } from "@/lib/ai/analysis-router"
 import {
+  buildClassificationPromptBody,
   buildExtractionPromptBody,
   buildRiskAndGuidancePromptBody,
+  CONTRACT_CLASSIFICATION_PROMPT_KEY,
   CONTRACT_EXTRACTION_PROMPT_KEY,
   CONTRACT_PROMPT_BUNDLE_KEY,
   CONTRACT_RISK_PROMPT_KEY,
@@ -19,8 +21,10 @@ import {
 import { calculateCost } from "@/lib/ai/cost-tracker"
 import { createProvider } from "@/lib/ai/providers"
 import {
+  type ClassificationStagePayload,
   type ExtractionStagePayload,
   type RiskAndGuidanceStagePayload,
+  classificationStageSchema,
   extractionStageSchema,
   parseJsonUnknown,
   riskAndGuidanceStageSchema
@@ -29,7 +33,16 @@ import { ModelType } from "@/types/ai"
 import { AiProviderKind, AnalysisPipelineStageName } from "@prisma/client"
 
 export type ContractPromptResolver = {
-  resolveExtraction: (normalizedDocument: string) => Promise<{
+  resolveClassification: (normalizedDocument: string) => Promise<{
+    key: string
+    version: string
+    text: string
+    source?: "database" | "registry_default"
+  }>
+  resolveExtraction: (
+    normalizedDocument: string,
+    classification?: ClassificationStagePayload | null
+  ) => Promise<{
     key: string
     version: string
     text: string
@@ -38,7 +51,8 @@ export type ContractPromptResolver = {
   resolveRisk: (
     normalizedDocument: string,
     extractionSummary: string,
-    contractTypeLabel: string
+    contractTypeLabel: string,
+    classification?: ClassificationStagePayload | null
   ) => Promise<{
     key: string
     version: string
@@ -49,6 +63,9 @@ export type ContractPromptResolver = {
 
 export type ContractPipelinePromptMetadata = {
   bundleKey: string
+  classificationKey: string
+  classificationVersion: string
+  classificationSource: "database" | "registry_default"
   extractionKey: string
   extractionVersion: string
   extractionSource: "database" | "registry_default"
@@ -73,6 +90,7 @@ export type StageAttemptLog = {
 }
 
 export type ContractPipelineSuccess = {
+  classification: ClassificationStagePayload | null
   extraction: ExtractionStagePayload
   risk: RiskAndGuidanceStagePayload
   stageLogs: StageAttemptLog[]
@@ -128,6 +146,36 @@ function apiModelLabel(model: ModelType): string {
   }
 }
 
+/**
+ * Mapping PipelineStage → Prisma-Enum.
+ * CLASSIFICATION ist neu und muss im Prisma-Schema existieren.
+ */
+function toPrismaStage(stage: PipelineStage): AnalysisPipelineStageName {
+  switch (stage) {
+    case "CLASSIFICATION":
+      return AnalysisPipelineStageName.CLASSIFICATION
+    case "EXTRACTION":
+      return AnalysisPipelineStageName.EXTRACTION
+    case "RISK_AND_GUIDANCE":
+      return AnalysisPipelineStageName.RISK_AND_GUIDANCE
+  }
+}
+
+/**
+ * Max-Token-Budget pro Stage.
+ * Classification ist kompakt (~500-800 Output-Tokens).
+ */
+function maxTokensForStage(stage: PipelineStage): number {
+  switch (stage) {
+    case "CLASSIFICATION":
+      return 4096
+    case "EXTRACTION":
+      return 8192
+    case "RISK_AND_GUIDANCE":
+      return 16384
+  }
+}
+
 export function normalizeDocumentTextForAnalysis(raw: string, maxChars: number): string {
   const collapsed = raw.replace(/\r\n/g, "\n").replace(/[ \t]+/g, " ").trim()
   if (collapsed.length <= maxChars) return collapsed
@@ -141,19 +189,31 @@ export function hashTextSha256(text: string): string {
 /** Registry-only resolver (keine DB) — für Tests und Offline-Evals. */
 export function createRegistryOnlyContractPromptResolver(): ContractPromptResolver {
   return {
-    resolveExtraction: async (normalizedDocument: string) => ({
-      key: CONTRACT_EXTRACTION_PROMPT_KEY,
+    resolveClassification: async (normalizedDocument: string) => ({
+      key: CONTRACT_CLASSIFICATION_PROMPT_KEY,
       version: CONTRACT_ANALYSIS_PROMPT_VERSION,
-      text: buildExtractionPromptBody(normalizedDocument, CONTRACT_ANALYSIS_PROMPT_VERSION),
+      text: buildClassificationPromptBody(normalizedDocument, CONTRACT_ANALYSIS_PROMPT_VERSION),
       source: "registry_default"
     }),
-    resolveRisk: async (normalizedDocument: string, extractionSummary: string) => ({
+    resolveExtraction: async (normalizedDocument: string, classification?: ClassificationStagePayload | null) => ({
+      key: CONTRACT_EXTRACTION_PROMPT_KEY,
+      version: CONTRACT_ANALYSIS_PROMPT_VERSION,
+      text: buildExtractionPromptBody(normalizedDocument, CONTRACT_ANALYSIS_PROMPT_VERSION, classification),
+      source: "registry_default"
+    }),
+    resolveRisk: async (
+      normalizedDocument: string,
+      extractionSummary: string,
+      _contractTypeLabel: string,
+      classification?: ClassificationStagePayload | null
+    ) => ({
       key: CONTRACT_RISK_PROMPT_KEY,
       version: CONTRACT_ANALYSIS_PROMPT_VERSION,
       text: buildRiskAndGuidancePromptBody(
         normalizedDocument,
         extractionSummary,
-        CONTRACT_ANALYSIS_PROMPT_VERSION
+        CONTRACT_ANALYSIS_PROMPT_VERSION,
+        classification
       ),
       source: "registry_default"
     })
@@ -161,7 +221,6 @@ export function createRegistryOnlyContractPromptResolver(): ContractPromptResolv
 }
 
 async function runJsonStage<T>(
-  prismaStage: AnalysisPipelineStageName,
   pipelineStage: PipelineStage,
   schema: z.ZodType<T>,
   ctx: RouterContext,
@@ -170,6 +229,7 @@ async function runJsonStage<T>(
   stageLogs: StageAttemptLog[],
   fallbackKeys: string[]
 ): Promise<{ data: T; model: ModelType; tokens: number }> {
+  const prismaStage = toPrismaStage(pipelineStage)
   const plan = buildModelExecutionPlan(pipelineStage, ctx)
   if (plan.length === 0) {
     throw new PipelineStageFailureError(prismaStage, "Kein konfigurierter KI-Anbieter für diese Stufe.")
@@ -189,7 +249,7 @@ async function runJsonStage<T>(
 
     try {
       const provider = createProvider(model)
-      const stageMaxTokens = pipelineStage === "RISK_AND_GUIDANCE" ? 16384 : 8192
+      const stageMaxTokens = maxTokensForStage(pipelineStage)
       const response = await provider.analyze({ prompt, documentText, jsonMode: true, maxTokens: stageMaxTokens })
       tokensUsed = response.tokensUsed
       let parsedJson: unknown
@@ -292,10 +352,43 @@ export async function runContractAnalysisPipeline(
   const stageLogs: StageAttemptLog[] = []
   const fallbackModelKeys: string[] = []
 
-  const extractionResolved = await resolver.resolveExtraction(normalized)
+  // ──────────────────────────────────────────────────────────────
+  // STEP 0: CLASSIFICATION (NEU)
+  // Bestimmt den rechtlichen Bewertungsrahmen für alle weiteren Steps.
+  // Non-blocking: bei Fehler wird ohne Klassifikation fortgefahren.
+  // ──────────────────────────────────────────────────────────────
+  let classificationData: ClassificationStagePayload | null = null
+  let classificationResolved: { key: string; version: string; source?: "database" | "registry_default" } | null = null
+
+  try {
+    const classResolved = await resolver.resolveClassification(normalized)
+    classificationResolved = classResolved
+
+    const classResult = await runJsonStage(
+      "CLASSIFICATION",
+      classificationStageSchema,
+      ctx,
+      classResolved.text,
+      normalized,
+      stageLogs,
+      fallbackModelKeys
+    )
+    classificationData = classResult.data
+  } catch (err) {
+    // Classification ist non-blocking — logge den Fehler, fahre ohne Kontext fort.
+    // Dies stellt sicher, dass die Pipeline abwärtskompatibel bleibt.
+    console.warn(
+      "[Pipeline] Classification (Step 0) fehlgeschlagen — fahre ohne Klassifikationskontext fort:",
+      err instanceof Error ? err.message : err
+    )
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // STEP 1: EXTRACTION (mit Classification-Kontext, wenn vorhanden)
+  // ──────────────────────────────────────────────────────────────
+  const extractionResolved = await resolver.resolveExtraction(normalized, classificationData)
 
   const extraction = await runJsonStage(
-    AnalysisPipelineStageName.EXTRACTION,
     "EXTRACTION",
     extractionStageSchema,
     ctx,
@@ -313,10 +406,12 @@ export async function runContractAnalysisPipeline(
 
   const contractTypeLabel = extraction.data.contractType ?? ""
 
-  const riskResolved = await resolver.resolveRisk(normalized, extractionSummary, contractTypeLabel)
+  // ──────────────────────────────────────────────────────────────
+  // STEP 2: RISK & GUIDANCE (mit Classification + Extraction-Kontext)
+  // ──────────────────────────────────────────────────────────────
+  const riskResolved = await resolver.resolveRisk(normalized, extractionSummary, contractTypeLabel, classificationData)
 
   const risk = await runJsonStage(
-    AnalysisPipelineStageName.RISK_AND_GUIDANCE,
     "RISK_AND_GUIDANCE",
     riskAndGuidanceStageSchema,
     ctx,
@@ -326,29 +421,40 @@ export async function runContractAnalysisPipeline(
     fallbackModelKeys
   )
 
+  // ──────────────────────────────────────────────────────────────
+  // Aggregation & Result Assembly
+  // ──────────────────────────────────────────────────────────────
   const extractionLog = stageLogs.find((l) => l.stage === AnalysisPipelineStageName.EXTRACTION && l.wasSuccessful)
   const riskLog = stageLogs.find((l) => l.stage === AnalysisPipelineStageName.RISK_AND_GUIDANCE && l.wasSuccessful)
+  const classLog = stageLogs.find((l) => l.stage === AnalysisPipelineStageName.CLASSIFICATION && l.wasSuccessful)
 
   const primaryModel = extraction.model
 
   const totalTokens = stageLogs.reduce((s, l) => s + (l.tokensUsed ?? 0), 0)
   let totalCost = 0
+  if (classLog) totalCost += calculateCost(classificationData ? extraction.model : ModelType.GPT_4O_MINI, classLog.tokensUsed)
   if (extractionLog) totalCost += calculateCost(extraction.model, extractionLog.tokensUsed)
   if (riskLog) totalCost += calculateCost(risk.model, riskLog.tokensUsed)
 
-  const routerSummary = [
+  const routerParts = [
+    classificationData
+      ? `Klassifikation: ${classificationData.contractClassification} (${apiModelLabel(extraction.model)})`
+      : "Klassifikation: übersprungen",
     `Extraktion: ${apiModelLabel(extraction.model)}`,
     `Risiko & Empfehlungen: ${apiModelLabel(risk.model)}`,
     fallbackModelKeys.length ? `Fallback-Versuche: ${fallbackModelKeys.join("; ")}` : "Keine Fallbacks nötig"
-  ].join(" · ")
+  ]
+  const routerSummary = routerParts.join(" · ")
 
   const aggregateConfidence =
     risk.data.aggregateConfidence ?? risk.data.riskScore01 ?? extraction.data.extractionConfidence ?? null
 
   const extractionSource = extractionResolved.source ?? "registry_default"
   const riskSource = riskResolved.source ?? "registry_default"
+  const classificationSource = classificationResolved?.source ?? "registry_default"
 
   return {
+    classification: classificationData,
     extraction: extraction.data,
     risk: risk.data,
     stageLogs,
@@ -362,6 +468,9 @@ export async function runContractAnalysisPipeline(
     aggregateConfidence,
     promptMetadata: {
       bundleKey: CONTRACT_PROMPT_BUNDLE_KEY,
+      classificationKey: classificationResolved?.key ?? CONTRACT_CLASSIFICATION_PROMPT_KEY,
+      classificationVersion: classificationResolved?.version ?? CONTRACT_ANALYSIS_PROMPT_VERSION,
+      classificationSource,
       extractionKey: extractionResolved.key,
       extractionVersion: extractionResolved.version,
       extractionSource,
