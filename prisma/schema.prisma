@@ -391,6 +391,7 @@ enum FindingReviewDecision {
 }
 
 enum AnalysisPipelineStageName {
+  CLASSIFICATION
   EXTRACTION
   RISK_AND_GUIDANCE
 }
@@ -431,6 +432,15 @@ model AnalysisRun {
   negotiationHints          Json?
   explanationSummary        String?                @db.Text
 
+  /// v3: Classification Step 0 — vollständiger JSON-Output der Klassifikation
+  classificationJson          Json?
+  classificationPromptKey     String?                @db.VarChar(120)
+  classificationPromptVersion String?                @db.VarChar(32)
+  /// Denormalisierte Klassifikations-Felder für Filterung/Analytics
+  contractClassification      String?                @db.VarChar(60)
+  partyConstellation          String?                @db.VarChar(60)
+  agbKontrolleAnwendbar       Boolean?
+
   tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   document  Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -444,6 +454,7 @@ model AnalysisRun {
   @@index([tenantId, documentId, startedAt])
   @@index([tenantId, documentId, runSequence])
   @@index([tenantId, status, startedAt])
+  @@index([tenantId, contractClassification])
   @@index([documentId, startedAt])
 }
 
