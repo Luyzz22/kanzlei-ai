@@ -383,6 +383,16 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
         extractionPromptVersion: pipeline.promptMetadata.extractionVersion,
         riskPromptKey: pipeline.promptMetadata.riskKey,
         riskPromptVersion: pipeline.promptMetadata.riskVersion,
+        // v3: Classification Step 0
+        classificationPromptKey: pipeline.promptMetadata.classificationKey,
+        classificationPromptVersion: pipeline.promptMetadata.classificationVersion,
+        classificationJson:
+          pipeline.classification != null
+            ? (pipeline.classification as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+        contractClassification: pipeline.classification?.contractClassification ?? null,
+        partyConstellation: pipeline.classification?.partyConstellation ?? null,
+        agbKontrolleAnwendbar: pipeline.classification?.agbKontrolleAnwendbar ?? null,
         promptVersion: pipeline.promptMetadata.extractionVersion,
         reviewState: AnalysisReviewState.ANALYSIERT
       }
