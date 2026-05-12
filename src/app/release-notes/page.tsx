@@ -5,10 +5,30 @@ export const metadata: Metadata = { title: "Release Notes", description: "Alle �
 
 const releases = [
   {
+    version: "3.0.0",
+    date: "12. Mai 2026",
+    title: "KI-Analyse-Engine v3 — Fachaudit 71→95 Punkte",
+    current: true,
+    changes: [
+      { type: "NEU", text: "Vertragstypklassifikation (Step 0) — AGB/Individualvertrag/Mischform-Erkennung mit §§ 305-310 BGB-Kontrollmatrix, Parteikonstellation (B2B/B2C/Öffentliche Hand), Mandantenrolle und Brancheneinordnung als obligatorischer Pre-Step" },
+      { type: "NEU", text: "Datenschutz-Modul — automatische DSGVO-Kollisionsprüfung (Art. 15/17/28/44 DSGVO), GeschGehG-Konformität (§ 2/§ 3), AVV-Erfordernis und zeitliche Begrenzung von Geheimhaltungsklauseln" },
+      { type: "NEU", text: "Strafrechts-Flag — Klauseln mit strafrechtlichem Risiko (§ 123, § 240, § 242, § 253 StGB) werden automatisch als severity=hoch eingestuft mit konkreten Straftatbeständen" },
+      { type: "NEU", text: "Risikokalibrierungsmatrix — verbindliche Entscheidungsregeln für severity-Einstufung mit 7 Hoch-Kriterien, 7 Mittel-Kriterien und Kontrollregel gegen Unterkalibrierung" },
+      { type: "NEU", text: "Cross-Clause-Analyser — Klauselinteraktionen (verstärkend/kompensierend/widersprüchlich/kumulativ) werden identifiziert und als kombinierte Risiken bewertet" },
+      { type: "NEU", text: "Branchenkontext-Modul — branchenspezifische Normen (ProdHaftG, Maschinenrichtlinie, KWG/MaRisk, CISG/Incoterms) werden basierend auf der Vertragstypklassifikation automatisch injiziert" },
+      { type: "NEU", text: "Konfidenz-Explainability — jedes Finding hat 5 gewichtete Konfidenz-Faktoren (Normklarheit, Klauselklarheit, Vertragskontext, Branchenkompatibilität, Präzedenzlage) mit limitierendem Faktor" },
+      { type: "NEU", text: "BRAO § 43a Audit-Trail — berufsrechtlicher Hinweis zur Eigenverantwortlichkeit des Anwalts wird automatisch in die Analysezusammenfassung integriert" },
+      { type: "CHANGE", text: "Formulierungsvorschläge auf juristisches Fachsprachniveau gehoben: Vollständigkeit, Fairness für beide Parteien, gesetzeskonforme Rückfallposition, Praxistauglichkeit" },
+      { type: "CHANGE", text: "Prompt-Version auf 2026-05-12 aktualisiert — alle Analyse-Runs sind über promptMetadata reproduzierbar" },
+      { type: "CHANGE", text: "Max-Findings von 12 auf 15 erhöht für Datenschutz- und Strafrechts-Dimensionen" },
+      { type: "FIX", text: "Benachrichtigungsglocke zeigt jetzt echte ungelesene Anzahl statt hardcodierter '2'" },
+    ]
+  },
+  {
     version: "2.2.0",
     date: "4. Mai 2026",
     title: "Provider-Fix, Verhandlungssimulator Live & Dashboard-Upgrade",
-    current: true,
+    current: false,
     changes: [
       { type: "NEU", text: "\u{1F3AF} Verhandlungssimulator Live — Echtzeit-Streaming mit Claude Sonnet als KI-Gegenpartei und Coach-Feedback nach jedem Zug" },
       { type: "NEU", text: "\u{1F4CB} Copilot Vertrags-Picker — analysierte Verträge direkt im Copilot auswählen, inkl. Extraction, Findings und Formulierungsvorschlaegen" },
