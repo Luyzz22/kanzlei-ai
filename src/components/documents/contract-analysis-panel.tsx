@@ -5,6 +5,8 @@ import { useFormState, useFormStatus } from "react-dom"
 
 import {
   startContractAnalysisAction,
+  finalizeAnalysisReviewAction,
+  batchAcceptFindingsAction,
   type ContractAnalysisFormState
 } from "@/app/workspace/dokumente/[id]/actions"
 import { AnalysisFindingReviewForm } from "@/components/documents/analysis-finding-review-form"
@@ -122,6 +124,15 @@ function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
           </span>
         </span>
         <StatusBadge label={severityLabel(finding.severity)} tone={severityTone(finding.severity)} />
+        {finding.latestReview && (
+          <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+            finding.latestReview.decision === "AKZEPTIERT" ? "bg-emerald-100 text-emerald-700" :
+            finding.latestReview.decision === "ABGELEHNT" ? "bg-rose-100 text-rose-700" :
+            "bg-amber-100 text-amber-700"
+          }`}>
+            {finding.latestReview.decision === "AKZEPTIERT" ? "✓" : finding.latestReview.decision === "ABGELEHNT" ? "✕" : "✎"}
+          </span>
+        )}
         <ChevronIcon open={isOpen} />
       </button>
       {isOpen && (
@@ -152,7 +163,7 @@ function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
               ) : (
                 <div className="relative">
                   <button type="button" onClick={() => setReviewOpen(false)} className="absolute -top-1 right-0 text-[11px] text-slate-400 hover:text-slate-600">Schließen ✕</button>
-                  <AnalysisFindingReviewForm documentId={documentId} findingId={finding.id} />
+                  <AnalysisFindingReviewForm documentId={documentId} findingId={finding.id} currentSuggestedRevision={finding.suggestedRevision} />
                 </div>
               )}
             </>
@@ -168,6 +179,8 @@ function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
 /* ================================================================== */
 export function ContractAnalysisPanel({ documentId, canStartAnalysis, canReviewFindings, analysis }: ContractAnalysisPanelProps) {
   const [state, formAction] = useFormState(startContractAnalysisAction, initialState)
+  const [finalizeState, finalizeAction] = useFormState(finalizeAnalysisReviewAction, initialState)
+  const [batchState, batchAcceptAction] = useFormState(batchAcceptFindingsAction, initialState)
   const [severityFilter, setSeverityFilter] = useState<"ALL" | "HOCH" | "MITTEL" | "NIEDRIG">("ALL")
   const [openFindings, setOpenFindings] = useState<Set<string>>(new Set())
   const [metaOpen, setMetaOpen] = useState(false)
@@ -258,6 +271,56 @@ export function ContractAnalysisPanel({ documentId, canStartAnalysis, canReviewF
             </div>
           ) : null}
 
+          {/* v3: Klassifikationsoutput */}
+          {analysis.classification && (
+            <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Vertragsklassifikation</p>
+              <div className="mt-3 grid gap-x-6 gap-y-2 text-[13px] sm:grid-cols-2 lg:grid-cols-3">
+                {analysis.classification.contractClassification && (
+                  <div><span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Vertragstyp</span><p className="mt-0.5 font-medium text-slate-900">{analysis.classification.contractClassification}</p></div>
+                )}
+                {analysis.classification.partyConstellation && (
+                  <div><span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Parteikonstellation</span><p className="mt-0.5 font-medium text-slate-900">{analysis.classification.partyConstellation}</p></div>
+                )}
+                {analysis.classification.clientRole && (
+                  <div><span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Mandantenrolle</span><p className="mt-0.5 font-medium text-slate-900">{analysis.classification.clientRole}</p></div>
+                )}
+                {analysis.classification.agbKontrolleAnwendbar != null && (
+                  <div><span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">AGB-Kontrolle</span><p className="mt-0.5 font-medium text-slate-900">{analysis.classification.agbKontrolleAnwendbar ? "§§ 305–310 BGB anwendbar" : "Nicht anwendbar (Individualvertrag)"}</p></div>
+                )}
+                {analysis.classification.industryClassification && (
+                  <div><span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Branche</span><p className="mt-0.5 font-medium text-slate-900">{analysis.classification.industryClassification}{analysis.classification.internationalElement ? " (international)" : ""}</p></div>
+                )}
+                {analysis.classification.agbKontrollmassstab && (
+                  <div><span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Kontrollmaßstab</span><p className="mt-0.5 font-medium text-slate-900">{analysis.classification.agbKontrollmassstab}</p></div>
+                )}
+              </div>
+              {analysis.classification.classificationSummary && (
+                <p className="mt-3 text-[12px] leading-relaxed text-slate-600">{analysis.classification.classificationSummary}</p>
+              )}
+              {analysis.classification.classificationConfidence != null && (
+                <p className="mt-2 text-[11px] text-slate-400">Klassifikations-Konfidenz: {(analysis.classification.classificationConfidence * 100).toFixed(0)}%</p>
+              )}
+            </div>
+          )}
+
+          {/* BRAO § 43a — Rechtlicher Hinweis (nicht wegklickbar, Compliance) */}
+          {analysis.run.status === "COMPLETED" && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50/50 px-4 py-3">
+              <div className="flex items-start gap-2.5">
+                <span className="text-base mt-0.5">⚖️</span>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-800">Rechtlicher Hinweis — BRAO § 43a</p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-amber-900">
+                    Diese KI-gestützte Analyse ist ein Arbeitshilfsmittel. Die rechtliche Einschätzung und Verantwortung
+                    verbleibt beim bearbeitenden Rechtsanwalt. Alle Findings sind vor Verwendung fachlich zu prüfen
+                    (Human-in-the-Loop erforderlich).
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ============ FINDINGS — Summary + Accordion ============ */}
           {analysis.findings.length > 0 && (
             <div className="space-y-3">
@@ -269,12 +332,76 @@ export function ContractAnalysisPanel({ documentId, canStartAnalysis, canReviewF
                   <button type="button" onClick={collapseAll} className="text-[11px] text-slate-400 hover:text-slate-600">Alle schließen</button>
                 </div>
               </div>
+
+              {/* Review Progress Bar */}
+              {(() => {
+                const reviewed = analysis.findings.filter(f => f.latestReview).length
+                const total = analysis.findings.length
+                const pct = total > 0 ? Math.round((reviewed / total) * 100) : 0
+                return (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-medium text-slate-600">{reviewed}/{total} Findings geprüft</span>
+                      <span className="text-slate-400">{pct}%</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? "bg-emerald-500" : "bg-[#003856]"}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })()}
+
               <FindingsSummaryBar findings={analysis.findings} riskScore={analysis.run.riskScore01} filter={severityFilter} onFilter={setSeverityFilter} />
+
+              {/* Batch Accept für Niedrig-Findings */}
+              {canReviewFindings && analysis.run.status === "COMPLETED" && (() => {
+                const unreviewed = analysis.findings.filter(f => f.severity === "NIEDRIG" && !f.latestReview)
+                if (unreviewed.length === 0) return null
+                return (
+                  <form action={batchAcceptAction}>
+                    <input type="hidden" name="documentId" value={documentId} />
+                    <input type="hidden" name="findingIds" value={unreviewed.map(f => f.id).join(",")} />
+                    <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[12px] font-medium text-emerald-700 transition-colors hover:bg-emerald-100">
+                      Alle Niedrig-Findings akzeptieren ({unreviewed.length})
+                    </button>
+                    {batchState.message && <span className={`ml-2 text-[11px] ${batchState.status === "success" ? "text-emerald-600" : "text-rose-600"}`}>{batchState.message}</span>}
+                  </form>
+                )
+              })()}
+
               <div className="space-y-2">
                 {getFilteredFindings().map((f) => (
                   <FindingCard key={f.id} finding={f} isOpen={openFindings.has(f.id)} onToggle={() => toggleFinding(f.id)} canReview={canReviewFindings && analysis.run.status === "COMPLETED"} documentId={documentId} />
                 ))}
               </div>
+
+              {/* Freigabe-Button — nur wenn alle Findings geprüft */}
+              {canReviewFindings && analysis.run.status === "COMPLETED" && analysis.run.reviewState !== "FREIGEGEBEN" && (() => {
+                const allReviewed = analysis.findings.every(f => f.latestReview)
+                return (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    {allReviewed ? (
+                      <form action={finalizeAction} className="flex items-center gap-3">
+                        <input type="hidden" name="documentId" value={documentId} />
+                        <input type="hidden" name="analysisRunId" value={analysis.run.id} />
+                        <button type="submit" className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-emerald-700">
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          Analyse freigeben
+                        </button>
+                        {finalizeState.message && <span className={`text-sm ${finalizeState.status === "success" ? "text-emerald-600" : "text-rose-600"}`}>{finalizeState.message}</span>}
+                      </form>
+                    ) : (
+                      <p className="text-[12px] text-slate-500">Alle Findings müssen geprüft werden, bevor die Analyse freigegeben werden kann.</p>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {analysis.run.reviewState === "FREIGEGEBEN" && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center">
+                  <p className="text-sm font-medium text-emerald-800">✓ Analyse freigegeben</p>
+                </div>
+              )}
             </div>
           )}
 
