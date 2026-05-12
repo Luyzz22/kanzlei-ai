@@ -253,7 +253,15 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt nach folgendem Schema:
       "confidence": "number (0-1)",
       "clauseRef": "string (z.B. '§ 3 Abs. 1' oder 'Gesamtvertrag')",
       "quote": "string (WÖRTLICHES Zitat der relevanten Klausel aus dem Vertragstext — max 2000 Zeichen)",
-      "suggestedRevision": "string (KONKRETER juristisch sauberer Formulierungsvorschlag — max 4000 Zeichen)"
+      "suggestedRevision": "string (KONKRETER juristisch sauberer Formulierungsvorschlag — max 4000 Zeichen)",
+      "confidenceFactors": {
+        "normClarity": "number (0-1, Gewicht 30%: 1.0=BGH klar, 0.7=Auslegungsspielraum, 0.4=streitig, 0.2=Neuland)",
+        "clauseClarity": "number (0-1, Gewicht 25%: 1.0=eindeutig, 0.7=h.M. klar, 0.4=mehrdeutig, 0.2=widersprüchlich)",
+        "contractContext": "number (0-1, Gewicht 20%: 1.0=AGB klar, 0.7=wahrscheinlich AGB, 0.4=unklar, 0.2=Kontext fehlt)",
+        "industryFit": "number (0-1, Gewicht 15%: 1.0=Branche klar, 0.7=moderat, 0.4=unklar, 0.2=kein Kontext)",
+        "precedent": "number (0-1, Gewicht 10%: 1.0=BGH direkt, 0.7=OLG, 0.4=nur Literatur, 0.2=Neuland)",
+        "limitingFactor": "string (welcher Faktor die Konfidenz am stärksten begrenzt)"
+      }
     }
   ],
   "clauseInteractions": [
@@ -292,6 +300,10 @@ PFLICHT — FÜR JEDES FINDING:
 3. "clauseRef": Deutsche Zitierweise, z.B. "§ 4", "§ 3 Abs. 1 Satz 2", "§ 1 und § 3 Abs. 2".
 
 4. "confidence": Deine Sicherheit (0.0–1.0) über die Richtigkeit des Findings.
+   BERECHNE den Wert aus den Konfidenz-Faktoren (C.4):
+   confidence = normClarity×0.30 + clauseClarity×0.25 + contractContext×0.20 + industryFit×0.15 + precedent×0.10
+   Gib alle 5 Faktoren + limitingFactor im Feld "confidenceFactors" an.
+   Wenn der niedrigste Faktor unter 0.4 liegt, setze limitingFactor auf den Namen dieses Faktors.
 ${classification?.contractClassification === "AGB" ? `
 5. AGB-SPEZIFISCH (da Vertragstyp = AGB):
    - Prüfe JEDE Klausel gegen §§ 307-309 BGB.
@@ -448,6 +460,10 @@ WEITERE REGELN:
 - Datenschutz- und Strafrechts-Findings sind KEINE optionalen Extras — sie gehören zu den Kern-Findings.
 - Ausgabe ist reines JSON, keine Markdown-Code-Fences.
 - Nutze aus der Vorab-Extraktion bekannte Klauselbezüge.
+- AUDIT-TRAIL (E.2): Die "explanationSummary" muss folgenden Hinweis enthalten:
+  "Hinweis nach BRAO § 43a: Diese KI-gestützte Analyse dient als Hilfsmittel zur Unterstützung
+  der anwaltlichen Tätigkeit. Die rechtliche Einschätzung und Verantwortung verbleibt beim
+  bearbeitenden Rechtsanwalt. Eine eigenständige fachliche Prüfung aller Findings ist erforderlich."
 
 VERTRAGSTEXT:
 ${normalizedDocument}`
