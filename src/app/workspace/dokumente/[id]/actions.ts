@@ -69,33 +69,41 @@ export async function startContractAnalysisAction(
     return { status: "error", message: "Keine Textgrundlage für die Analyse verfügbar." }
   }
 
-  const result = await runPersistedContractAnalysis({
-    tenantId: tenantContext.tenantId,
-    documentId,
-    actorId: session.user.id,
-    documentText: text,
-    documentSha256: doc.sha256
-  })
+  try {
+    const result = await runPersistedContractAnalysis({
+      tenantId: tenantContext.tenantId,
+      documentId,
+      actorId: session.user.id,
+      documentText: text,
+      documentSha256: doc.sha256
+    })
 
-  if (!result.ok) {
-    if (result.code === "FORBIDDEN") {
-      return { status: "error", message: "Für diese Aktion fehlt die Berechtigung." }
+    if (!result.ok) {
+      if (result.code === "FORBIDDEN") {
+        return { status: "error", message: "Für diese Aktion fehlt die Berechtigung." }
+      }
+      if (result.code === "NO_PROVIDER") {
+        return { status: "error", message: result.message }
+      }
+      if (result.code === "ALREADY_RUNNING") {
+        return { status: "error", message: result.message }
+      }
+      return { status: "error", message: result.message ?? "Die Analyse ist fehlgeschlagen." }
     }
-    if (result.code === "NO_PROVIDER") {
-      return { status: "error", message: result.message }
-    }
-    if (result.code === "ALREADY_RUNNING") {
-      return { status: "error", message: result.message }
-    }
-    return { status: "error", message: result.message }
-  }
 
-  revalidatePath(`/workspace/dokumente/${documentId}`)
-  revalidatePath("/workspace/dokumente")
+    revalidatePath(`/workspace/dokumente/${documentId}`)
+    revalidatePath("/workspace/dokumente")
 
-  return {
-    status: "success",
-    message: "KI-Vertragsanalyse abgeschlossen. Ergebnisse sind unten einsehbar — bitte fachlich prüfen (Human-in-the-Loop)."
+    return {
+      status: "success",
+      message: "KI-Vertragsanalyse abgeschlossen. Ergebnisse sind unten einsehbar — bitte fachlich prüfen (Human-in-the-Loop)."
+    }
+  } catch (err) {
+    console.error("[startContractAnalysisAction] Unerwarteter Fehler:", err instanceof Error ? err.message : err)
+    return {
+      status: "error",
+      message: "Die Analyse wurde unterbrochen (Zeitlimit überschritten). Bitte versuchen Sie es erneut — bei wiederholtem Fehler ist ein Upgrade auf den Pro-Plan erforderlich."
+    }
   }
 }
 
