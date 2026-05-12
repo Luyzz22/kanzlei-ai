@@ -256,6 +256,15 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt nach folgendem Schema:
       "suggestedRevision": "string (KONKRETER juristisch sauberer Formulierungsvorschlag — max 4000 Zeichen)"
     }
   ],
+  "clauseInteractions": [
+    {
+      "clauseRefs": ["§ X", "§ Y"],
+      "interactionType": "verstärkend | kompensierend | widersprüchlich | kumulativ",
+      "combinedRiskDescription": "string (Beschreibung des kombinierten Risikos)",
+      "combinedSeverity": "niedrig|mittel|hoch",
+      "remediation": "string (Abhilfemaßnahme für die Kombination, optional)"
+    }
+  ],
   "riskScore01": "number (0-1, Gesamtrisikoindikator)",
   "recommendedMeasures": ["string", "string"],
   "negotiationHints": ["string", "string"],
@@ -273,6 +282,12 @@ PFLICHT — FÜR JEDES FINDING:
    - Formuliere eine ALTERNATIVE Klausel, die direkt in den Vertrag übernommen werden kann.
    - Juristisch saubere Sprache — keine Umgangssprache, keine Erklärungen.
    - Konkret und einsatzbereit — kein "sollte", "könnte", sondern ausformulierte Klausel.
+   - QUALITÄTSANFORDERUNG (C.3): Der Formulierungsvorschlag muss folgende Kriterien erfüllen:
+     a) Sprachlich auf dem Niveau eines erfahrenen Vertragsjuristen (nicht eines Studenten)
+     b) Vollständig und ohne Auslassungen — kein "[...]" oder "wie oben"
+     c) Beide Parteien fair berücksichtigen, nicht nur einseitig zugunsten des Mandanten
+     d) Gesetzeskonforme Rückfallposition enthalten (z.B. "im Übrigen gelten die gesetzlichen Regelungen")
+     e) Praxistauglich: Muss ohne weitere Anpassung in einen Vertragsentwurf eingefügt werden können
 
 3. "clauseRef": Deutsche Zitierweise, z.B. "§ 4", "§ 3 Abs. 1 Satz 2", "§ 1 und § 3 Abs. 2".
 
@@ -367,6 +382,54 @@ GESAMTRISIKO-SCORE (riskScore01) — Kalibrierungsanker:
   - 0.7-0.85: Systematische Benachteiligung, dringende Nachverhandlung erforderlich
   - 0.85-1.0: Vertrag enthält unwirksame/strafrechtlich relevante Klauseln, Unterzeichnung nicht empfohlen
 
+OBLIGATORISCHES ANALYSE-SEGMENT: KLAUSELINTERAKTIONEN (C.1)
+Analysiere NACH der Einzelklauselanalyse die Wechselwirkungen zwischen Klauseln.
+Die gefährlichsten Vertragsrisiken entstehen durch Klauselkombinationen, nicht durch Einzelklauseln.
+
+Prüfe systematisch folgende Interaktionstypen:
+- VERSTÄRKEND: Klausel A macht Klausel B noch nachteiliger (z.B. kurze Rügefrist + Aufrechnungsverbot)
+- KOMPENSIEREND: Klausel A mildert den Nachteil von Klausel B (selten, aber relevant)
+- WIDERSPRÜCHLICH: Klauseln stehen in Konflikt (z.B. Schriftform vs. Zustimmungsfiktion bei Schweigen)
+- KUMULATIV: Beide Klauseln schaffen gemeinsam ein neues, nicht offensichtliches Risiko
+  (z.B. Schweigen=Annahme + Preis bei Lieferung maßgeblich → konstruiertes Ausstiegsszenario)
+
+Typische toxische Kombinationen (als Prüfschablone):
+- Annahme-/Bestellregeln × Preisanpassungsrecht → Preismanipulation nach Bestellung
+- Rügefristen × Aufrechnungs-/Zurückbehaltungsverbot → Mandant zahlt trotz Mängeln
+- Kündigungsrecht × Preisänderung × Vertragsänderungsfiktion → konstruiertes Ausstiegsszenario
+- Haftungsbeschränkung × Gewährleistungsausschluss → doppelte Absicherung des Lieferanten
+- Geheimhaltung × Datenschutz → DSGVO-Kollision bei pauschaler Vertraulichkeit
+
+Erzeuge im Feld "clauseInteractions" mindestens 2 Interaktionen (wenn vorhanden).
+Die combinedSeverity einer Interaktion kann HÖHER sein als die severity der Einzelfindings.
+Klauselinteraktionen fließen in den Gesamtrisikoscore (riskScore01) ein.
+${classification?.industryClassification && classification.industryClassification !== "Sonstige" ? `
+OBLIGATORISCHES ANALYSE-SEGMENT: BRANCHENKONTEXT (C.2)
+Der Vertrag wurde als Branche "${classification.industryClassification}" klassifiziert.
+Prüfe branchenspezifische Sonderregelungen:
+${classification.industryClassification === "Produktion" ? `
+- ProdHaftG: Herstellerhaftung auch ohne Verschulden; Haftungsausschluss in AGB unwirksam (§ 14 ProdHaftG)
+- Maschinenrichtlinie 2006/42/EG: CE-Konformität, Betriebsanleitungspflicht
+- REACH-Verordnung: Chemikalien-Registrierung bei Industriekomponenten
+- Prüfe Haftungsklauseln auf ProdHaftG-Kompatibilität (Findings erzeugen wenn inkompatibel)
+` : classification.industryClassification === "Dienstleistung" ? `
+- Werkvertragsrecht §§ 631 ff. BGB: Abnahme, Nacherfüllung, Mängelrechte
+- Dienstvertragsrecht §§ 611 ff. BGB: Unterscheidung Dienst-/Werkvertrag relevant für Gewährleistung
+- IT-/SaaS-spezifisch: Verfügbarkeit (SLA), Datenmigration, Vendor-Lock-in-Klauseln
+- Prüfe, ob der Vertrag korrekt als Werk- oder Dienstvertrag qualifiziert ist
+` : classification.industryClassification === "Finanzprodukt" ? `
+- KWG/MaRisk: Aufsichtsrechtliche Anforderungen an Auslagerungsverträge
+- VVG (bei Versicherung): Zwingende Verbraucherschutzvorschriften
+- Verbraucherkredit-Richtlinie: Widerrufsrecht, Informationspflichten
+- BaFin-Rundschreiben: Anforderungen an IT-Sicherheit und Auslagerung
+` : classification.industryClassification === "International" ? `
+- CISG: Prüfe ob wirksam ausgeschlossen; wenn nicht, gelten UN-Kaufrecht-Normen vorrangig
+- Incoterms: Klare Lieferbedingungen (DDP, FOB, CIF etc.) definiert?
+- Rechtswahl und Gerichtsstand: Wirksame Rechtswahlklausel nach Rom-I-VO?
+- Drittlandübermittlung: DSGVO Art. 44 ff. bei Datentransfer außerhalb EU/EWR
+` : ""}
+Erzeuge mindestens ein Finding mit Branchenbezug, wenn eine branchenspezifische Norm verletzt oder nicht adressiert wird.
+` : ""}
 BEISPIEL FÜR EIN FINDING:
 {
   "category": "Vertragsstrafe",
