@@ -516,6 +516,7 @@ model AnalysisFindingReview {
   comment               String?                @db.Text
   modifiedTitle         String?                @db.VarChar(240)
   modifiedDescription   String?                @db.Text
+  modifiedSuggestedRevision String?             @db.Text
   reviewedAt            DateTime               @default(now())
 
   tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
