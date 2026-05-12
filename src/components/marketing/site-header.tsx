@@ -46,7 +46,7 @@ const appNav: NavItem[] = [
 export function SiteHeader() {
   const { data: session, status } = useSession()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState<string | null>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   const isLoggedIn = status === "authenticated" && session?.user
@@ -72,8 +72,8 @@ export function SiteHeader() {
           {nav.map((item) =>
             item.children ? (
               <div key={item.label} className="relative"
-                onMouseEnter={() => setDropdownOpen(true)}
-                onMouseLeave={() => setDropdownOpen(false)}
+                onMouseEnter={() => setDropdownOpen(item.label)}
+                onMouseLeave={() => setDropdownOpen(null)}
               >
                 <button className="flex items-center gap-1 rounded-full px-3.5 py-2 text-[13px] font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
                   {item.label}
@@ -81,7 +81,7 @@ export function SiteHeader() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                {dropdownOpen && (
+                {dropdownOpen === item.label && (
                   <div className="absolute left-0 top-full z-50 mt-1 w-80 rounded-xl border border-gray-200/80 bg-white p-2 shadow-elevated animate-fade-in">
                     {item.children.map((child) => (
                       <Link key={child.href} href={child.href} className="block rounded-lg px-3.5 py-3 transition-colors hover:bg-gray-50">
