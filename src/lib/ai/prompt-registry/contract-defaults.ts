@@ -318,6 +318,32 @@ ${classification?.contractClassification === "AGB" ? `
    - Individuell ausgehandelte Klauseln: Prüfe nur am Maßstab von § 138 BGB und § 242 BGB.
    - Kennzeichne in "description", ob die Klausel als AGB oder individuell eingestuft wird.
 ` : ""}
+OBLIGATORISCHE NORM-KENNZEICHNUNG (P0):
+Kennzeichne in "description" JEDE Normreferenz mit einem der folgenden Marker:
+
+[DIREKT] — Norm ist direkt und zwingend anwendbar.
+  Verwende bei: § 276 Abs. 3 BGB, § 134 BGB, § 138 BGB, Art. 28 DSGVO, § 14 ProdHaftG.
+  Beispiel: "§ 276 Abs. 3 BGB [DIREKT] — Haftungsausschluss für Vorsatz zwingend unwirksam."
+
+[ZWINGEND] — Norm ist nicht abdingbar, auch nicht durch Individualvereinbarung.
+  Verwende bei: § 276 Abs. 3 BGB, § 134, § 138 BGB, Art. 83 DSGVO, § 14 ProdHaftG.
+  Bei [ZWINGEND]: severity automatisch "hoch".
+  Beispiel: "§ 276 Abs. 3 BGB [ZWINGEND] — Haftungsfreizeichnung für Vorsatz ist nichtig."
+
+[B2B-INDIZ] — Norm gilt im B2B nicht direkt, fließt aber als Wertungsmaßstab in § 307 BGB ein.
+  Verwende IMMER bei §§ 308, 309 BGB im B2B-Kontext (§ 310 Abs. 1 BGB).
+  PFLICHTTEXT bei jeder Verwendung: "Im B2B-Verhältnis gilt § [X] BGB nach § 310 Abs. 1 BGB
+  nicht direkt, fließt aber als Wertungsmaßstab in die Prüfung nach § 307 BGB ein."
+  Beispiel: "§ 309 Nr. 7 BGB [B2B-INDIZ] — Klauselverbot gilt im B2B nicht direkt (§ 310 Abs. 1),
+  ist aber Indiz für unangemessene Benachteiligung nach § 307 BGB."
+
+[ANALOG] — Norm wird als Wertungsmaßstab oder analog herangezogen.
+  Verwende bei: § 308 Nr. 5 BGB bei Schweigefiktionen im B2B, § 308 Nr. 7 BGB bei Vertragsstrafen im B2B.
+  PFLICHT: Begründe WARUM analog. Setze confidenceFactors.precedent auf max 0.7 bei analoger Anwendung.
+
+REGEL: Jede Normreferenz in "description" MUSS genau einen dieser 4 Marker tragen.
+Ohne Marker ist die Normreferenz für den Anwalt nicht einordbar.
+
 OBLIGATORISCHES ANALYSE-SEGMENT: DATENSCHUTZ (B.2)
 Prüfe den Vertrag IMMER auf folgende Datenschutz-Dimensionen — unabhängig vom Vertragstyp.
 Wenn der Vertrag Begriffe wie "Kundendaten", "personenbezogene Daten", "Mitarbeiterdaten",
@@ -398,21 +424,32 @@ OBLIGATORISCHES ANALYSE-SEGMENT: KLAUSELINTERAKTIONEN (C.1)
 Analysiere NACH der Einzelklauselanalyse die Wechselwirkungen zwischen Klauseln.
 Die gefährlichsten Vertragsrisiken entstehen durch Klauselkombinationen, nicht durch Einzelklauseln.
 
-Prüfe systematisch folgende Interaktionstypen:
-- VERSTÄRKEND: Klausel A macht Klausel B noch nachteiliger (z.B. kurze Rügefrist + Aufrechnungsverbot)
-- KOMPENSIEREND: Klausel A mildert den Nachteil von Klausel B (selten, aber relevant)
+PFLICHT-PRÜFSCHABLONE — Diese 3 Interaktionsmuster MÜSSEN geprüft werden:
+
+INTERAKTION A: ANNAHME × PREIS (z.B. § 1 × § 3)
+Prüfe: Gibt es eine Schweigeannahme/Annahmefiktion UND eine einseitige Preisänderungsklausel?
+Risiko: Auftraggeber hat verbindliche Bestellung ohne verbindlichen Preis.
+Szenario: Lieferant nimmt schweigend an → ändert Preisliste → liefert zum erhöhten Preis → AG kann nicht anfechten.
+Falls gefunden: interactionType="kumulativ", combinedSeverity mindestens "hoch".
+
+INTERAKTION B: RÜGEFRIST × AUFRECHNUNGSVERBOT (z.B. § 5 × § 8)
+Prüfe: Gibt es kurze Rügefristen mit Rechtsverlust UND Aufrechnungs-/Zurückbehaltungsverbot bei Mängeln?
+Risiko: Selbst bei fristgerechter Mängelrüge muss AG zahlen und kann nicht zurückhalten.
+Szenario: AG rügt fristgerecht → muss trotzdem zahlen (§ 8) → klagt separat → Lieferant bestreitet Fristgerechtigkeit → AG verliert alles.
+Falls gefunden: interactionType="verstärkend", combinedSeverity="hoch".
+
+INTERAKTION C: KÜNDIGUNG × PREIS × VERTRAGSÄNDERUNG (z.B. § 2 × § 3 × § 10)
+Prüfe: Gibt es niedrigschwelliges Kündigungsrecht UND einseitiges Preisänderungsrecht UND Zustimmungsfiktion bei Schweigen?
+Risiko: Konstruiertes Ausstiegsszenario — Lieferant kann Vertrag jederzeit "legal" beenden.
+Szenario: Lieferant erhöht Preisliste still → AG zahlt alten Preis → Lieferant wertet als Zahlungsverzug → kündigt fristlos.
+Falls gefunden: interactionType="kumulativ", combinedSeverity="hoch".
+
+Zusätzlich prüfe systematisch:
+- VERSTÄRKEND: Klausel A macht Klausel B noch nachteiliger
+- KOMPENSIEREND: Klausel A mildert den Nachteil von Klausel B (selten, aber dokumentieren)
 - WIDERSPRÜCHLICH: Klauseln stehen in Konflikt (z.B. Schriftform vs. Zustimmungsfiktion bei Schweigen)
-- KUMULATIV: Beide Klauseln schaffen gemeinsam ein neues, nicht offensichtliches Risiko
-  (z.B. Schweigen=Annahme + Preis bei Lieferung maßgeblich → konstruiertes Ausstiegsszenario)
 
-Typische toxische Kombinationen (als Prüfschablone):
-- Annahme-/Bestellregeln × Preisanpassungsrecht → Preismanipulation nach Bestellung
-- Rügefristen × Aufrechnungs-/Zurückbehaltungsverbot → Mandant zahlt trotz Mängeln
-- Kündigungsrecht × Preisänderung × Vertragsänderungsfiktion → konstruiertes Ausstiegsszenario
-- Haftungsbeschränkung × Gewährleistungsausschluss → doppelte Absicherung des Lieferanten
-- Geheimhaltung × Datenschutz → DSGVO-Kollision bei pauschaler Vertraulichkeit
-
-Erzeuge im Feld "clauseInteractions" mindestens 2 Interaktionen (wenn vorhanden).
+Erzeuge im Feld "clauseInteractions" MINDESTENS die gefundenen Pflicht-Interaktionen.
 Die combinedSeverity einer Interaktion kann HÖHER sein als die severity der Einzelfindings.
 Klauselinteraktionen fließen in den Gesamtrisikoscore (riskScore01) ein.
 ${classification?.industryClassification && classification.industryClassification !== "Sonstige" ? `
@@ -460,7 +497,39 @@ WEITERE REGELN:
 - Datenschutz- und Strafrechts-Findings sind KEINE optionalen Extras — sie gehören zu den Kern-Findings.
 - Ausgabe ist reines JSON, keine Markdown-Code-Fences.
 - Nutze aus der Vorab-Extraktion bekannte Klauselbezüge.
-- AUDIT-TRAIL (E.2): Die "explanationSummary" muss folgenden Hinweis enthalten:
+
+PFLICHT-FINDINGS — Diese Aspekte MÜSSEN als eigenständige Findings erscheinen, wenn sie im Vertrag vorhanden sind:
+- Annahmefiktion bei Schweigen (auch wenn Risiko für sich allein "niedrig" — benötigt als Trigger für Cross-Clause)
+- Zahlungsfrist unter 14 Tagen (eigenständiges Finding, nicht mit Verzugszinsen zusammenführen)
+- Fehlende AVV bei Verarbeitung personenbezogener Daten
+- Einseitige Gerichtsstandsvereinbarung
+
+BESTIMMTHEITSGEBOT-CHECK (P1) — Prüfe bei JEDEM Formulierungsvorschlag zu Vertragsstrafen:
+- Enthält die vorgeschlagene Vertragsstrafe einen FIXEN Betrag oder eine objektiv bestimmbare Berechnungsformel?
+- Falls NEIN (z.B. "nach billigem Ermessen"): AUTOMATISCH ein Stufenmodell vorschlagen:
+  (a) Bei erstmaligem Verstoß: EUR [X] (z.B. 10.000)
+  (b) Bei wiederholtem Verstoß: EUR [Y] je weiterem Verstoß (z.B. 20.000)
+  (c) Bei vorsätzlichem Verstoß: EUR [Z] (z.B. 35.000)
+  Plus: Anrechnung auf Schaden, § 343 BGB-Vorbehalt
+- NIEMALS "billiges Ermessen" als Festsetzungsmethode vorschlagen — das ist rechtspraktisch wertlos.
+
+TEMPORAL-VALIDIERUNG (P1) — Prüfe bei JEDEM Formulierungsvorschlag:
+- Referenziert der Vorschlag Vergangenheitsdaten ("letzte X Monate", "durchschnittliches Auftragsvolumen")?
+- Erkenne den Vertragsbeginn aus der Extraktion.
+- Falls der Vertrag ein NEUVERTRAG ist (Beginn in der Zukunft oder < 6 Monate alt):
+  Formulierungsvorschläge mit Vergangenheitsreferenzen MÜSSEN eine Anlaufphase enthalten.
+  Beispiel: "Nach Ablauf von sechs Monaten ab Vertragsbeginn tritt an die Stelle des vorstehenden
+  Schwellenwerts das durchschnittliche monatliche Auftragsvolumen der vorangegangenen sechs Monate."
+
+LkSG-PRÜFUNG (P2) — Bei LIEFERANTENVERTRÄGEN mit produzierten Waren:
+- Enthält der Vertrag eine Lieferkettensorgfaltspflichtenklausel?
+- Falls NEIN: Erzeuge ein Finding mit severity="niedrig" oder "mittel", Kategorie "Compliance":
+  "Abhängig von der Unternehmensgröße des Auftraggebers (>1.000 Mitarbeiter: LkSG anwendbar)
+  fehlen Sorgfaltspflichtenklauseln gemäß Lieferkettensorgfaltspflichtengesetz."
+- Konfidenz bewusst niedrig setzen (0.60-0.70) — Anwendbarkeit aus Vertrag nicht bestimmbar.
+- KEINE automatische Hochstufung — LkSG ist hinweisbasiert, nicht zwingend in jedem Fall.
+
+AUDIT-TRAIL (E.2): Die "explanationSummary" muss folgenden Hinweis enthalten:
   "Hinweis nach BRAO § 43a: Diese KI-gestützte Analyse dient als Hilfsmittel zur Unterstützung
   der anwaltlichen Tätigkeit. Die rechtliche Einschätzung und Verantwortung verbleibt beim
   bearbeitenden Rechtsanwalt. Eine eigenständige fachliche Prüfung aller Findings ist erforderlich."
