@@ -258,23 +258,6 @@ export function ContractAnalysisPanel({ documentId, canStartAnalysis, canReviewF
             </div>
           ) : null}
 
-          {/* BRAO § 43a — Rechtlicher Hinweis (nicht wegklickbar, Compliance) */}
-          {analysis.run.status === "COMPLETED" && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/50 px-4 py-3">
-              <div className="flex items-start gap-2.5">
-                <span className="text-base mt-0.5">⚖️</span>
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-800">Rechtlicher Hinweis — BRAO § 43a</p>
-                  <p className="mt-1 text-[12px] leading-relaxed text-amber-900">
-                    Diese KI-gestützte Analyse ist ein Arbeitshilfsmittel. Die rechtliche Einschätzung und Verantwortung
-                    verbleibt beim bearbeitenden Rechtsanwalt. Alle Findings sind vor Verwendung fachlich zu prüfen
-                    (Human-in-the-Loop erforderlich).
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* ============ FINDINGS — Summary + Accordion ============ */}
           {analysis.findings.length > 0 && (
             <div className="space-y-3">
