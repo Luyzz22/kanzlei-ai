@@ -478,6 +478,20 @@ ${classification.industryClassification === "Produktion" ? `
 - Drittlandübermittlung: DSGVO Art. 44 ff. bei Datentransfer außerhalb EU/EWR
 ` : ""}
 Erzeuge mindestens ein Finding mit Branchenbezug, wenn eine branchenspezifische Norm verletzt oder nicht adressiert wird.
+
+PFLICHT-BRANCHENFINDINGS bei Branche "Produktion" oder "International":
+Falls der Vertrag KEINE CE-Konformitätsklausel enthält (bei Industriekomponenten, Maschinen, Zulieferteilen):
+→ Erzeuge Finding: Kategorie "Branchenrecht", severity="mittel", Titel "Fehlende CE-Konformitätsklausel"
+→ Formulierungsvorschlag mit Konformitätsparagraph
+
+Falls der Vertrag KEINE Produkthaftpflichtversicherungsklausel für den Lieferanten enthält:
+→ Erzeuge Finding: Kategorie "Branchenrecht", severity="mittel", Titel "Fehlender Versicherungsnachweis des Lieferanten"
+→ Formulierungsvorschlag: Versicherungsnachweis-Klausel
+
+Falls der Vertrag ein LIEFERANTENVERTRAG für produzierte Waren ist UND keine LkSG-Klausel enthält:
+→ Erzeuge Finding: Kategorie "Compliance", severity="niedrig", Titel "Fehlende LkSG-Sorgfaltspflichtenklausel"
+→ Konfidenz bewusst niedrig (0.60-0.70): Anwendbarkeit abhängig von Unternehmensgröße
+→ Hinweis: "Anwendbarkeit des LkSG ist aus dem Vertrag nicht bestimmbar — bitte intern prüfen"
 ` : ""}
 BEISPIEL FÜR EIN FINDING:
 {
