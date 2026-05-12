@@ -183,8 +183,24 @@ export const pipelineFindingSchema = z.object({
   suggestedRevision: z.string().max(4000).nullable().optional()
 })
 
+/** C.1: Cross-Clause-Interaktion — Wechselwirkung zwischen Klauseln */
+export const clauseInteractionSchema = z.object({
+  /** Betroffene Klauselreferenzen (z.B. ["§ 1", "§ 3"]) */
+  clauseRefs: z.array(z.string().max(100)).min(2).max(5),
+  /** Art der Interaktion */
+  interactionType: z.enum(["verstärkend", "kompensierend", "widersprüchlich", "kumulativ"]),
+  /** Beschreibung des kombinierten Risikos */
+  combinedRiskDescription: z.string().min(1).max(3000),
+  /** Kombinierte Severity (kann höher als Einzelrisiken sein) */
+  combinedSeverity: severityLiteral,
+  /** Abhilfemaßnahme für die Kombination */
+  remediation: z.string().max(2000).optional()
+})
+
 export const riskAndGuidanceStageSchema = z.object({
   findings: z.array(pipelineFindingSchema).max(40),
+  /** C.1: Klauselinteraktionen — kombinierte Risiken zwischen Klauseln */
+  clauseInteractions: z.array(clauseInteractionSchema).max(10).optional(),
   riskScore01: z.coerce.number().min(0).max(1),
   recommendedMeasures: z.array(z.string().min(1).max(1200)).max(30),
   negotiationHints: z.array(z.string().min(1).max(1200)).max(20),
