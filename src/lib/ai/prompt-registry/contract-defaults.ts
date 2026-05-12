@@ -324,6 +324,49 @@ Wenn eine Klausel strafrechtlich relevantes Verhalten legitimieren könnte:
 - In "suggestedRevision" eine Klausel formulieren, die die legitimen Interessen schützt,
   ohne strafrechtliche Risiken zu schaffen
 
+RISIKOKALIBRIERUNGSMATRIX (B.4)
+Verwende die folgende Matrix als VERBINDLICHE Entscheidungsgrundlage für die severity-Einstufung.
+Die Matrix verhindert systematische Über- und Unterkalibrierung.
+
+severity = "hoch" — ZWINGEND bei mindestens EINEM der folgenden Kriterien:
+  a) Klausel ist nach zwingenden Rechtsnormen unwirksam (§ 276 Abs. 3 BGB, § 309 BGB)
+  b) Klausel legitimiert strafrechtlich relevantes Verhalten (§ 123, § 240, § 242, § 253 StGB)
+  c) DSGVO-Verstoß mit Bußgeldrisiko (fehlende AVV bei Datenverarbeitung, Art. 83 DSGVO)
+  d) Haftungsausschluss für Leben/Körper/Gesundheit oder grobe Fahrlässigkeit/Vorsatz
+  e) Vollständiger Ausschluss wesentlicher gesetzlicher Rechte (Rücktritt, Gewährleistung)
+     ohne jede Kompensation
+  f) Einseitige Vertragsänderung mit Zustimmungsfiktion (Schweigen = Zustimmung)
+  g) Vollständig unbegrenztes einseitiges Leistungsbestimmungsrecht (Preis, Umfang)
+     ohne Schutzmechanismus (keine Ankündigung, kein Sonderkündigungsrecht)
+
+severity = "mittel" — bei mindestens EINEM der folgenden Kriterien, SOFERN kein "hoch"-Kriterium greift:
+  a) Klausel ist nach AGB-Recht angreifbar, aber nicht zwingend unwirksam (§ 307 BGB Generalklausel)
+  b) Klausel weicht erheblich vom dispositiven Recht ab, aber ohne zwingende Unwirksamkeit
+  c) Unverhältnismäßige, aber nicht sittenwidrige Vertragsstrafe
+  d) Unangemessen kurze Fristen (Rüge, Kündigung), die aber nicht zu totalem Rechtsverlust führen
+  e) Einseitige Gerichtsstandsvereinbarung im B2B-Verkehr
+  f) Verzugszinsen über gesetzlichem Niveau, aber unter Wucher-Schwelle
+  g) Eingeschränktes (nicht vollständiges) Aufrechnungs-/Zurückbehaltungsverbot
+
+severity = "niedrig" — NUR wenn ALLE folgenden Bedingungen erfüllt sind:
+  a) Klausel ist grundsätzlich wirksam und branchenüblich
+  b) Kein Verstoß gegen zwingendes Recht
+  c) Geringe praktische Auswirkung auf die Vertragsbalance
+  d) Verbesserungspotenzial besteht, aber kein materielles Risiko
+
+KALIBRIERUNGS-KONTROLLREGEL:
+  - Prüfe JEDES Finding nach Einstufung nochmals gegen die Matrix.
+  - Wenn ein "hoch"-Kriterium erfüllt ist, DARF die Klausel NICHT als "mittel" eingestuft werden.
+  - Im Zweifel eine Stufe HÖHER einstufen — Unterkalibrierung ist gefährlicher als Überkalibrierung,
+    weil der Anwalt ein fälschlich als "mittel" eingestuftes Risiko deprioritisieren könnte.
+
+GESAMTRISIKO-SCORE (riskScore01) — Kalibrierungsanker:
+  - 0.0-0.3: Vertrag ist ausgewogen, geringe Risiken, branchenüblich
+  - 0.3-0.5: Einzelne problematische Klauseln, insgesamt aber akzeptabel
+  - 0.5-0.7: Mehrere erhebliche Risiken, Nachverhandlung empfohlen
+  - 0.7-0.85: Systematische Benachteiligung, dringende Nachverhandlung erforderlich
+  - 0.85-1.0: Vertrag enthält unwirksame/strafrechtlich relevante Klauseln, Unterzeichnung nicht empfohlen
+
 BEISPIEL FÜR EIN FINDING:
 {
   "category": "Vertragsstrafe",
