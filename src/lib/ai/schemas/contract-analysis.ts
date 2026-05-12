@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 /** Version der Prompts / Erwartungsstruktur — bei Schema-Änderungen erhöhen. */
-export const CONTRACT_ANALYSIS_PROMPT_VERSION = "2026-05-11"
+export const CONTRACT_ANALYSIS_PROMPT_VERSION = "2026-05-12"
 
 /**
  * UNIFIED ANALYSIS SCHEMA v3 (2026-05-11)
@@ -180,7 +180,22 @@ export const pipelineFindingSchema = z.object({
   /** v2: exaktes Zitat der Originalklausel (max 2000 Zeichen) */
   quote: z.string().max(2000).nullable().optional(),
   /** v2: konkreter Formulierungsvorschlag (neue Klauselfassung) */
-  suggestedRevision: z.string().max(4000).nullable().optional()
+  suggestedRevision: z.string().max(4000).nullable().optional(),
+  /** C.4: Konfidenz-Explainability — Aufschlüsselung der Konfidenz-Faktoren */
+  confidenceFactors: z.object({
+    /** Normklarheit (30%): BGH-Rspr eindeutig=1.0, streitig=0.4, kein Präzedenz=0.2 */
+    normClarity: z.coerce.number().min(0).max(1),
+    /** Klauselklarheit (25%): eindeutig=1.0, mehrdeutig=0.4, widersprüchlich=0.2 */
+    clauseClarity: z.coerce.number().min(0).max(1),
+    /** Vertragskontext (20%): AGB klar=1.0, Individualvertrag möglich=0.4, unklar=0.2 */
+    contractContext: z.coerce.number().min(0).max(1),
+    /** Branchenkompatibilität (15%): Standard klar=1.0, unklar=0.4, kein Kontext=0.2 */
+    industryFit: z.coerce.number().min(0).max(1),
+    /** Präzedenzlage (10%): BGH direkt=1.0, OLG=0.7, nur Literatur=0.4, Neuland=0.2 */
+    precedent: z.coerce.number().min(0).max(1),
+    /** Welcher Faktor die Konfidenz am stärksten begrenzt */
+    limitingFactor: z.string().max(200).optional()
+  }).nullable().optional()
 })
 
 /** C.1: Cross-Clause-Interaktion — Wechselwirkung zwischen Klauseln */
