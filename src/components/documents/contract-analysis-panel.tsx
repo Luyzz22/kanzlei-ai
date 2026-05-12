@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useFormState, useFormStatus } from "react-dom"
 
 import {
@@ -14,9 +15,7 @@ import type {
   WorkbenchDeadlines
 } from "@/types/ai-workbench"
 
-const initialState: ContractAnalysisFormState = {
-  status: "idle"
-}
+const initialState: ContractAnalysisFormState = { status: "idle" }
 
 function SubmitAnalysisButton() {
   const { pending } = useFormStatus()
@@ -36,242 +35,198 @@ function severityTone(sev: "NIEDRIG" | "MITTEL" | "HOCH"): "neutral" | "info" | 
   if (sev === "MITTEL") return "warning"
   return "risk"
 }
-
 function severityLabel(sev: "NIEDRIG" | "MITTEL" | "HOCH"): string {
   if (sev === "NIEDRIG") return "Niedrig"
   if (sev === "MITTEL") return "Mittel"
   return "Hoch"
 }
-
+function severityColor(sev: "NIEDRIG" | "MITTEL" | "HOCH") {
+  if (sev === "HOCH") return { dot: "bg-rose-500", border: "border-rose-200" }
+  if (sev === "MITTEL") return { dot: "bg-amber-500", border: "border-amber-200" }
+  return { dot: "bg-slate-400", border: "border-slate-200" }
+}
 function runStatusLabel(status: WorkbenchAiContractAnalysisProps["run"]["status"]): string {
-  switch (status) {
-    case "QUEUED":
-      return "Warteschlange"
-    case "RUNNING":
-      return "Läuft"
-    case "COMPLETED":
-      return "Abgeschlossen"
-    case "FAILED":
-      return "Fehlgeschlagen"
-    default:
-      return status
-  }
+  switch (status) { case "QUEUED": return "Warteschlange"; case "RUNNING": return "Läuft"; case "COMPLETED": return "Abgeschlossen"; case "FAILED": return "Fehlgeschlagen"; default: return status }
 }
-
 function runStatusTone(status: WorkbenchAiContractAnalysisProps["run"]["status"]): "neutral" | "info" | "success" | "risk" | "warning" {
-  if (status === "COMPLETED") return "success"
-  if (status === "FAILED") return "risk"
-  if (status === "RUNNING") return "info"
-  return "warning"
+  if (status === "COMPLETED") return "success"; if (status === "FAILED") return "risk"; if (status === "RUNNING") return "info"; return "warning"
 }
-
 function analysisReviewStateLabel(s: WorkbenchAiContractAnalysisProps["run"]["reviewState"]): string {
-  switch (s) {
-    case "UNGEPRUEFT":
-      return "Ungeprüft"
-    case "ENTWURF":
-      return "Entwurf"
-    case "ANALYSIERT":
-      return "Analysiert"
-    case "IN_PRUEFUNG":
-      return "In Prüfung"
-    case "FREIGEGEBEN":
-      return "Freigegeben"
-    case "ZURUECKGEWIESEN":
-      return "Zurückgewiesen"
-    case "WIEDERHOLUNG_ANGEFORDERT":
-      return "Erneut analysieren"
-    default:
-      return s
-  }
+  switch (s) { case "UNGEPRUEFT": return "Ungeprüft"; case "ENTWURF": return "Entwurf"; case "ANALYSIERT": return "Analysiert"; case "IN_PRUEFUNG": return "In Prüfung"; case "FREIGEGEBEN": return "Freigegeben"; case "ZURUECKGEWIESEN": return "Zurückgewiesen"; case "WIEDERHOLUNG_ANGEFORDERT": return "Erneut analysieren"; default: return s }
 }
-
 function findingDecisionLabel(d: string): string {
-  switch (d) {
-    case "AKZEPTIERT":
-      return "Akzeptiert"
-    case "ABGELEHNT":
-      return "Abgelehnt"
-    case "ANGEPASST":
-      return "Angepasst"
-    default:
-      return d
-  }
+  switch (d) { case "AKZEPTIERT": return "Akzeptiert"; case "ABGELEHNT": return "Abgelehnt"; case "ANGEPASST": return "Angepasst"; default: return d }
 }
-
 function providerLabel(p: string | null): string {
-  if (!p) return "—"
-  switch (p) {
-    case "OPENAI":
-      return "OpenAI"
-    case "ANTHROPIC":
-      return "Anthropic"
-    case "GOOGLE_GEMINI":
-      return "Gemini"
-    case "LLAMA_COMPAT":
-      return "Llama-kompatibel"
-    default:
-      return p
-  }
+  if (!p) return "—"; switch (p) { case "OPENAI": return "OpenAI"; case "ANTHROPIC": return "Anthropic"; case "GOOGLE_GEMINI": return "Gemini"; case "LLAMA_COMPAT": return "Llama-kompatibel"; default: return p }
 }
 
-type ContractAnalysisPanelProps = {
-  documentId: string
-  canStartAnalysis: boolean
-  canReviewFindings: boolean
-  analysis: WorkbenchAiContractAnalysisProps | null
-}
-
-// --- v2 Helper functions for structuredData + deadlines rendering ---
-
-function hasAnyStructuredDataField(sd: WorkbenchStructuredData): boolean {
-  return Object.values(sd).some((v) => v !== null && v !== undefined && v !== "")
-}
-
-function hasAnyDeadlinesField(d: WorkbenchDeadlines): boolean {
-  return Object.values(d).some((v) => v !== null && v !== undefined && v !== "")
-}
-
-function formatBoolean(v: boolean | null | undefined): string | null {
-  if (v === true) return "Ja"
-  if (v === false) return "Nein"
-  return null
-}
-
-function formatDays(v: number | null | undefined): string | null {
-  if (v == null) return null
-  return `${v} Tage`
-}
-
-function formatMonths(v: number | null | undefined): string | null {
-  if (v == null) return null
-  return `${v} Monate`
-}
+function hasAnyStructuredDataField(sd: WorkbenchStructuredData): boolean { return Object.values(sd).some((v) => v !== null && v !== undefined && v !== "") }
+function hasAnyDeadlinesField(d: WorkbenchDeadlines): boolean { return Object.values(d).some((v) => v !== null && v !== undefined && v !== "") }
+function formatBoolean(v: boolean | null | undefined): string | null { if (v === true) return "Ja"; if (v === false) return "Nein"; return null }
+function formatDays(v: number | null | undefined): string | null { if (v == null) return null; return `${v} Tage` }
+function formatMonths(v: number | null | undefined): string | null { if (v == null) return null; return `${v} Monate` }
 
 function StructuredDataRow({ label, value }: { label: string; value: string | null | undefined }) {
   if (value == null || value === "") return null
+  return (<div className="flex flex-col"><dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</dt><dd className="mt-0.5 text-sm text-slate-800">{value}</dd></div>)
+}
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (<svg className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>)
+}
+
+type ContractAnalysisPanelProps = { documentId: string; canStartAnalysis: boolean; canReviewFindings: boolean; analysis: WorkbenchAiContractAnalysisProps | null }
+
+/* ================================================================== */
+/* SUMMARY BAR                                                       */
+/* ================================================================== */
+function FindingsSummaryBar({ findings, riskScore, filter, onFilter }: {
+  findings: WorkbenchAiContractAnalysisProps["findings"]; riskScore: number | null
+  filter: "ALL" | "HOCH" | "MITTEL" | "NIEDRIG"; onFilter: (f: "ALL" | "HOCH" | "MITTEL" | "NIEDRIG") => void
+}) {
+  const hoch = findings.filter(f => f.severity === "HOCH").length
+  const mittel = findings.filter(f => f.severity === "MITTEL").length
+  const niedrig = findings.filter(f => f.severity === "NIEDRIG").length
+  const scorePercent = riskScore != null ? Math.round(riskScore * 100) : null
+  const scoreColor = riskScore != null ? (riskScore >= 0.7 ? "text-rose-600" : riskScore >= 0.4 ? "text-amber-600" : "text-emerald-600") : "text-slate-400"
+
   return (
-    <div className="flex flex-col">
-      <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</dt>
-      <dd className="mt-0.5 text-sm text-slate-800">{value}</dd>
+    <div className="flex flex-wrap items-center gap-2">
+      <button onClick={() => onFilter("ALL")} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${filter === "ALL" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>Alle ({findings.length})</button>
+      <button onClick={() => onFilter("HOCH")} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${filter === "HOCH" ? "bg-rose-600 text-white" : "bg-rose-50 text-rose-700 hover:bg-rose-100"}`}>Hoch ({hoch})</button>
+      <button onClick={() => onFilter("MITTEL")} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${filter === "MITTEL" ? "bg-amber-500 text-white" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}>Mittel ({mittel})</button>
+      <button onClick={() => onFilter("NIEDRIG")} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${filter === "NIEDRIG" ? "bg-slate-600 text-white" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`}>Niedrig ({niedrig})</button>
+      {scorePercent != null && (<div className="ml-auto flex items-center gap-2"><span className="text-[11px] font-medium text-slate-400">Risiko</span><span className={`text-lg font-bold tabular-nums ${scoreColor}`}>{scorePercent}%</span></div>)}
     </div>
   )
 }
 
-export function ContractAnalysisPanel({
-  documentId,
-  canStartAnalysis,
-  canReviewFindings,
-  analysis
-}: ContractAnalysisPanelProps) {
+/* ================================================================== */
+/* FINDING CARD — Accordion                                          */
+/* ================================================================== */
+function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
+  finding: WorkbenchAiContractAnalysisProps["findings"][0]; isOpen: boolean; onToggle: () => void; canReview: boolean; documentId: string
+}) {
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const colors = severityColor(finding.severity)
+  return (
+    <div className={`rounded-xl border transition-colors ${isOpen ? colors.border : "border-slate-100"} bg-white`}>
+      <button type="button" onClick={onToggle} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${colors.dot}`} />
+        <span className="flex-1 min-w-0">
+          <span className="text-[13px] font-medium text-slate-900 line-clamp-1">{finding.title}</span>
+          <span className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400">
+            {finding.clauseRef && <span>{finding.clauseRef}</span>}
+            {finding.confidence != null && <span>· Konfidenz {(finding.confidence * 100).toFixed(0)}%</span>}
+          </span>
+        </span>
+        <StatusBadge label={severityLabel(finding.severity)} tone={severityTone(finding.severity)} />
+        <ChevronIcon open={isOpen} />
+      </button>
+      {isOpen && (
+        <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
+          <p className="text-[13px] leading-relaxed text-slate-700">{finding.description}</p>
+          {finding.sourceSpan && (<blockquote className="border-l-4 border-slate-300 bg-slate-50 py-2.5 pl-3 pr-3 text-[12px] italic leading-relaxed text-slate-600 rounded-r-lg">&ldquo;{finding.sourceSpan}&rdquo;</blockquote>)}
+          {finding.suggestedRevision && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">Formulierungsvorschlag</p>
+              <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-relaxed text-emerald-900">{finding.suggestedRevision}</p>
+            </div>
+          )}
+          {finding.latestReview && (
+            <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
+              <span className="font-medium">Letzte Prüfung:</span>
+              <span>{findingDecisionLabel(finding.latestReview.decision)}</span>
+              {finding.latestReview.comment && <span>— {finding.latestReview.comment}</span>}
+              <span className="ml-auto text-slate-400">{new Date(finding.latestReview.reviewedAt).toLocaleString("de-DE")}</span>
+            </div>
+          )}
+          {canReview && (
+            <>
+              {!reviewOpen ? (
+                <button type="button" onClick={() => setReviewOpen(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  Prüfen &amp; Entscheiden
+                </button>
+              ) : (
+                <div className="relative">
+                  <button type="button" onClick={() => setReviewOpen(false)} className="absolute -top-1 right-0 text-[11px] text-slate-400 hover:text-slate-600">Schließen ✕</button>
+                  <AnalysisFindingReviewForm documentId={documentId} findingId={finding.id} />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ================================================================== */
+/* MAIN PANEL                                                        */
+/* ================================================================== */
+export function ContractAnalysisPanel({ documentId, canStartAnalysis, canReviewFindings, analysis }: ContractAnalysisPanelProps) {
   const [state, formAction] = useFormState(startContractAnalysisAction, initialState)
+  const [severityFilter, setSeverityFilter] = useState<"ALL" | "HOCH" | "MITTEL" | "NIEDRIG">("ALL")
+  const [openFindings, setOpenFindings] = useState<Set<string>>(new Set())
+  const [metaOpen, setMetaOpen] = useState(false)
+
+  function toggleFinding(id: string) { setOpenFindings(prev => { const next = new Set(prev); if (next.has(id)) { next.delete(id) } else { next.add(id) }; return next }) }
+  function expandAll() { if (!analysis) return; setOpenFindings(new Set(getFilteredFindings().map(f => f.id))) }
+  function collapseAll() { setOpenFindings(new Set()) }
+  function getFilteredFindings() { if (!analysis) return []; if (severityFilter === "ALL") return analysis.findings; return analysis.findings.filter(f => f.severity === severityFilter) }
 
   return (
     <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">KI-Vertragsanalyse</p>
-        <p className="mt-1 text-sm text-slate-600">
-          Mehrstufige Pipeline: strukturierte Extraktion, Risiko- und Klauselanalyse, Handlungsempfehlungen. Ergebnisse werden
-          mandantenbezogen gespeichert und sind zur fachlichen Prüfung vorgesehen (keine automatische Rechtsberatung).
-        </p>
+        <p className="mt-1 text-sm text-slate-600">Mehrstufige Pipeline: strukturierte Extraktion, Risiko- und Klauselanalyse, Handlungsempfehlungen. Ergebnisse werden mandantenbezogen gespeichert und sind zur fachlichen Prüfung vorgesehen (keine automatische Rechtsberatung).</p>
       </div>
 
       {canStartAnalysis ? (
         <form action={formAction} className="flex flex-wrap items-center gap-3">
           <input type="hidden" name="documentId" value={documentId} />
           <SubmitAnalysisButton />
-          {state.message ? (
-            <p className={`text-sm ${state.status === "success" ? "text-emerald-700" : "text-rose-700"}`}>{state.message}</p>
-          ) : null}
+          {state.message ? (<p className={`text-sm ${state.status === "success" ? "text-emerald-700" : "text-rose-700"}`}>{state.message}</p>) : null}
         </form>
-      ) : (
-        <p className="text-sm text-slate-600">Start erst nach erfolgreicher Textextraktion möglich.</p>
-      )}
+      ) : (<p className="text-sm text-slate-600">Start erst nach erfolgreicher Textextraktion möglich.</p>)}
 
       {analysis ? (
         <div className="space-y-4 border-t border-slate-100 pt-4">
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="text-slate-500">Letzter Lauf:</span>
-            <StatusBadge label={runStatusLabel(analysis.run.status)} tone={runStatusTone(analysis.run.status)} />
-            <span className="text-slate-500">
-              {new Date(analysis.run.startedAt).toLocaleString("de-DE")}
-              {analysis.run.completedAt ? ` – ${new Date(analysis.run.completedAt).toLocaleString("de-DE")}` : ""}
-            </span>
+            <p className="text-xs text-slate-500">KI-Vertragsanalyse{" "}<StatusBadge label={runStatusLabel(analysis.run.status)} tone={runStatusTone(analysis.run.status)} />{analysis.run.completedAt ? `. Ergebnisse sind unten einsehbar — bitte fachlich prüfen (Human-in-the-Loop).` : null}</p>
           </div>
 
-          <div className="grid gap-2 text-sm sm:grid-cols-2">
-            <p>
-              <span className="text-xs uppercase tracking-wide text-slate-500">Anbieter / Modell</span>
-              <br />
-              <span className="font-medium text-slate-900">
-                {providerLabel(analysis.run.primaryProvider)}
-                {analysis.run.primaryModel ? ` · ${analysis.run.primaryModel}` : ""}
-              </span>
-            </p>
-            <p>
-              <span className="text-xs uppercase tracking-wide text-slate-500">Lauf / Prüfstatus</span>
-              <br />
-              <span className="font-medium text-slate-900">
-                #{analysis.run.runSequence} · {analysisReviewStateLabel(analysis.run.reviewState)}
-              </span>
-            </p>
-            <p>
-              <span className="text-xs uppercase tracking-wide text-slate-500">Risikoindikator (0–1)</span>
-              <br />
-              <span className="font-medium text-slate-900">
-                {analysis.run.riskScore01 != null ? analysis.run.riskScore01.toFixed(2) : "—"}
-              </span>
-            </p>
-            <p>
-              <span className="text-xs uppercase tracking-wide text-slate-500">Konfidenz</span>
-              <br />
-              <span className="font-medium text-slate-900">
-                {analysis.run.aggregateConfidence != null ? analysis.run.aggregateConfidence.toFixed(2) : "—"}
-              </span>
-            </p>
-            <p>
-              <span className="text-xs uppercase tracking-wide text-slate-500">Strukturierte Ausgabe</span>
-              <br />
-              <span className="font-medium text-slate-900">{analysis.run.structuredOutputValid ? "Validiert" : "Nicht valide"}</span>
-            </p>
-            <p className="sm:col-span-2">
-              <span className="text-xs uppercase tracking-wide text-slate-500">Prompts (Extraktion / Risiko)</span>
-              <br />
-              <span className="font-mono text-xs text-slate-800">
-                {analysis.run.extractionPromptKey}@{analysis.run.extractionPromptVersion} · {analysis.run.riskPromptKey}@
-                {analysis.run.riskPromptVersion}
-              </span>
-            </p>
-          </div>
+          {/* Collapsible Run Metadata */}
+          <button type="button" onClick={() => setMetaOpen(!metaOpen)} className="flex w-full items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[11px] font-medium text-slate-500 hover:bg-slate-100 transition-colors">
+            <ChevronIcon open={metaOpen} />
+            <span>Lauf #{analysis.run.runSequence} · {providerLabel(analysis.run.primaryProvider)} · {analysis.run.primaryModel}</span>
+            <span className="ml-auto"><StatusBadge label={analysisReviewStateLabel(analysis.run.reviewState)} tone="neutral" /></span>
+          </button>
 
-          {analysis.run.routerSummary ? (
-            <p className="text-xs text-slate-600">
-              <span className="font-semibold text-slate-700">Routing / Protokoll: </span>
-              {analysis.run.routerSummary}
-            </p>
-          ) : null}
+          {metaOpen && (
+            <div className="grid gap-x-6 gap-y-2 rounded-lg border border-slate-100 bg-slate-50/60 p-4 text-sm sm:grid-cols-2">
+              <p><span className="text-xs uppercase tracking-wide text-slate-500">Letzter Lauf</span><br /><StatusBadge label={runStatusLabel(analysis.run.status)} tone={runStatusTone(analysis.run.status)} /></p>
+              {analysis.run.startedAt ? (<p><span className="text-xs uppercase tracking-wide text-slate-500">Zeitraum</span><br /><span className="font-medium text-slate-900">{new Date(analysis.run.startedAt).toLocaleString("de-DE")}{analysis.run.completedAt ? ` – ${new Date(analysis.run.completedAt).toLocaleString("de-DE")}` : ""}</span></p>) : null}
+              <p><span className="text-xs uppercase tracking-wide text-slate-500">Anbieter / Modell</span><br /><span className="font-medium text-slate-900">{providerLabel(analysis.run.primaryProvider)} · {analysis.run.primaryModel}</span></p>
+              <p><span className="text-xs uppercase tracking-wide text-slate-500">Risikoindikator</span><br /><span className="font-medium text-slate-900">{analysis.run.riskScore01?.toFixed(2) ?? "—"}</span></p>
+              <p><span className="text-xs uppercase tracking-wide text-slate-500">Konfidenz</span><br /><span className="font-medium text-slate-900">{analysis.run.aggregateConfidence?.toFixed(2) ?? "—"}</span></p>
+              <p><span className="text-xs uppercase tracking-wide text-slate-500">Strukturierte Ausgabe</span><br /><span className="font-medium text-slate-900">{analysis.run.structuredOutputValid ? "Validiert" : "Nicht valide"}</span></p>
+              <p className="sm:col-span-2"><span className="text-xs uppercase tracking-wide text-slate-500">Prompts</span><br /><span className="font-mono text-xs text-slate-800">{analysis.run.extractionPromptKey}@{analysis.run.extractionPromptVersion} · {analysis.run.riskPromptKey}@{analysis.run.riskPromptVersion}</span></p>
+              {analysis.run.routerSummary ? (<p className="sm:col-span-2 text-xs text-slate-600"><span className="font-semibold text-slate-700">Routing: </span>{analysis.run.routerSummary}</p>) : null}
+            </div>
+          )}
 
-          {analysis.run.status === "FAILED" ? (
-            <p className="text-sm text-rose-700">
-              {analysis.run.errorCode ? `Fehlercode: ${analysis.run.errorCode}. ` : null}
-              {analysis.run.fallbackReason ?? analysis.run.validationErrorSummary ?? "Die Analyse ist fehlgeschlagen."}
-            </p>
-          ) : null}
+          {analysis.run.status === "FAILED" ? (<p className="text-sm text-rose-700">{analysis.run.errorCode ? `Fehlercode: ${analysis.run.errorCode}. ` : null}{analysis.run.fallbackReason ?? analysis.run.validationErrorSummary ?? "Die Analyse ist fehlgeschlagen."}</p>) : null}
 
+          {/* Extraction */}
           {analysis.extraction ? (
             <div className="space-y-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Extraktion</p>
-                <p className="mt-1 text-sm font-medium text-slate-900">Vertragstyp: {analysis.extraction.contractType}</p>
-              </div>
-
-              {/* v2: Strukturierte Businessdaten als 2-Spalten-Grid */}
-              {analysis.extraction.structuredData &&
-              hasAnyStructuredDataField(analysis.extraction.structuredData) ? (
+              <div><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Extraktion</p><p className="mt-1 text-sm font-medium text-slate-900">Vertragstyp: {analysis.extraction.contractType}</p></div>
+              {analysis.extraction.structuredData && hasAnyStructuredDataField(analysis.extraction.structuredData) ? (
                 <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    📊 Extrahierte Daten
-                  </p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">📊 Extrahierte Daten</p>
                   <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
                     <StructuredDataRow label="Kunde" value={analysis.extraction.structuredData.customer} />
                     <StructuredDataRow label="Anbieter" value={analysis.extraction.structuredData.vendor} />
@@ -279,149 +234,64 @@ export function ContractAnalysisPanel({
                     <StructuredDataRow label="Gerichtsstand" value={analysis.extraction.structuredData.jurisdiction} />
                     <StructuredDataRow label="Anwendbares Recht" value={analysis.extraction.structuredData.applicableLaw} />
                     <StructuredDataRow label="Haftungsgrenze" value={analysis.extraction.structuredData.liabilityLimit} />
-                    <StructuredDataRow
-                      label="Geheimhaltung"
-                      value={formatBoolean(analysis.extraction.structuredData.confidentialityObligation)}
-                    />
+                    <StructuredDataRow label="Geheimhaltung" value={formatBoolean(analysis.extraction.structuredData.confidentialityObligation)} />
                     <StructuredDataRow label="Vertragsstrafe" value={analysis.extraction.structuredData.penaltyClause} />
                     <StructuredDataRow label="IP-Rechte" value={analysis.extraction.structuredData.intellectualProperty} />
-                    <StructuredDataRow
-                      label="AVV vorhanden"
-                      value={formatBoolean(analysis.extraction.structuredData.dataProcessingAgreement)}
-                    />
-                    <StructuredDataRow label="Datenlokation" value={analysis.extraction.structuredData.dataLocation} />
-                    <StructuredDataRow
-                      label="Datenexport-Klausel"
-                      value={formatBoolean(analysis.extraction.structuredData.dataExportClause)}
-                    />
+                    <StructuredDataRow label="AVV vorhanden" value={formatBoolean(analysis.extraction.structuredData.dataProcessingAgreement)} />
                   </dl>
                 </div>
               ) : null}
-
-              {/* v2: Deadlines-Strip */}
-              {analysis.extraction.deadlines &&
-              hasAnyDeadlinesField(analysis.extraction.deadlines) ? (
+              {analysis.extraction.deadlines && hasAnyDeadlinesField(analysis.extraction.deadlines) ? (
                 <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    📅 Fristen &amp; Termine
-                  </p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">📅 Fristen &amp; Termine</p>
                   <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-                    <StructuredDataRow
-                      label="Kündigungsfrist"
-                      value={formatDays(analysis.extraction.deadlines.noticePeriodDays)}
-                    />
-                    <StructuredDataRow
-                      label="Auto-Verlängerung"
-                      value={formatBoolean(analysis.extraction.deadlines.autoRenewal)}
-                    />
-                    <StructuredDataRow
-                      label="Verlängerungszeitraum"
-                      value={formatMonths(analysis.extraction.deadlines.renewalTermMonths)}
-                    />
-                    <StructuredDataRow
-                      label="Vertragsbeginn"
-                      value={analysis.extraction.deadlines.contractStartDate}
-                    />
-                    <StructuredDataRow
-                      label="Vertragsende"
-                      value={analysis.extraction.deadlines.contractEndDate}
-                    />
-                    <StructuredDataRow
-                      label="Nächster Kündigungstermin"
-                      value={analysis.extraction.deadlines.nextCancellationDate}
-                    />
-                    <StructuredDataRow
-                      label="Gewährleistung"
-                      value={formatMonths(analysis.extraction.deadlines.warrantyPeriodMonths)}
-                    />
+                    <StructuredDataRow label="Kündigungsfrist" value={formatDays(analysis.extraction.deadlines.noticePeriodDays)} />
+                    <StructuredDataRow label="Auto-Verlängerung" value={formatBoolean(analysis.extraction.deadlines.autoRenewal)} />
+                    <StructuredDataRow label="Verlängerungszeitraum" value={formatMonths(analysis.extraction.deadlines.renewalTermMonths)} />
+                    <StructuredDataRow label="Vertragsbeginn" value={analysis.extraction.deadlines.contractStartDate} />
+                    <StructuredDataRow label="Vertragsende" value={analysis.extraction.deadlines.contractEndDate} />
+                    <StructuredDataRow label="Nächster Kündigungstermin" value={analysis.extraction.deadlines.nextCancellationDate} />
+                    <StructuredDataRow label="Gewährleistung" value={formatMonths(analysis.extraction.deadlines.warrantyPeriodMonths)} />
                   </dl>
                 </div>
               ) : null}
             </div>
           ) : null}
 
-          {analysis.findings.length ? (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Wesentliche Findings</p>
-              <ul className="mt-2 space-y-3">
-                {analysis.findings.slice(0, 12).map((f) => (
-                  <li key={f.id} className="rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-sm">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <span className="font-medium text-slate-900">{f.title}</span>
-                      <StatusBadge label={severityLabel(f.severity)} tone={severityTone(f.severity)} />
-                    </div>
-                    <p className="mt-2 text-slate-700">{f.description}</p>
-
-                    {/* v2: Original-Klauselzitat als Blockquote */}
-                    {f.sourceSpan ? (
-                      <blockquote className="mt-3 border-l-4 border-slate-300 bg-slate-50 py-2 pl-3 pr-3 text-xs italic leading-relaxed text-slate-600">
-                        &ldquo;{f.sourceSpan}&rdquo;
-                      </blockquote>
-                    ) : null}
-
-                    {/* v2: Formulierungsvorschlag als Fix-Kasten */}
-                    {f.suggestedRevision ? (
-                      <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50/60 p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
-                          ✏️ Formulierungsvorschlag
-                        </p>
-                        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-emerald-900">
-                          {f.suggestedRevision}
-                        </p>
-                      </div>
-                    ) : null}
-
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                      {f.confidence != null ? <span>Konfidenz: {f.confidence.toFixed(2)}</span> : null}
-                      {f.clauseRef ? <span>Klauselbezug: {f.clauseRef}</span> : null}
-                    </div>
-
-                    {f.latestReview ? (
-                      <p className="mt-2 text-xs text-slate-600">
-                        Letzte Prüfung: {findingDecisionLabel(f.latestReview.decision)}
-                        {f.latestReview.comment ? ` — ${f.latestReview.comment}` : ""} ·{" "}
-                        {new Date(f.latestReview.reviewedAt).toLocaleString("de-DE")}
-                      </p>
-                    ) : null}
-                    {canReviewFindings && analysis.run.status === "COMPLETED" ? (
-                      <AnalysisFindingReviewForm documentId={documentId} findingId={f.id} />
-                    ) : null}
-                  </li>
+          {/* ============ FINDINGS — Summary + Accordion ============ */}
+          {analysis.findings.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Findings ({analysis.findings.length})</p>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={expandAll} className="text-[11px] text-slate-400 hover:text-slate-600">Alle öffnen</button>
+                  <span className="text-slate-200">|</span>
+                  <button type="button" onClick={collapseAll} className="text-[11px] text-slate-400 hover:text-slate-600">Alle schließen</button>
+                </div>
+              </div>
+              <FindingsSummaryBar findings={analysis.findings} riskScore={analysis.run.riskScore01} filter={severityFilter} onFilter={setSeverityFilter} />
+              <div className="space-y-2">
+                {getFilteredFindings().map((f) => (
+                  <FindingCard key={f.id} finding={f} isOpen={openFindings.has(f.id)} onToggle={() => toggleFinding(f.id)} canReview={canReviewFindings && analysis.run.status === "COMPLETED"} documentId={documentId} />
                 ))}
-              </ul>
+              </div>
             </div>
-          ) : null}
+          )}
 
+          {/* Recommendations */}
           {analysis.risk ? (
             <div className="space-y-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Empfohlene Maßnahmen</p>
-                <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-slate-700">
-                  {analysis.risk.recommendedMeasures.map((m, i) => (
-                    <li key={`m-${i}`}>{m}</li>
-                  ))}
-                </ul>
+              <div><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Empfohlene Maßnahmen</p>
+                <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-slate-700">{analysis.risk.recommendedMeasures.map((m, i) => (<li key={`m-${i}`}>{m}</li>))}</ul>
               </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Verhandlungshinweise</p>
-                <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-slate-700">
-                  {analysis.risk.negotiationHints.map((m, i) => (
-                    <li key={`h-${i}`}>{m}</li>
-                  ))}
-                </ul>
+              <div><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Verhandlungshinweise</p>
+                <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-slate-700">{analysis.risk.negotiationHints.map((m, i) => (<li key={`h-${i}`}>{m}</li>))}</ul>
               </div>
-              {analysis.risk.explanationSummary ? (
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Kurzbegründung</p>
-                  <p className="mt-1 text-sm text-slate-700">{analysis.risk.explanationSummary}</p>
-                </div>
-              ) : null}
+              {analysis.risk.explanationSummary ? (<div><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Kurzbegründung</p><p className="mt-1 text-sm text-slate-700">{analysis.risk.explanationSummary}</p></div>) : null}
             </div>
           ) : null}
         </div>
-      ) : (
-        <p className="border-t border-slate-100 pt-4 text-sm text-slate-600">Noch keine gespeicherte KI-Analyse für dieses Dokument.</p>
-      )}
+      ) : (<p className="border-t border-slate-100 pt-4 text-sm text-slate-600">Noch keine gespeicherte KI-Analyse für dieses Dokument.</p>)}
     </div>
   )
 }
