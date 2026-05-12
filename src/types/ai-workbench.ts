@@ -59,8 +59,30 @@ export type WorkbenchDeadlines = {
   warrantyPeriodMonths?: number | null
 }
 
+export type WorkbenchClassification = {
+  contractClassification: string | null
+  partyConstellation: string | null
+  clientRole: string | null
+  industryClassification: string | null
+  internationalElement: boolean | null
+  agbKontrolleAnwendbar: boolean | null
+  agbKontrollmassstab: string | null
+  classificationSummary: string | null
+  classificationConfidence: number | null
+}
+
+export type WorkbenchConfidenceFactors = {
+  normClarity: number
+  clauseClarity: number
+  contractContext: number
+  industryFit: number
+  precedent: number
+  limitingFactor?: string | null
+}
+
 export type WorkbenchAiContractAnalysisProps = {
   run: WorkbenchAiRunSummary
+  classification: WorkbenchClassification | null
   extraction: {
     contractType: string
     parties: unknown
@@ -82,6 +104,8 @@ export type WorkbenchAiContractAnalysisProps = {
     sourceSpan: string | null
     /** v2 — konkreter Formulierungsvorschlag, bei alten Findings null. */
     suggestedRevision: string | null
+    /** v3 — Konfidenz-Aufschlüsselung (C.4) */
+    confidenceFactors: WorkbenchConfidenceFactors | null
     latestReview: {
       decision: string
       comment: string | null
