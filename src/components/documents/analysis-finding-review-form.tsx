@@ -42,12 +42,13 @@ function SubmitReviewButton() {
   )
 }
 
-type Props = {
+export type ReviewFormProps = {
   documentId: string
   findingId: string
+  currentSuggestedRevision?: string | null
 }
 
-export function AnalysisFindingReviewForm({ documentId, findingId }: Props) {
+export function AnalysisFindingReviewForm({ documentId, findingId, currentSuggestedRevision }: ReviewFormProps) {
   const [state, action] = useFormState(submitAnalysisFindingReviewAction, initial)
 
   return (
@@ -99,6 +100,16 @@ export function AnalysisFindingReviewForm({ documentId, findingId }: Props) {
             rows={2}
             className={inputClass}
             placeholder="Optional: alternative Formulierung des Findings …"
+          />
+        </label>
+        <label className={`${labelClass} sm:col-span-2`}>
+          Angepasster Formulierungsvorschlag (nur bei &bdquo;Angepasst&ldquo;)
+          <textarea
+            name="modifiedSuggestedRevision"
+            rows={4}
+            className={inputClass}
+            defaultValue={currentSuggestedRevision ?? ""}
+            placeholder="Überarbeitete Vertragsklausel — direkt einsatzbereit …"
           />
         </label>
       </div>
