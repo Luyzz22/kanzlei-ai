@@ -67,6 +67,10 @@ export type WorkbenchAiContractAnalysis = {
     | "extractionPromptVersion"
     | "riskPromptKey"
     | "riskPromptVersion"
+    | "classificationJson"
+    | "contractClassification"
+    | "partyConstellation"
+    | "agbKontrolleAnwendbar"
   >
   extraction: {
     contractType: string
@@ -163,7 +167,12 @@ export async function getWorkbenchAiContractAnalysis(
         extractionPromptKey: run.extractionPromptKey,
         extractionPromptVersion: run.extractionPromptVersion,
         riskPromptKey: run.riskPromptKey,
-        riskPromptVersion: run.riskPromptVersion
+        riskPromptVersion: run.riskPromptVersion,
+        // v3: Classification
+        classificationJson: run.classificationJson ?? null,
+        contractClassification: run.contractClassification ?? null,
+        partyConstellation: run.partyConstellation ?? null,
+        agbKontrolleAnwendbar: run.agbKontrolleAnwendbar ?? null
       },
       extraction: run.extraction
         ? {
