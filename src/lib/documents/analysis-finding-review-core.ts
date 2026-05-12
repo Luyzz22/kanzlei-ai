@@ -27,6 +27,7 @@ export async function submitAnalysisFindingReview(input: {
   comment?: string | null
   modifiedTitle?: string | null
   modifiedDescription?: string | null
+  modifiedSuggestedRevision?: string | null
 }): Promise<SubmitFindingReviewResult> {
   if (!canReviewContractAnalysisFindings(input.actorPlatformRole, input.actorTenantRole)) {
     return { ok: false, code: "FORBIDDEN", message: "Keine Berechtigung für die Finding-Prüfung." }
@@ -35,6 +36,7 @@ export async function submitAnalysisFindingReview(input: {
   const comment = input.comment?.trim() || null
   const modifiedTitle = input.modifiedTitle?.trim() || null
   const modifiedDescription = input.modifiedDescription?.trim() || null
+  const modifiedSuggestedRevision = input.modifiedSuggestedRevision?.trim() || null
 
   if (input.decision === FindingReviewDecision.ABGELEHNT && !comment) {
     return {
@@ -83,7 +85,8 @@ export async function submitAnalysisFindingReview(input: {
         decision: input.decision,
         comment,
         modifiedTitle: input.decision === FindingReviewDecision.ANGEPASST ? modifiedTitle : null,
-        modifiedDescription: input.decision === FindingReviewDecision.ANGEPASST ? modifiedDescription : null
+        modifiedDescription: input.decision === FindingReviewDecision.ANGEPASST ? modifiedDescription : null,
+        modifiedSuggestedRevision: input.decision === FindingReviewDecision.ANGEPASST ? modifiedSuggestedRevision : null
       }
     })
 
@@ -112,6 +115,74 @@ export async function submitAnalysisFindingReview(input: {
         analysisRunId: finding.analysisRunId,
         decision: input.decision,
         hasComment: Boolean(comment)
+      } satisfies Prisma.InputJsonValue
+    })
+
+    return { ok: true as const }
+  })
+}
+
+// =====================================================================
+// Freigabe — Analyse abschließen
+// =====================================================================
+
+export type FinalizeReviewResult =
+  | { ok: true }
+  | { ok: false; code: "FORBIDDEN" | "NOT_FOUND" | "INCOMPLETE"; message: string }
+
+export async function finalizeAnalysisReview(input: {
+  tenantId: string
+  actorId: string
+  actorPlatformRole: Role
+  actorTenantRole: TenantRole
+  documentId: string
+  analysisRunId: string
+}): Promise<FinalizeReviewResult> {
+  if (!canReviewContractAnalysisFindings(input.actorPlatformRole, input.actorTenantRole)) {
+    return { ok: false, code: "FORBIDDEN", message: "Keine Berechtigung für die Freigabe." }
+  }
+
+  return withTenant(input.tenantId, async (tx) => {
+    const run = await tx.analysisRun.findFirst({
+      where: { id: input.analysisRunId, tenantId: input.tenantId, documentId: input.documentId },
+      select: { id: true, reviewState: true, _count: { select: { findings: true } } }
+    })
+    if (!run) {
+      return { ok: false as const, code: "NOT_FOUND" as const, message: "Analyselauf nicht gefunden." }
+    }
+
+    // Prüfe ob alle Findings mindestens eine Review haben
+    const findingsWithoutReview = await tx.analysisFinding.count({
+      where: {
+        analysisRunId: input.analysisRunId,
+        tenantId: input.tenantId,
+        reviews: { none: {} }
+      }
+    })
+
+    if (findingsWithoutReview > 0) {
+      return {
+        ok: false as const,
+        code: "INCOMPLETE" as const,
+        message: `Noch ${findingsWithoutReview} Finding(s) ohne Prüfung. Bitte alle Findings prüfen, bevor die Analyse freigegeben wird.`
+      }
+    }
+
+    await tx.analysisRun.update({
+      where: { id: run.id },
+      data: { reviewState: AnalysisReviewState.FREIGEGEBEN }
+    })
+
+    await writeAuditEventTx(tx, {
+      tenantId: input.tenantId,
+      actorId: input.actorId,
+      action: "analysis.run.finalized",
+      resourceType: "analysisRun",
+      resourceId: run.id,
+      documentId: input.documentId,
+      metadata: {
+        previousState: run.reviewState,
+        newState: AnalysisReviewState.FREIGEGEBEN
       } satisfies Prisma.InputJsonValue
     })
 
