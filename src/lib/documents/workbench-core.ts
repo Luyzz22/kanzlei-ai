@@ -11,7 +11,9 @@ import {
 import type {
   WorkbenchAiContractAnalysisProps,
   WorkbenchStructuredData,
-  WorkbenchDeadlines
+  WorkbenchDeadlines,
+  WorkbenchClassification,
+  WorkbenchConfidenceFactors
 } from "@/types/ai-workbench"
 import { getDocumentReviewSummary, type DocumentReviewSummary } from "@/lib/documents/review-workbench-core"
 import { getWorkspaceDocumentById, type WorkspaceDocumentDetail } from "@/lib/documents/workspace-core"
@@ -52,6 +54,23 @@ export function serializeWorkbenchAiContractAnalysis(
   ai: WorkbenchAiContractAnalysis | null
 ): WorkbenchAiContractAnalysisProps | null {
   if (!ai) return null
+
+  // v3: Classification aus classificationJson extrahieren
+  const classJson = ai.run.classificationJson as Record<string, unknown> | null
+  const classification: WorkbenchClassification | null = classJson
+    ? {
+        contractClassification: (classJson.contractClassification as string) ?? ai.run.contractClassification ?? null,
+        partyConstellation: (classJson.partyConstellation as string) ?? ai.run.partyConstellation ?? null,
+        clientRole: (classJson.clientRole as string) ?? null,
+        industryClassification: (classJson.industryClassification as string) ?? null,
+        internationalElement: (classJson.internationalElement as boolean) ?? null,
+        agbKontrolleAnwendbar: (classJson.agbKontrolleAnwendbar as boolean) ?? ai.run.agbKontrolleAnwendbar ?? null,
+        agbKontrollmassstab: (classJson.agbKontrollmassstab as string) ?? null,
+        classificationSummary: (classJson.classificationSummary as string) ?? null,
+        classificationConfidence: (classJson.classificationConfidence as number) ?? null
+      }
+    : null
+
   return {
     run: {
       id: ai.run.id,
@@ -75,6 +94,7 @@ export function serializeWorkbenchAiContractAnalysis(
       riskPromptKey: ai.run.riskPromptKey,
       riskPromptVersion: ai.run.riskPromptVersion
     },
+    classification,
     extraction: ai.extraction
       ? {
           contractType: ai.extraction.contractType,
@@ -99,6 +119,8 @@ export function serializeWorkbenchAiContractAnalysis(
       sourceSpan: f.sourceSpan,
       // v2: Formulierungsvorschlag durchreichen
       suggestedRevision: f.suggestedRevision,
+      // v3: Konfidenz-Faktoren (noch nicht per-Finding persistiert, Placeholder)
+      confidenceFactors: null as WorkbenchConfidenceFactors | null,
       latestReview: f.latestReview
         ? {
             decision: f.latestReview.decision,
