@@ -6,7 +6,7 @@ import { FindingReviewDecision } from "@prisma/client"
 
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
-import { submitAnalysisFindingReview } from "@/lib/documents/analysis-finding-review-core"
+import { submitAnalysisFindingReview, finalizeAnalysisReview } from "@/lib/documents/analysis-finding-review-core"
 import { createDocumentComment } from "@/lib/documents/comments-core"
 import { processDocumentExtraction } from "@/lib/documents/processing-core"
 import { runPersistedContractAnalysis } from "@/lib/documents/analysis-run-core"
@@ -425,6 +425,7 @@ export async function submitAnalysisFindingReviewAction(
   const comment = String(formData.get("comment") ?? "").trim() || null
   const modifiedTitle = String(formData.get("modifiedTitle") ?? "").trim() || null
   const modifiedDescription = String(formData.get("modifiedDescription") ?? "").trim() || null
+  const modifiedSuggestedRevision = String(formData.get("modifiedSuggestedRevision") ?? "").trim() || null
 
   if (!documentId || !findingId) return { status: "error", message: reviewInitialError }
 
@@ -456,7 +457,8 @@ export async function submitAnalysisFindingReviewAction(
     decision,
     comment,
     modifiedTitle,
-    modifiedDescription
+    modifiedDescription,
+    modifiedSuggestedRevision
   })
 
   if (!result.ok) {
@@ -466,4 +468,99 @@ export async function submitAnalysisFindingReviewAction(
   revalidatePath(`/workspace/dokumente/${documentId}`)
   revalidatePath("/workspace/dokumente")
   return { status: "success", message: "Finding-Bewertung wurde gespeichert." }
+}
+
+// =====================================================================
+// Freigabe — Analyse abschließen
+// =====================================================================
+
+export async function finalizeAnalysisReviewAction(
+  _: ContractAnalysisFormState,
+  formData: FormData
+): Promise<ContractAnalysisFormState> {
+  const documentId = String(formData.get("documentId") ?? "").trim()
+  const analysisRunId = String(formData.get("analysisRunId") ?? "").trim()
+  if (!documentId || !analysisRunId) return { status: "error", message: "Fehlende Parameter." }
+
+  const context = await getActionContext()
+  if (!context.ok) return { status: "error", message: context.message }
+
+  const user = await prisma.user.findUnique({
+    where: { id: context.actorId },
+    select: { role: true }
+  })
+  const membership = await prisma.tenantMember.findFirst({
+    where: { userId: context.actorId, tenantId: context.tenantId },
+    select: { role: true }
+  })
+  if (!user?.role || !membership?.role) {
+    return { status: "error", message: "Benutzer- oder Mandantenrolle nicht ermittelt." }
+  }
+
+  const result = await finalizeAnalysisReview({
+    tenantId: context.tenantId,
+    actorId: context.actorId,
+    actorPlatformRole: user.role,
+    actorTenantRole: membership.role,
+    documentId,
+    analysisRunId
+  })
+
+  if (!result.ok) {
+    return { status: "error", message: result.message }
+  }
+
+  revalidatePath(`/workspace/dokumente/${documentId}`)
+  revalidatePath("/workspace/dokumente")
+  return { status: "success", message: "Analyse wurde freigegeben." }
+}
+
+// =====================================================================
+// Batch-Review — Mehrere Findings gleichzeitig akzeptieren
+// =====================================================================
+
+export async function batchAcceptFindingsAction(
+  _: ContractAnalysisFormState,
+  formData: FormData
+): Promise<ContractAnalysisFormState> {
+  const documentId = String(formData.get("documentId") ?? "").trim()
+  const findingIdsRaw = String(formData.get("findingIds") ?? "").trim()
+  if (!documentId || !findingIdsRaw) return { status: "error", message: "Fehlende Parameter." }
+
+  const findingIds = findingIdsRaw.split(",").map(s => s.trim()).filter(Boolean)
+  if (findingIds.length === 0) return { status: "error", message: "Keine Findings ausgewählt." }
+
+  const context = await getActionContext()
+  if (!context.ok) return { status: "error", message: context.message }
+
+  const user = await prisma.user.findUnique({
+    where: { id: context.actorId },
+    select: { role: true }
+  })
+  const membership = await prisma.tenantMember.findFirst({
+    where: { userId: context.actorId, tenantId: context.tenantId },
+    select: { role: true }
+  })
+  if (!user?.role || !membership?.role) {
+    return { status: "error", message: "Benutzer- oder Mandantenrolle nicht ermittelt." }
+  }
+
+  let accepted = 0
+  for (const findingId of findingIds) {
+    const result = await submitAnalysisFindingReview({
+      tenantId: context.tenantId,
+      actorId: context.actorId,
+      actorPlatformRole: user.role,
+      actorTenantRole: membership.role,
+      documentId,
+      analysisFindingId: findingId,
+      decision: "AKZEPTIERT" as FindingReviewDecision,
+      comment: "Batch-Akzeptanz"
+    })
+    if (result.ok) accepted++
+  }
+
+  revalidatePath(`/workspace/dokumente/${documentId}`)
+  revalidatePath("/workspace/dokumente")
+  return { status: "success", message: `${accepted} Finding(s) akzeptiert.` }
 }
