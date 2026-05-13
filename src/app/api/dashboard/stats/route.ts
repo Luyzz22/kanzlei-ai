@@ -16,7 +16,7 @@ export async function GET() {
     return NextResponse.json({ error: "Kein Mandant" }, { status: 403 })
   }
 
-  const [totalRuns, completedRuns, totalFindings, lastRun, recentRuns] = await Promise.all([
+  const [totalRuns, completedRuns, totalFindings, lastRun, recentRuns, severityDist, reviewDist, classificationDist, categoryDist] = await Promise.all([
     prisma.analysisRun.count({ where: { tenantId: ctx.tenantId } }),
     prisma.analysisRun.findMany({
       where: { tenantId: ctx.tenantId, status: "COMPLETED" },
@@ -42,9 +42,36 @@ export async function GET() {
         completedAt: true,
         riskScore01: true,
         primaryModel: true,
+        reviewState: true,
         document: { select: { id: true, title: true, documentType: true, organizationName: true } },
         findings: { select: { severity: true } }
       }
+    }),
+    // Severity Distribution
+    prisma.analysisFinding.groupBy({
+      by: ["severity"],
+      where: { tenantId: ctx.tenantId },
+      _count: { severity: true }
+    }),
+    // Review State Distribution
+    prisma.analysisRun.groupBy({
+      by: ["reviewState"],
+      where: { tenantId: ctx.tenantId, status: "COMPLETED" },
+      _count: { reviewState: true }
+    }),
+    // Contract Classification Distribution
+    prisma.analysisRun.groupBy({
+      by: ["contractClassification"],
+      where: { tenantId: ctx.tenantId, status: "COMPLETED", contractClassification: { not: null } },
+      _count: { contractClassification: true }
+    }),
+    // Top Finding Categories
+    prisma.analysisFinding.groupBy({
+      by: ["category"],
+      where: { tenantId: ctx.tenantId },
+      _count: { category: true },
+      orderBy: { _count: { category: "desc" } },
+      take: 8
     })
   ])
 
@@ -78,5 +105,23 @@ export async function GET() {
       title: lastRun.document?.title,
     } : null,
     history,
+    // v3.1: Analytics
+    severityDistribution: {
+      hoch: severityDist.find(s => s.severity === "HOCH")?._count.severity ?? 0,
+      mittel: severityDist.find(s => s.severity === "MITTEL")?._count.severity ?? 0,
+      niedrig: severityDist.find(s => s.severity === "NIEDRIG")?._count.severity ?? 0
+    },
+    reviewDistribution: reviewDist.map(r => ({
+      state: r.reviewState,
+      count: r._count.reviewState
+    })),
+    classificationDistribution: classificationDist.map(c => ({
+      type: c.contractClassification,
+      count: c._count.contractClassification
+    })),
+    topCategories: categoryDist.map(c => ({
+      category: c.category,
+      count: c._count.category
+    }))
   })
 }
