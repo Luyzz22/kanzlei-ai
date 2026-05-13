@@ -27,6 +27,10 @@ type DashboardStats = {
     model: string
     completedAt: string | null
   }>
+  severityDistribution?: { hoch: number; mittel: number; niedrig: number }
+  reviewDistribution?: Array<{ state: string; count: number }>
+  classificationDistribution?: Array<{ type: string; count: number }>
+  topCategories?: Array<{ category: string; count: number }>
 }
 
 const quickActions = [
@@ -180,6 +184,81 @@ function DashboardContent() {
           Datenbank verbunden {"·"} Claude Sonnet 4 (Primary) {"·"} Audit Trail aktiv {"·"} max_tokens 16384
         </p>
       </div>
+
+      {/* Analytics Section */}
+      {stats && stats.totalFindings > 0 && (
+        <div>
+          <h2 className="text-[15px] font-semibold text-gray-900">Analytics</h2>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+            {/* Severity Distribution */}
+            <div className="rounded-xl border border-gray-100 bg-white p-5">
+              <p className="text-[12px] font-medium text-gray-400">Severity-Verteilung</p>
+              <div className="mt-3 space-y-2">
+                {(() => {
+                  const sd = stats.severityDistribution ?? { hoch: 0, mittel: 0, niedrig: 0 }
+                  const total = sd.hoch + sd.mittel + sd.niedrig
+                  if (total === 0) return <p className="text-[11px] text-gray-400">Keine Daten</p>
+                  return (
+                    <>
+                      <div>
+                        <div className="flex items-center justify-between text-[11px]"><span className="text-rose-700">Hoch</span><span className="font-semibold text-gray-900">{sd.hoch}</span></div>
+                        <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-rose-500 transition-all" style={{ width: `${(sd.hoch / total) * 100}%` }} /></div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between text-[11px]"><span className="text-amber-700">Mittel</span><span className="font-semibold text-gray-900">{sd.mittel}</span></div>
+                        <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${(sd.mittel / total) * 100}%` }} /></div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between text-[11px]"><span className="text-slate-600">Niedrig</span><span className="font-semibold text-gray-900">{sd.niedrig}</span></div>
+                        <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-slate-400 transition-all" style={{ width: `${(sd.niedrig / total) * 100}%` }} /></div>
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+            </div>
+
+            {/* Review Status */}
+            <div className="rounded-xl border border-gray-100 bg-white p-5">
+              <p className="text-[12px] font-medium text-gray-400">Pr{"ü"}fstatus</p>
+              <div className="mt-3 space-y-2">
+                {(stats.reviewDistribution ?? []).map((r: { state: string; count: number }) => {
+                  const label = r.state === "FREIGEGEBEN" ? "Freigegeben" : r.state === "IN_PRUEFUNG" ? "In Pr\u00fcfung" : r.state === "ANALYSIERT" ? "Analysiert" : r.state === "UNGEPRUEFT" ? "Ungepr\u00fcft" : r.state
+                  const color = r.state === "FREIGEGEBEN" ? "bg-emerald-500" : r.state === "IN_PRUEFUNG" ? "bg-[#003856]" : "bg-gray-300"
+                  return (
+                    <div key={r.state} className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${color}`} />
+                      <span className="flex-1 text-[11px] text-gray-600">{label}</span>
+                      <span className="text-[12px] font-semibold text-gray-900">{r.count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Top Risk Categories */}
+            <div className="rounded-xl border border-gray-100 bg-white p-5">
+              <p className="text-[12px] font-medium text-gray-400">H{"ä"}ufigste Risikokategorien</p>
+              <div className="mt-3 space-y-1.5">
+                {(stats.topCategories ?? []).slice(0, 6).map((c: { category: string; count: number }, i: number) => {
+                  const maxCount = stats.topCategories?.[0]?.count ?? 1
+                  return (
+                    <div key={c.category} className="flex items-center gap-2">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
+                        <div className="h-full rounded-full bg-[#003856] transition-all" style={{ width: `${(c.count / maxCount) * 100}%`, opacity: 1 - i * 0.1 }} />
+                      </div>
+                      <span className="w-24 truncate text-right text-[10px] text-gray-600">{c.category}</span>
+                      <span className="w-6 text-right text-[11px] font-semibold text-gray-900">{c.count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   )
 }
