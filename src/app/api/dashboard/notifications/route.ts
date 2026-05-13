@@ -108,5 +108,17 @@ export async function GET() {
   // Sort by time descending
   notifications.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
 
+  // System notification for latest release
+  notifications.unshift({
+    id: "release-3.1.0",
+    type: "system",
+    emoji: "🚀",
+    title: "KanzleiAI v3.1.0 verfügbar",
+    desc: "Review-Pipeline, PDF-Export, Norm-Analogie-Marker und 16 weitere Verbesserungen",
+    time: "2026-05-12T10:00:00.000Z",
+    read: false,
+    href: "/release-notes"
+  })
+
   return NextResponse.json({ notifications: notifications.slice(0, 20) })
 }
