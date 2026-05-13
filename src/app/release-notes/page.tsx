@@ -5,10 +5,34 @@ export const metadata: Metadata = { title: "Release Notes", description: "Alle �
 
 const releases = [
   {
+    version: "3.1.0",
+    date: "12. Mai 2026",
+    title: "Review-Pipeline, PDF-Export & Analyse-Präzision",
+    current: true,
+    changes: [
+      { type: "NEU", text: "Review-Pipeline mit Prüffortschritt — Fortschrittsbalken zeigt '7/11 Findings geprüft' mit Prozentangabe. Status-Dots (✓ ✕ ✎) auf jedem Finding sichtbar, auch im eingeklappten Zustand" },
+      { type: "NEU", text: "Batch-Accept — 'Alle Niedrig-Findings akzeptieren' akzeptiert alle ungeprüften Niedrig-Findings mit einem Klick" },
+      { type: "NEU", text: "Freigabe-Button — 'Analyse freigeben' erscheint erst, wenn alle Findings geprüft sind. Setzt den Review-Status auf FREIGEGEBEN mit Audit-Event" },
+      { type: "NEU", text: "Formulierungsvorschlag editierbar — bei 'Angepasst' kann der Formulierungsvorschlag direkt überarbeitet werden. Wird als modifiedSuggestedRevision persistiert" },
+      { type: "NEU", text: "PDF-Export für Mandantenakte — 'Als PDF exportieren' öffnet druckoptimierte A4-Ansicht mit BRAO-Disclaimer, Risiko-Summary, Klassifikation, allen Findings mit Review-Status und Formulierungsvorschlägen" },
+      { type: "NEU", text: "Klassifikationsblock im UI — Vertragstyp, Parteikonstellation, AGB-Kontrolle, Branche und Mandantenrolle werden zwischen Extraktion und Findings angezeigt" },
+      { type: "NEU", text: "Norm-Analogie-Kennzeichnung — jede Normreferenz trägt [DIREKT], [ZWINGEND], [B2B-INDIZ] oder [ANALOG] Marker für sofortige Einordnung" },
+      { type: "NEU", text: "Branchenmodul dedizierte Findings — fehlende CE-Konformität, Versicherungsnachweis und LkSG-Klauseln werden als eigenständige Findings erzeugt" },
+      { type: "NEU", text: "Cross-Clause Pflicht-Prüfschablonen — 3 toxische Interaktionsmuster (Preis×Annahme, Rüge×Aufrechnung, Kündigung×Preis×Änderung) werden systematisch geprüft" },
+      { type: "CHANGE", text: "Accordion-Findings — Findings sind im Standardzustand eingeklappt mit Severity-Filter-Buttons (Alle/Hoch/Mittel/Niedrig) und Risiko-Score-Anzeige" },
+      { type: "CHANGE", text: "BRAO § 43a Header — nicht-wegklickbarer Rechtshinweis als eigenständiger Block VOR den Findings" },
+      { type: "CHANGE", text: "Lauf-Metadaten eingeklappt — Provider, Modell, Prompt-Versionen hinter Accordion versteckt" },
+      { type: "CHANGE", text: "Vertragsstrafe-Formulierungen nutzen jetzt Stufenmodell statt 'billiges Ermessen' (Bestimmtheitsgebot)" },
+      { type: "CHANGE", text: "Temporal-Validierung — Formulierungsvorschläge bei Neuverträgen enthalten automatisch Anlaufphase" },
+      { type: "FIX", text: "504-Timeout-Fehler zeigt jetzt saubere Fehlermeldung statt TypeError-Crash" },
+      { type: "FIX", text: "Dropdown-Menüs öffnen nicht mehr gleichzeitig übereinander" },
+    ]
+  },
+  {
     version: "3.0.0",
     date: "12. Mai 2026",
     title: "KI-Analyse-Engine v3 — Fachaudit 71→95 Punkte",
-    current: true,
+    current: false,
     changes: [
       { type: "NEU", text: "Vertragstypklassifikation (Step 0) — AGB/Individualvertrag/Mischform-Erkennung mit §§ 305-310 BGB-Kontrollmatrix, Parteikonstellation (B2B/B2C/Öffentliche Hand), Mandantenrolle und Brancheneinordnung als obligatorischer Pre-Step" },
       { type: "NEU", text: "Datenschutz-Modul — automatische DSGVO-Kollisionsprüfung (Art. 15/17/28/44 DSGVO), GeschGehG-Konformität (§ 2/§ 3), AVV-Erfordernis und zeitliche Begrenzung von Geheimhaltungsklauseln" },
