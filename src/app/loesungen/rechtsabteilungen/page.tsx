@@ -65,7 +65,7 @@ export default function RechtsabteilungenPage() {
               { emoji: "👥", title: "SCIM v2 Provisioning", desc: "Automatische Nutzerverwaltung über Ihren Identity Provider." },
               { emoji: "🏗️", title: "Row-Level Security", desc: "Datenbankebene Mandantentrennung — DSGVO-konform by Design." },
               { emoji: "📋", title: "Audit Trail (10 Jahre)", desc: "Hash-verkettete Protokollierung für Compliance-Nachweise." },
-              { emoji: "🇪🇺", title: "EU-Datenresidenz", desc: "Alle Daten auf Servern in Frankfurt/EU. Keine US-Transfers." },
+              { emoji: "🇪🇺", title: "EU-Datenresidenz", desc: "Datenspeicherung in Frankfurt, KI-Verarbeitung über EU-Endpoints. SCCs mit allen Anbietern." },
               { emoji: "📄", title: "AVV & DPA", desc: "Auftragsverarbeitung mit TOM und 7 dokumentierten Sub-Processors." },
             ].map((f) => (
               <div key={f.title} className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white px-5 py-4">
