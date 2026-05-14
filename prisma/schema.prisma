@@ -388,6 +388,7 @@ enum FindingReviewDecision {
   AKZEPTIERT
   ABGELEHNT
   ANGEPASST
+  KENNTNISGENOMMEN
 }
 
 enum AnalysisPipelineStageName {
