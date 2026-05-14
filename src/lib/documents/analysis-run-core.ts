@@ -21,6 +21,7 @@ import { createTenantContractPromptResolver } from "@/lib/ai/prompt-governance.s
 import { prisma } from "@/lib/prisma"
 import { CONTRACT_ANALYSIS_PROMPT_VERSION } from "@/lib/ai/schemas/contract-analysis"
 import { writeAuditEventTx } from "@/lib/audit-write"
+import { sendAnalysisCompleteNotification } from "@/lib/email/analysis-notification"
 import { withTenant } from "@/lib/tenant-context.server"
 
 function severityFromLiteral(s: "niedrig" | "mittel" | "hoch"): DocumentFindingSeverity {
@@ -523,6 +524,42 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
     }
   } catch {
     // Dynamics-Integration nicht konfiguriert oder Fehler — ignorieren
+  }
+
+  // E-Mail-Benachrichtigung: Analyse-Abschluss (best-effort, non-blocking)
+  try {
+    const notifyUser = await prisma.user.findUnique({
+      where: { id: input.actorId },
+      select: { email: true, name: true }
+    })
+    const notifyDoc = await prisma.document.findUnique({
+      where: { id: input.documentId },
+      select: { title: true }
+    })
+    if (notifyUser?.email && notifyDoc?.title) {
+      const high = pipeline.risk.findings.filter(f => f.severity === "hoch").length
+      const medium = pipeline.risk.findings.filter(f => f.severity === "mittel").length
+      const low = pipeline.risk.findings.filter(f => f.severity === "niedrig").length
+
+      sendAnalysisCompleteNotification({
+        recipientEmail: notifyUser.email,
+        recipientName: notifyUser.name,
+        documentId: input.documentId,
+        documentTitle: notifyDoc.title,
+        riskScore01: pipeline.risk.riskScore01,
+        findingsCount: pipeline.risk.findings.length,
+        highFindings: high,
+        mediumFindings: medium,
+        lowFindings: low,
+        primaryModel: pipeline.primaryModel,
+        durationMs,
+        contractClassification: pipeline.classification?.contractClassification ?? null
+      }).catch((e) => {
+        console.warn("[email.analysis_complete] Fehlgeschlagen:", e instanceof Error ? e.message : e)
+      })
+    }
+  } catch {
+    // E-Mail-Benachrichtigung fehlgeschlagen — ignorieren
   }
 
   return { ok: true, runId }
