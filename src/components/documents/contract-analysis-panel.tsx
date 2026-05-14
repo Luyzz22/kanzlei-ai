@@ -111,6 +111,7 @@ function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
   finding: WorkbenchAiContractAnalysisProps["findings"][0]; isOpen: boolean; onToggle: () => void; canReview: boolean; documentId: string
 }) {
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const colors = severityColor(finding.severity)
   return (
     <div className={`rounded-xl border transition-colors ${isOpen ? colors.border : "border-slate-100"} bg-white`}>
@@ -147,11 +148,41 @@ function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
             </div>
           )}
           {finding.latestReview && (
-            <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
-              <span className="font-medium">Letzte Prüfung:</span>
-              <span>{findingDecisionLabel(finding.latestReview.decision)}</span>
-              {finding.latestReview.comment && <span>— {finding.latestReview.comment}</span>}
-              <span className="ml-auto text-slate-400">{new Date(finding.latestReview.reviewedAt).toLocaleString("de-DE")}</span>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
+                <span className="font-medium">Letzte Prüfung:</span>
+                <span>{findingDecisionLabel(finding.latestReview.decision)}</span>
+                {finding.latestReview.reviewerName && (
+                  <span className="rounded bg-slate-200/60 px-1.5 py-0.5 text-[10px] font-medium text-slate-700">{finding.latestReview.reviewerName}</span>
+                )}
+                {finding.latestReview.comment && <span className="truncate">— {finding.latestReview.comment}</span>}
+                <span className="ml-auto shrink-0 text-slate-400">{new Date(finding.latestReview.reviewedAt).toLocaleString("de-DE")}</span>
+              </div>
+              {finding.allReviews.length > 1 && (
+                <div>
+                  <button type="button" onClick={() => setHistoryOpen(!historyOpen)} className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-400 hover:text-slate-600">
+                    <ChevronIcon open={historyOpen} />
+                    Review-Historie ({finding.allReviews.length} Einträge)
+                  </button>
+                  {historyOpen && (
+                    <div className="mt-1.5 space-y-1 border-l-2 border-slate-200 pl-3">
+                      {finding.allReviews.map((rev, idx) => (
+                        <div key={`rev-${idx}`} className="flex items-center gap-2 text-[10px] text-slate-500">
+                          <span className={`inline-flex rounded px-1.5 py-0.5 font-medium ${
+                            rev.decision === "AKZEPTIERT" ? "bg-emerald-50 text-emerald-700" :
+                            rev.decision === "ABGELEHNT" ? "bg-rose-50 text-rose-700" :
+                            rev.decision === "KENNTNISGENOMMEN" ? "bg-slate-100 text-slate-600" :
+                            "bg-amber-50 text-amber-700"
+                          }`}>{findingDecisionLabel(rev.decision)}</span>
+                          {rev.reviewerName && <span className="font-medium text-slate-600">{rev.reviewerName}</span>}
+                          {rev.comment && <span className="truncate text-slate-400">— {rev.comment}</span>}
+                          <span className="ml-auto shrink-0 text-slate-300">{new Date(rev.reviewedAt).toLocaleString("de-DE")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
           {canReview && (
