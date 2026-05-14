@@ -77,7 +77,7 @@ export default function SicherheitPage() {
         <div className="mx-auto max-w-3xl px-5 sm:px-8 text-center">
           <span className="text-[40px]">🇩🇪</span>
           <h2 className="mt-4 text-display-sm text-gray-950">Datenresidenz Deutschland</h2>
-          <p className="mt-4 text-[16px] leading-relaxed text-gray-500">Alle Daten werden auf Servern in Frankfurt am Main (eu-central-1) verarbeitet und gespeichert. PostgreSQL bei Neon (EU), Hosting auf Vercel Edge Network. Kein Drittlandtransfer personenbezogener Daten.</p>
+          <p className="mt-4 text-[16px] leading-relaxed text-gray-500">Alle Daten werden in Frankfurt am Main (eu-central-1) gespeichert. KI-Anfragen werden über EU-Endpoints der Provider verarbeitet. Mit allen Unterauftragsverarbeitern bestehen Standardvertragsklauseln (SCCs) gemäß Art. 46 Abs. 2 lit. c DSGVO. Kein KI-Training auf Kundendaten.</p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link href="/avv" className="rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42]">📋 AVV herunterladen</Link>
             <Link href="/trust-center" className="rounded-full border border-gray-200 bg-white px-7 py-3.5 text-[15px] font-medium text-gray-700 hover:bg-gray-50">Trust Center</Link>
