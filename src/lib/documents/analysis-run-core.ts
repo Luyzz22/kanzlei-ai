@@ -99,7 +99,15 @@ export type WorkbenchAiContractAnalysis = {
       comment: string | null
       reviewedAt: Date
       reviewerId: string
+      reviewerName: string | null
     } | null
+    allReviews: Array<{
+      decision: string
+      comment: string | null
+      reviewedAt: Date
+      reviewerId: string
+      reviewerName: string | null
+    }>
   }>
   risk: {
     recommendedMeasures: string[]
@@ -135,7 +143,10 @@ export async function getWorkbenchAiContractAnalysis(
           orderBy: { createdAt: "asc" },
           take: 50,
           include: {
-            reviews: { orderBy: { reviewedAt: "desc" }, take: 1 }
+            reviews: {
+              orderBy: { reviewedAt: "desc" },
+              include: { reviewer: { select: { name: true } } }
+            }
           }
         }
       }
@@ -204,9 +215,17 @@ export async function getWorkbenchAiContractAnalysis(
                 decision: r.decision,
                 comment: r.comment,
                 reviewedAt: r.reviewedAt,
-                reviewerId: r.reviewerId
+                reviewerId: r.reviewerId,
+                reviewerName: r.reviewer?.name ?? null
               }
-            : null
+            : null,
+          allReviews: f.reviews.map((rev) => ({
+            decision: rev.decision,
+            comment: rev.comment,
+            reviewedAt: rev.reviewedAt,
+            reviewerId: rev.reviewerId,
+            reviewerName: rev.reviewer?.name ?? null
+          }))
         }
       }),
       risk: hasRiskPayload
