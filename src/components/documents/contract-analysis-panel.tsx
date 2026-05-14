@@ -57,7 +57,7 @@ function analysisReviewStateLabel(s: WorkbenchAiContractAnalysisProps["run"]["re
   switch (s) { case "UNGEPRUEFT": return "Ungeprüft"; case "ENTWURF": return "Entwurf"; case "ANALYSIERT": return "Analysiert"; case "IN_PRUEFUNG": return "In Prüfung"; case "FREIGEGEBEN": return "Freigegeben"; case "ZURUECKGEWIESEN": return "Zurückgewiesen"; case "WIEDERHOLUNG_ANGEFORDERT": return "Erneut analysieren"; default: return s }
 }
 function findingDecisionLabel(d: string): string {
-  switch (d) { case "AKZEPTIERT": return "Akzeptiert"; case "ABGELEHNT": return "Abgelehnt"; case "ANGEPASST": return "Angepasst"; default: return d }
+  switch (d) { case "AKZEPTIERT": return "Akzeptiert"; case "ABGELEHNT": return "Abgelehnt"; case "ANGEPASST": return "Angepasst"; case "KENNTNISGENOMMEN": return "Kenntnisgenommen"; default: return d }
 }
 function providerLabel(p: string | null): string {
   if (!p) return "—"; switch (p) { case "OPENAI": return "OpenAI"; case "ANTHROPIC": return "Anthropic"; case "GOOGLE_GEMINI": return "Gemini"; case "LLAMA_COMPAT": return "Llama-kompatibel"; default: return p }
@@ -128,9 +128,10 @@ function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
           <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
             finding.latestReview.decision === "AKZEPTIERT" ? "bg-emerald-100 text-emerald-700" :
             finding.latestReview.decision === "ABGELEHNT" ? "bg-rose-100 text-rose-700" :
+            finding.latestReview.decision === "KENNTNISGENOMMEN" ? "bg-blue-100 text-blue-600" :
             "bg-amber-100 text-amber-700"
           }`}>
-            {finding.latestReview.decision === "AKZEPTIERT" ? "✓" : finding.latestReview.decision === "ABGELEHNT" ? "✕" : "✎"}
+            {finding.latestReview.decision === "AKZEPTIERT" ? "✓" : finding.latestReview.decision === "ABGELEHNT" ? "✕" : finding.latestReview.decision === "KENNTNISGENOMMEN" ? "○" : "✎"}
           </span>
         )}
         <ChevronIcon open={isOpen} />
