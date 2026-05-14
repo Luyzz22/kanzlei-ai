@@ -117,7 +117,7 @@ export default function RoadmapPage() {
             <p className="mt-2 text-center text-[14px] text-gray-500">Was bleibt konstant über alle Versionen</p>
             <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { emoji: "🇩🇪", title: "DACH-First", desc: "Deutsches Recht, deutsche Sprache, EU-Hosting — keine US-Centric-Tools" },
+                { emoji: "🇩🇪", title: "DACH-First", desc: "Deutsches Recht, deutsche Sprache, EU-Datenspeicherung — gebaut für den DACH-Markt" },
                 { emoji: "🛡️", title: "Compliance-Native", desc: "EU AI Act, DSGVO, NIS2, LkSG — eingebaut, nicht aufgesetzt" },
                 { emoji: "🤝", title: "Human-in-the-Loop", desc: "KI als Werkzeug, Jurist entscheidet — keine Autonomie ohne Aufsicht" },
                 { emoji: "🏢", title: "Enterprise-Grade", desc: "Mandantentrennung, Audit-Trail, SSO, SCIM — von Tag 1" }
