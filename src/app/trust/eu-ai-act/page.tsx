@@ -23,37 +23,27 @@ const gpaiModels: GpaiModel[] = [
     name: "claude-sonnet-4-6",
     provider: "Anthropic",
     role: "risk",
-    version: "claude-sonnet-4.6 · Release 17. Februar 2026",
+    version: "Claude Sonnet 4.6 · Primary für Extraktion & Risiko-Analyse",
     euRegion: false,
     trainingOptOut: "default",
     gpaiTier: "general",
     modelCardUrl: "https://docs.anthropic.com/en/docs/about-claude/models"
   },
   {
-    name: "gpt-4o-mini",
-    provider: "OpenAI",
-    role: "extraction",
-    version: "gpt-4o-mini · Stand Juli 2024",
-    euRegion: false,
-    trainingOptOut: "default",
-    gpaiTier: "general",
-    modelCardUrl: "https://platform.openai.com/docs/models/gpt-4o-mini"
-  },
-  {
     name: "gpt-4o",
     provider: "OpenAI",
     role: "fallback",
-    version: "gpt-4o · Stand Mai 2024",
+    version: "GPT-4o · Fallback-Provider bei Anthropic-Ausfall",
     euRegion: false,
     trainingOptOut: "default",
     gpaiTier: "general",
     modelCardUrl: "https://platform.openai.com/docs/models/gpt-4o"
   },
   {
-    name: "gemini-1.5-flash",
+    name: "gemini-2.5-flash",
     provider: "Google",
     role: "ocr",
-    version: "gemini-1.5-flash · Stand Mai 2024",
+    version: "Gemini 2.5 Flash · OCR-Extraktion und Fallback",
     euRegion: true,
     trainingOptOut: "contractual",
     gpaiTier: "general",
@@ -83,7 +73,7 @@ export default function EuAiActPage() {
             EU AI Act Compliance
           </h1>
           <p className="mt-4 max-w-3xl text-[16px] leading-relaxed text-gray-600">
-            KanzleiAI-Einordnung nach der EU-Verordnung über kuenstliche Intelligenz.
+            KanzleiAI-Einordnung nach der EU-Verordnung über künstliche Intelligenz.
             Risiko-Klassifizierung, Transparenzpflichten, General Purpose AI (GPAI)
             Modell-Dokumentation und Nachweise zur Einhaltung der Hochrisiko-Anforderungen
             ab 2. August 2026.
@@ -102,9 +92,9 @@ export default function EuAiActPage() {
                 </h2>
                 <p className="mt-2 text-[13px] leading-relaxed text-rose-800">
                   Ab diesem Datum gelten die Hochrisiko-Anforderungen nach Annex III der
-                  KI-Verordnung. Versto&szlig;-Bu&szlig;gelder: bis 35 Mio. EUR oder 7%
+                  KI-Verordnung. Verstoß-Bußgelder: bis 35 Mio. EUR oder 7%
                   des weltweiten Jahresumsatzes. KanzleiAI als Deployer (Betreiber)
-                  erfuellt die Vorgaben und unterstützt Kunden bei der eigenen
+                  erfüllt die Vorgaben und unterstützt Kunden bei der eigenen
                   Compliance-Dokumentation.
                 </p>
               </div>
@@ -119,7 +109,7 @@ export default function EuAiActPage() {
             Risiko-Klassifizierung
           </h2>
           <p className="mt-2 text-[14px] leading-relaxed text-gray-600">
-            Die Klassifizierung haengt vom konkreten Einsatzkontext beim Kunden ab.
+            Die Klassifizierung hängt vom konkreten Einsatzkontext beim Kunden ab.
             KanzleiAI liefert pro Einsatzszenario eine eindeutige Einordnung.
           </p>
 
@@ -132,9 +122,9 @@ export default function EuAiActPage() {
                 </h3>
               </div>
               <p className="mt-2 text-[12px] leading-relaxed text-amber-800">
-                Einsatz bei automatisierten Beschaeftigungsentscheidungen:
+                Einsatz bei automatisierten Beschäftigungsentscheidungen:
                 Arbeitsverträge-Prüfung, die direkt zu Einstellungs- oder
-                Kündigungsentscheidungen fuehrt.
+                Kündigungsentscheidungen führt.
               </p>
               <p className="mt-2 text-[11px] text-amber-700">
                 Pflichten: Risiko-Management, Daten-Governance, technische Dokumentation,
@@ -151,7 +141,7 @@ export default function EuAiActPage() {
                 </h3>
               </div>
               <p className="mt-2 text-[12px] leading-relaxed text-blue-800">
-                Standard-Vertragsprüfung ohne beschaeftigungsrechtliche Automatisierung:
+                Standard-Vertragsprüfung ohne beschäftigungsrechtliche Automatisierung:
                 NDA, SaaS-Vertrag, Lieferantenvertrag, Kaufvertrag, Mietvertrag.
               </p>
               <p className="mt-2 text-[11px] text-blue-700">
@@ -169,9 +159,9 @@ export default function EuAiActPage() {
             General Purpose AI (GPAI) Modelle
           </h2>
           <p className="mt-2 text-[14px] leading-relaxed text-gray-600">
-            Gemaess Art. 53 EU AI Act muessen Deployer alle eingesetzten GPAI-Modelle
-            dokumentieren. Nachstehend die vollstaendige Liste aller in KanzleiAI
-            aktiven General-Purpose-Modelle, einschliesslich Version, Herkunft und
+            Gemäß Art. 53 EU AI Act müssen Deployer alle eingesetzten GPAI-Modelle
+            dokumentieren. Nachstehend die vollständige Liste aller in KanzleiAI
+            aktiven General-Purpose-Modelle, einschließlich Version, Herkunft und
             Trainings-Opt-Out-Status.
           </p>
 
@@ -218,7 +208,7 @@ export default function EuAiActPage() {
                     </dt>
                     <dd className="mt-0.5 text-[13px] text-gray-800">
                       {m.trainingOptOut === "default"
-                        ? "Standardmaessig aktiv (Provider-Policy)"
+                        ? "Standardmäßig aktiv (Provider-Policy)"
                         : m.trainingOptOut === "contractual"
                           ? "Vertraglich zugesichert"
                           : "Nicht anwendbar"}
@@ -271,13 +261,13 @@ export default function EuAiActPage() {
                 article: "Art. 10",
                 title: "Daten-Governance",
                 status: "Umgesetzt",
-                desc: "Verarbeitete Daten kommen ausschließlich vom Kunden. Kein Training mit Mandantendaten. Datenminimierung auf Preview-Laenge (16k Zeichen)."
+                desc: "Verarbeitete Daten kommen ausschließlich vom Kunden. Kein Training mit Mandantendaten. Datenminimierung auf Preview-Länge (16k Zeichen)."
               },
               {
                 article: "Art. 11",
                 title: "Technische Dokumentation",
                 status: "Umgesetzt",
-                desc: "Architektur, Provider-Routing, Prompt-Versionierung und Audit-Trail vollstaendig dokumentiert (Enterprise-Kunden erhalten Technical Dossier)."
+                desc: "Architektur, Provider-Routing, Prompt-Versionierung und Audit-Trail vollständig dokumentiert (Enterprise-Kunden erhalten Technical Dossier)."
               },
               {
                 article: "Art. 12",
@@ -295,7 +285,7 @@ export default function EuAiActPage() {
                 article: "Art. 14",
                 title: "Human Oversight",
                 status: "Umgesetzt",
-                desc: "Human-in-the-Loop-Pflicht nach BRAK-Leitfaden. Jedes KI-Finding mit Review-Controls (Akzeptiert / Abgelehnt / Angepasst)."
+                desc: "Human-in-the-Loop-Pflicht nach BRAK-Leitfaden. Jedes KI-Finding mit Review-Controls (Akzeptiert / Abgelehnt / Angepasst / Kenntnisgenommen). Review-Historie mit Reviewer-Name und Zeitstempel."
               },
               {
                 article: "Art. 15",
@@ -307,7 +297,7 @@ export default function EuAiActPage() {
                 article: "Art. 26",
                 title: "Pflichten von Deployern",
                 status: "Dokumentiert",
-                desc: "Betreiber-Handbuch für Kanzlei-Kunden (Checkliste, Logs, Meldepflicht bei Zwischenfaellen) als PDF-Download verfügbar."
+                desc: "Betreiber-Handbuch für Kanzlei-Kunden (Checkliste, Logs, Meldepflicht bei Zwischenfällen) als PDF-Download verfügbar."
               }
             ].map((item) => (
               <div
@@ -369,7 +359,7 @@ export default function EuAiActPage() {
               § 203 StGB Geheimhaltung →
             </Link>
             <a
-              href="mailto:compliance@sbsdeutschland.de?subject=EU%20AI%20Act%20Technical%20Dossier"
+              href="mailto:ki@sbsdeutschland.de?subject=EU%20AI%20Act%20Technical%20Dossier"
               className="inline-flex items-center gap-1.5 rounded-lg bg-[#003856] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#002a42]"
             >
               Technical Dossier anfordern
