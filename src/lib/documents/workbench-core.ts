@@ -126,9 +126,17 @@ export function serializeWorkbenchAiContractAnalysis(
             decision: f.latestReview.decision,
             comment: f.latestReview.comment,
             reviewedAt: f.latestReview.reviewedAt.toISOString(),
-            reviewerId: f.latestReview.reviewerId
+            reviewerId: f.latestReview.reviewerId,
+            reviewerName: f.latestReview.reviewerName ?? null
           }
-        : null
+        : null,
+      allReviews: (f.allReviews ?? []).map((rev: { decision: string; comment: string | null; reviewedAt: Date | string; reviewerId: string; reviewerName?: string | null }) => ({
+        decision: rev.decision,
+        comment: rev.comment,
+        reviewedAt: typeof rev.reviewedAt === "string" ? rev.reviewedAt : rev.reviewedAt.toISOString(),
+        reviewerId: rev.reviewerId,
+        reviewerName: rev.reviewerName ?? null
+      }))
     })),
     risk: ai.risk
   }
