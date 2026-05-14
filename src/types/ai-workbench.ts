@@ -111,7 +111,16 @@ export type WorkbenchAiContractAnalysisProps = {
       comment: string | null
       reviewedAt: string
       reviewerId: string
+      reviewerName: string | null
     } | null
+    /** v3.4 — vollständige Review-Historie (neueste zuerst) */
+    allReviews: Array<{
+      decision: string
+      comment: string | null
+      reviewedAt: string
+      reviewerId: string
+      reviewerName: string | null
+    }>
   }>
   risk: {
     recommendedMeasures: string[]
