@@ -13,7 +13,8 @@ import type {
   WorkbenchStructuredData,
   WorkbenchDeadlines,
   WorkbenchClassification,
-  WorkbenchConfidenceFactors
+  WorkbenchConfidenceFactors,
+  WorkbenchEvidenceGraph
 } from "@/types/ai-workbench"
 import { getDocumentReviewSummary, type DocumentReviewSummary } from "@/lib/documents/review-workbench-core"
 import { getWorkspaceDocumentById, type WorkspaceDocumentDetail } from "@/lib/documents/workspace-core"
@@ -48,6 +49,71 @@ export type DocumentWorkbenchData = {
     guidance: string[]
   }
   aiContractAnalysis: WorkbenchAiContractAnalysis | null
+}
+
+// =======================================================================
+// Evidence Graph Extraction Helpers (v4)
+// =======================================================================
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === "object" && !Array.isArray(v)
+}
+
+/** Extracts confidenceFactors from the combined evidenceGraph JSON blob. */
+function extractConfidenceFactors(raw: unknown): WorkbenchConfidenceFactors | null {
+  if (!isRecord(raw)) return null
+  const cf = raw.confidenceFactors
+  if (!isRecord(cf)) return null
+  const n = (k: string) => typeof cf[k] === "number" ? cf[k] as number : 0
+  return {
+    normClarity: n("normClarity"),
+    clauseClarity: n("clauseClarity"),
+    contractContext: n("contractContext"),
+    industryFit: n("industryFit"),
+    precedent: n("precedent"),
+    limitingFactor: typeof cf.limitingFactor === "string" ? cf.limitingFactor : null
+  }
+}
+
+/** Extracts evidence graph data (normBasis, reasoningSteps, etc.) from JSON blob. */
+function extractEvidenceGraph(raw: unknown): WorkbenchEvidenceGraph | null {
+  if (!isRecord(raw)) return null
+
+  const normBasis = Array.isArray(raw.normBasis)
+    ? (raw.normBasis as Array<Record<string, unknown>>)
+        .filter(isRecord)
+        .map((n) => ({
+          norm: String(n.norm ?? ""),
+          marker: (["DIREKT", "ZWINGEND", "B2B-INDIZ", "ANALOG"].includes(String(n.marker)) ? String(n.marker) : "DIREKT") as "DIREKT" | "ZWINGEND" | "B2B-INDIZ" | "ANALOG",
+          relevance: String(n.relevance ?? "")
+        }))
+    : null
+
+  const reasoningSteps = Array.isArray(raw.reasoningSteps)
+    ? (raw.reasoningSteps as Array<Record<string, unknown>>)
+        .filter(isRecord)
+        .map((s) => ({
+          step: typeof s.step === "number" ? s.step : 0,
+          label: String(s.label ?? ""),
+          content: String(s.content ?? "")
+        }))
+        .sort((a, b) => a.step - b.step)
+    : null
+
+  const counterArguments = Array.isArray(raw.counterArguments)
+    ? (raw.counterArguments as unknown[]).filter((s): s is string => typeof s === "string")
+    : null
+
+  const limitations = Array.isArray(raw.limitations)
+    ? (raw.limitations as unknown[]).filter((s): s is string => typeof s === "string")
+    : null
+
+  // Only return if there's actual data
+  if (!normBasis?.length && !reasoningSteps?.length && !counterArguments?.length && !limitations?.length) {
+    return null
+  }
+
+  return { normBasis, reasoningSteps, counterArguments, limitations }
 }
 
 export function serializeWorkbenchAiContractAnalysis(
@@ -119,8 +185,9 @@ export function serializeWorkbenchAiContractAnalysis(
       sourceSpan: f.sourceSpan,
       // v2: Formulierungsvorschlag durchreichen
       suggestedRevision: f.suggestedRevision,
-      // v3: Konfidenz-Faktoren (noch nicht per-Finding persistiert, Placeholder)
-      confidenceFactors: null as WorkbenchConfidenceFactors | null,
+      // v4: confidenceFactors + evidenceGraph aus dem evidenceGraph JSON-Blob lesen
+      confidenceFactors: extractConfidenceFactors(f.evidenceGraph),
+      evidenceGraph: extractEvidenceGraph(f.evidenceGraph),
       latestReview: f.latestReview
         ? {
             decision: f.latestReview.decision,
