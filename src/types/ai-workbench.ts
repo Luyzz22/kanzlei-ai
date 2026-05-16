@@ -80,6 +80,26 @@ export type WorkbenchConfidenceFactors = {
   limitingFactor?: string | null
 }
 
+/** Evidence Graph MVP: Strukturierte Begründungskette pro Finding */
+export type WorkbenchEvidenceGraphNorm = {
+  norm: string
+  marker: "DIREKT" | "ZWINGEND" | "B2B-INDIZ" | "ANALOG"
+  relevance: string
+}
+
+export type WorkbenchEvidenceGraphStep = {
+  step: number
+  label: string
+  content: string
+}
+
+export type WorkbenchEvidenceGraph = {
+  normBasis?: WorkbenchEvidenceGraphNorm[] | null
+  reasoningSteps?: WorkbenchEvidenceGraphStep[] | null
+  counterArguments?: string[] | null
+  limitations?: string[] | null
+}
+
 export type WorkbenchAiContractAnalysisProps = {
   run: WorkbenchAiRunSummary
   classification: WorkbenchClassification | null
@@ -106,6 +126,8 @@ export type WorkbenchAiContractAnalysisProps = {
     suggestedRevision: string | null
     /** v3 — Konfidenz-Aufschlüsselung (C.4) */
     confidenceFactors: WorkbenchConfidenceFactors | null
+    /** v4 — Evidence Graph MVP: klickbare Begründungskette */
+    evidenceGraph: WorkbenchEvidenceGraph | null
     latestReview: {
       decision: string
       comment: string | null
