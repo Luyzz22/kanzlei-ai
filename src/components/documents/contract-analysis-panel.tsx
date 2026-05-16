@@ -10,6 +10,7 @@ import {
   type ContractAnalysisFormState
 } from "@/app/workspace/dokumente/[id]/actions"
 import { AnalysisFindingReviewForm } from "@/components/documents/analysis-finding-review-form"
+import { EvidenceGraphPanel } from "@/components/documents/evidence-graph-panel"
 import { StatusBadge } from "@/components/marketing/status-badge"
 import type {
   WorkbenchAiContractAnalysisProps,
@@ -147,6 +148,11 @@ function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
               <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-relaxed text-emerald-900">{finding.suggestedRevision}</p>
             </div>
           )}
+          {/* v4: Evidence Graph — klickbare Begründungskette */}
+          <EvidenceGraphPanel
+            evidenceGraph={finding.evidenceGraph}
+            confidenceFactors={finding.confidenceFactors}
+          />
           {finding.latestReview && (
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
