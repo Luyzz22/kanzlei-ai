@@ -1,17 +1,18 @@
 import { z } from "zod"
 
 /** Version der Prompts / Erwartungsstruktur — bei Schema-Änderungen erhöhen. */
-export const CONTRACT_ANALYSIS_PROMPT_VERSION = "2026-05-12"
+export const CONTRACT_ANALYSIS_PROMPT_VERSION = "2026-05-16"
 
 /**
- * UNIFIED ANALYSIS SCHEMA v3 (2026-05-11)
+ * UNIFIED ANALYSIS SCHEMA v4 (2026-05-16)
  *
- * Neu in v3:
- * - Classification Stage (Step 0): Vertragstypklassifikation, Parteikonstellation,
- *   Mandantenrolle, Brancheneinordnung, anwendbare Normen-Matrix
- * - Kontextinjektion in Extraction und Risk Stages
+ * Neu in v4:
+ * - Evidence Graph MVP: Strukturierte Begründungskette pro Finding
+ *   (normBasis, reasoningSteps, counterArguments, limitations)
+ * - confidenceFactors jetzt persistiert in DB (war v3 nur im Prompt-Output)
  *
- * Backward-kompatibel: Alle v2-Felder bleiben nullable/optional.
+ * v3 (2026-05-11): Classification Stage, Kontextinjektion
+ * Backward-kompatibel: Alle v2/v3-Felder bleiben nullable/optional.
  */
 
 const severityLiteral = z.enum(["niedrig", "mittel", "hoch"])
@@ -195,6 +196,25 @@ export const pipelineFindingSchema = z.object({
     precedent: z.coerce.number().min(0).max(1),
     /** Welcher Faktor die Konfidenz am stärksten begrenzt */
     limitingFactor: z.string().max(200).optional()
+  }).nullable().optional(),
+  /** Evidence Graph MVP: Strukturierte Begründungskette pro Finding */
+  evidenceGraph: z.object({
+    /** Primäre Rechtsgrundlagen mit Anwendbarkeitsmarker */
+    normBasis: z.array(z.object({
+      norm: z.string().max(200),
+      marker: z.enum(["DIREKT", "ZWINGEND", "B2B-INDIZ", "ANALOG"]),
+      relevance: z.string().max(500)
+    })).max(8).optional(),
+    /** Begründungsschritte: Dokumentstelle → Rechtsnorm → Bewertung */
+    reasoningSteps: z.array(z.object({
+      step: z.coerce.number().int().min(1).max(10),
+      label: z.string().max(100),
+      content: z.string().max(2000)
+    })).max(10).optional(),
+    /** Mögliche Gegenargumente / alternative Interpretationen */
+    counterArguments: z.array(z.string().max(1000)).max(5).optional(),
+    /** Einschränkungen / Unsicherheiten dieser Bewertung */
+    limitations: z.array(z.string().max(1000)).max(5).optional()
   }).nullable().optional()
 })
 
