@@ -2,6 +2,7 @@
  * Zentrale Prompt-Templates für Vertragsanalyse — keine verstreuten Inline-Prompts in der Pipeline.
  * Versionen und Keys müssen mit PromptDefinition-Seed und DB-Releases übereinstimmen.
  *
+ * v4 (2026-05-16): Evidence Graph MVP — strukturierte Begründungskette pro Finding.
  * v3 (2026-05-11): Vertragstypklassifikation (Step 0) + Kontextinjektion in Extraction & Risk.
  */
 import { CONTRACT_ANALYSIS_PROMPT_VERSION } from "@/lib/ai/schemas/contract-analysis"
@@ -261,6 +262,34 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt nach folgendem Schema:
         "industryFit": "number (0-1, Gewicht 15%: 1.0=Branche klar, 0.7=moderat, 0.4=unklar, 0.2=kein Kontext)",
         "precedent": "number (0-1, Gewicht 10%: 1.0=BGH direkt, 0.7=OLG, 0.4=nur Literatur, 0.2=Neuland)",
         "limitingFactor": "string (welcher Faktor die Konfidenz am stärksten begrenzt)"
+      },
+      "evidenceGraph": {
+        "normBasis": [
+          {
+            "norm": "string (z.B. '§ 307 Abs. 1 BGB', 'Art. 28 DSGVO')",
+            "marker": "DIREKT | ZWINGEND | B2B-INDIZ | ANALOG",
+            "relevance": "string (kurze Begründung warum diese Norm hier einschlägig ist)"
+          }
+        ],
+        "reasoningSteps": [
+          {
+            "step": 1,
+            "label": "Vertragsklausel",
+            "content": "string (wörtliches Zitat oder Paraphrase der relevanten Stelle)"
+          },
+          {
+            "step": 2,
+            "label": "Rechtliche Einordnung",
+            "content": "string (Subsumtion unter die anwendbare Norm)"
+          },
+          {
+            "step": 3,
+            "label": "Risikobewertung",
+            "content": "string (konkrete Auswirkung und warum diese severity)"
+          }
+        ],
+        "counterArguments": ["string (mögliches Gegenargument oder alternative Interpretation)"],
+        "limitations": ["string (Einschränkung oder Unsicherheit dieser Bewertung)"]
       }
     }
   ],
@@ -304,6 +333,28 @@ PFLICHT — FÜR JEDES FINDING:
    confidence = normClarity×0.30 + clauseClarity×0.25 + contractContext×0.20 + industryFit×0.15 + precedent×0.10
    Gib alle 5 Faktoren + limitingFactor im Feld "confidenceFactors" an.
    Wenn der niedrigste Faktor unter 0.4 liegt, setze limitingFactor auf den Namen dieses Faktors.
+
+5. EVIDENCE GRAPH (E.1 — PFLICHT bei severity="hoch" oder severity="mittel"):
+   Erzeuge im Feld "evidenceGraph" eine klickbare Begründungskette für das Finding.
+   
+   a) "normBasis": Liste der einschlägigen Normen mit Marker (DIREKT/ZWINGEND/B2B-INDIZ/ANALOG).
+      PFLICHT: Mindestens 1 Norm pro Finding. Marker MUSS mit dem Norm-Marker in "description" übereinstimmen.
+   
+   b) "reasoningSteps": Logische Argumentationskette in 3-5 Schritten:
+      Schritt 1: "Vertragsklausel" — was steht im Vertrag (Bezug zu "quote")
+      Schritt 2: "Rechtliche Einordnung" — Subsumtion unter die Norm
+      Schritt 3: "Risikobewertung" — konkrete Auswirkung auf den Mandanten
+      Optional Schritt 4: "Rechtsfolge" — was passiert wenn die Klausel bleibt
+      Optional Schritt 5: "Handlungsempfehlung" — konkreter nächster Schritt
+   
+   c) "counterArguments": 1-3 mögliche Gegenargumente des Vertragspartners.
+      Hilft dem Anwalt, sich auf Verhandlungen vorzubereiten.
+      Beispiel: "Der Lieferant könnte argumentieren, dass die Haftungsbeschränkung branchenüblich ist."
+   
+   d) "limitations": 1-3 Einschränkungen der KI-Bewertung.
+      Beispiel: "Bewertung basiert nur auf dem Vertragstext — mündliche Nebenabreden nicht bekannt."
+   
+   Bei severity="niedrig" ist evidenceGraph OPTIONAL (nur bei komplexen Fällen sinnvoll).
 ${classification?.contractClassification === "AGB" ? `
 5. AGB-SPEZIFISCH (da Vertragstyp = AGB):
    - Prüfe JEDE Klausel gegen §§ 307-309 BGB.
@@ -497,12 +548,26 @@ BEISPIEL FÜR EIN FINDING:
 {
   "category": "Vertragsstrafe",
   "title": "Unverhältnismäßig hohe Vertragsstrafe",
-  "description": "Die pauschale Vertragsstrafe ist sittenwidrig hoch und nach § 343 BGB reduzierbar.",
+  "description": "Die pauschale Vertragsstrafe ist sittenwidrig hoch und nach § 343 BGB [DIREKT] reduzierbar.",
   "severity": "hoch",
   "confidence": 0.9,
   "clauseRef": "§ 4",
   "quote": "Bei Verstoß gegen diese Vereinbarung zahlt der Empfänger eine Vertragsstrafe von EUR 250.000 pro Verstoß.",
-  "suggestedRevision": "Bei schuldhaftem Verstoß gegen diese Vereinbarung zahlt der Empfänger eine angemessene Vertragsstrafe, die sich nach der Schwere des Verstoßes richtet, höchstens jedoch EUR 25.000 pro Verstoß. Die Vertragsstrafe ist auf den tatsächlich entstandenen Schaden anzurechnen."
+  "suggestedRevision": "Bei schuldhaftem Verstoß gegen diese Vereinbarung zahlt der Empfänger eine angemessene Vertragsstrafe, die sich nach der Schwere des Verstoßes richtet, höchstens jedoch EUR 25.000 pro Verstoß. Die Vertragsstrafe ist auf den tatsächlich entstandenen Schaden anzurechnen.",
+  "confidenceFactors": { "normClarity": 0.95, "clauseClarity": 0.9, "contractContext": 0.85, "industryFit": 0.8, "precedent": 0.95, "limitingFactor": null },
+  "evidenceGraph": {
+    "normBasis": [
+      { "norm": "§ 343 BGB", "marker": "DIREKT", "relevance": "Richterliche Herabsetzung unverhältnismäßig hoher Vertragsstrafen" },
+      { "norm": "§ 307 Abs. 1 BGB", "marker": "B2B-INDIZ", "relevance": "Unangemessene Benachteiligung durch überhöhte Pauschale in AGB" }
+    ],
+    "reasoningSteps": [
+      { "step": 1, "label": "Vertragsklausel", "content": "§ 4 sieht eine Vertragsstrafe von EUR 250.000 pro Verstoß vor — ohne Differenzierung nach Schwere." },
+      { "step": 2, "label": "Rechtliche Einordnung", "content": "§ 343 BGB erlaubt richterliche Herabsetzung einer unverhältnismäßig hohen Strafe. In AGB ist eine undifferenzierte Pauschale nach § 307 BGB angreifbar." },
+      { "step": 3, "label": "Risikobewertung", "content": "Bei einem Bagatellverstoß wären EUR 250.000 offensichtlich unverhältnismäßig. Keine Anrechnung auf den Schaden vorgesehen." }
+    ],
+    "counterArguments": ["Der Lieferant könnte argumentieren, dass die Höhe dem typischen Schadensrisiko entspricht und abschreckend wirken soll."],
+    "limitations": ["Ob die Klausel im Einzelfall herabgesetzt wird, hängt von der konkreten Vertragssituation und dem Verstoß ab."]
+  }
 }
 
 WEITERE REGELN:
