@@ -494,6 +494,8 @@ model AnalysisFinding {
   clauseRef     String?  @db.VarChar(200)
   sourceSpan    String?  @db.Text
   suggestedRevision String? @db.Text
+  /// Evidence Graph MVP: Structured reasoning chain per finding (normBasis, steps, counterArgs, limitations, confidenceFactors)
+  evidenceGraph Json?
   createdAt     DateTime @default(now())
 
   tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
