@@ -94,6 +94,8 @@ export type WorkbenchAiContractAnalysis = {
     sourceSpan: string | null
     /** v2: konkreter Formulierungsvorschlag zur Risikominimierung */
     suggestedRevision: string | null
+    /** v4: Evidence Graph — klickbare Begründungskette (JSON aus DB) */
+    evidenceGraph: unknown
     latestReview: {
       decision: string
       comment: string | null
@@ -210,6 +212,8 @@ export async function getWorkbenchAiContractAnalysis(
           sourceSpan: f.sourceSpan,
           // v2 — bei älteren Findings null.
           suggestedRevision: f.suggestedRevision,
+          // v4 — Evidence Graph (JSON aus DB, bei älteren Findings null).
+          evidenceGraph: f.evidenceGraph ?? null,
           latestReview: r
             ? {
                 decision: r.decision,
@@ -488,7 +492,15 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
           // v2: quote landet in sourceSpan (bestehendes Feld, max Text).
           // suggestedRevision ist ein neues Feld aus der v2-Migration.
           sourceSpan: f.quote ?? null,
-          suggestedRevision: f.suggestedRevision ?? null
+          suggestedRevision: f.suggestedRevision ?? null,
+          // v4: Evidence Graph — confidenceFactors + evidenceGraph als JSON-Blob.
+          evidenceGraph:
+            (f.evidenceGraph || f.confidenceFactors)
+              ? ({
+                  ...(f.evidenceGraph ?? {}),
+                  confidenceFactors: f.confidenceFactors ?? undefined
+                } as Prisma.InputJsonValue)
+              : Prisma.JsonNull
         }))
       })
     }
