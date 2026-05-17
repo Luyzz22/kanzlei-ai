@@ -14,7 +14,13 @@ type ParsedAnalysis = {
   summary: string
   overallRisk: number
   matchPercentage: number
-  findings: unknown[]
+  findings: Array<{
+    clause: string; docA: string; docB: string
+    severity: string; assessment: string
+    riskDelta?: number
+    normBasis?: Array<{ norm: string; marker: string }>
+    suggestedRevision?: string
+  }>
   missingInA: unknown[]
   missingInB: unknown[]
   recommendations: unknown[]
@@ -105,9 +111,23 @@ const comparisonSchema = JSON.stringify({
           docA: { type: "string", description: "Relevante Passage aus Dokument A" },
           docB: { type: "string", description: "Relevante Passage aus Dokument B" },
           severity: { type: "string", enum: ["niedrig", "mittel", "hoch"] },
-          assessment: { type: "string", description: "Bewertung der Abweichung und deren Risiko" }
+          assessment: { type: "string", description: "Bewertung der Abweichung und deren Risiko" },
+          riskDelta: { type: "number", minimum: -100, maximum: 100, description: "Risiko-Delta: positiv=Dokument A risikoreicher als B, negativ=B risikoreicher als A. 0=gleichwertig." },
+          normBasis: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                norm: { type: "string", description: "z.B. § 307 BGB, Art. 28 DSGVO" },
+                marker: { type: "string", enum: ["DIREKT", "ZWINGEND", "B2B-INDIZ", "ANALOG"] }
+              },
+              required: ["norm", "marker"]
+            },
+            description: "Einschlägige Rechtsnormen für diese Abweichung"
+          },
+          suggestedRevision: { type: "string", description: "Konkreter Formulierungsvorschlag für eine Kompromissklausel" }
         },
-        required: ["clause", "docA", "docB", "severity", "assessment"]
+        required: ["clause", "docA", "docB", "severity", "assessment", "riskDelta"]
       }
     },
     missingInA: { type: "array", items: { type: "string" }, description: "Klauseln die in Dokument A fehlen aber in B vorhanden sind" },
@@ -169,6 +189,16 @@ VERGLEICHS-SCHWERPUNKTE:
 4. Identifiziere Klauseln die in einem Dokument fehlen
 5. Prüfe besonders: Haftung, Gewährleistung, Kündigungsfristen, Gerichtsstand, Vertragsstrafen, IP-Rechte, Datenschutz, Force Majeure
 6. Formuliere konkrete Handlungsempfehlungen für Nachverhandlungen
+
+RISIKO-DELTA (NEU — PFLICHT pro Finding):
+- "riskDelta": Numerischer Wert -100 bis +100.
+  Positiv = Dokument A ist risikoreicher als B (für den Leser).
+  Negativ = Dokument B ist risikoreicher.
+  0 = gleichwertig.
+  Beispiel: Haftungsbeschränkung in A auf €50k, in B unbeschränkt → riskDelta: -70 (B risikoreicher).
+- "normBasis": Welche Rechtsnormen sind bei dieser Abweichung einschlägig?
+  Marker: DIREKT (unmittelbar anwendbar), ZWINGEND (nicht abdingbar), B2B-INDIZ (Wertungsmaßstab im B2B), ANALOG (analoge Anwendung).
+- "suggestedRevision": Formuliere einen konkreten Kompromissvorschlag, der die Interessen beider Seiten berücksichtigt.
 
 Erkenne die Sprache automatisch und antworte in der Sprache der Dokumente.
 
