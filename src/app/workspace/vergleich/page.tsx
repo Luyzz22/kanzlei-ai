@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { AiTransparencyBadge } from "@/components/compliance/ai-transparency-badge"
 
 type ComparisonFinding = {
   clause: string
@@ -156,6 +157,7 @@ export default function VergleichPage() {
           {/* Summary */}
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <h2 className="text-[14px] font-semibold text-gray-900">📊 Zusammenfassung</h2>
+            <AiTransparencyBadge compact className="mt-2" />
             <p className="mt-2 text-[14px] leading-relaxed text-gray-600">{result.summary}</p>
           </div>
 
