@@ -5,10 +5,41 @@ export const metadata: Metadata = { title: "Release Notes", description: "Alle �
 
 const releases = [
   {
+    version: "4.0.0",
+    date: "17. Mai 2026",
+    title: "Evidence Graph, Eval Dashboard & Vertragsvergleich v2",
+    current: true,
+    changes: [
+      { type: "NEU", text: "Evidence Graph MVP — klickbare Begründungskette pro Finding mit Rechtsgrundlagen (normBasis mit DIREKT/ZWINGEND/B2B-INDIZ/ANALOG-Markern), Argumentationskette als nummerierte Timeline, Gegenargumenten für Verhandlungsvorbereitung, Einschränkungen der KI-Bewertung und Konfidenz-Faktoren mit gewichteten Balken" },
+      { type: "NEU", text: "Continuous Eval Dashboard — Qualitätsmonitoring unter /workspace/eval-dashboard mit Override-Raten, Drift Detection (automatischer Alert bei >10pp Anstieg), Konfidenz-Kalibrierung (werden High-Confidence-Findings häufiger akzeptiert?), Provider-Vergleich, Prompt-Version-Tracking und Sparkline-Trends für Konfidenz, Risiko, Kosten und Latenz" },
+      { type: "NEU", text: "Vertragsvergleich v2 — Risiko-Delta pro Klausel-Diff (-100 bis +100: wer hat mehr Risiko?), normBasis-Badges pro Abweichung, konkrete Kompromissvorschläge für Nachverhandlungen, Ø Risiko-Delta als 4. KPI-Karte" },
+      { type: "NEU", text: "Enterprise-Logo — neues Shield-Logomark mit Vertrags-/AI-Motiv ersetzt das bisherige 'KA'-Textlogo. Favicon, Apple-Icon und Header aktualisiert" },
+      { type: "CHANGE", text: "Prompt-Version auf v2026-05-16 aktualisiert — confidenceFactors und evidenceGraph werden jetzt in der DB persistiert (vorher nur im Prompt-Output)" },
+      { type: "CHANGE", text: "Eval Dashboard in Sidebar-Navigation unter Verwaltung eingebunden mit NEU-Badge" },
+      { type: "CHANGE", text: "Analyse-Schema auf v4 aktualisiert mit evidenceGraph-Objekt (Zod-validiert)" },
+    ]
+  },
+  {
+    version: "3.2.0",
+    date: "15. Mai 2026",
+    title: "Review-Workflow, E-Mail-Benachrichtigung & Hybrid-Pricing",
+    current: false,
+    changes: [
+      { type: "NEU", text: "Review-Formular mit Radio-Buttons und 'Kenntnisgenommen' als vierte Option neben Akzeptiert/Abgelehnt/Angepasst" },
+      { type: "NEU", text: "E-Mail-Benachrichtigung bei Analyse-Abschluss an den Ersteller" },
+      { type: "NEU", text: "Reviewer-Name und Review-Historie pro Finding — wer hat wann was entschieden" },
+      { type: "NEU", text: "Bulk-Upload — mehrere Verträge gleichzeitig hochladen und analysieren" },
+      { type: "NEU", text: "Hybrid-Pricing-Seite mit Starter (€790/Mo), Business (€1.990/Mo) und Enterprise (ab €54k ACV) inkl. Feature-Vergleich, FAQ und Trust-Badges" },
+      { type: "CHANGE", text: "Profil-Seite Enterprise-Rewrite mit verbessertem Layout" },
+      { type: "FIX", text: "Compliance-Claims auf allen Seiten konsistent" },
+      { type: "FIX", text: "AI Act Transparenzseite auf aktuellen Stand gebracht (Art. 50 Deadline 02.08.2026)" },
+    ]
+  },
+  {
     version: "3.1.0",
     date: "12. Mai 2026",
     title: "Review-Pipeline, PDF-Export & Analyse-Präzision",
-    current: true,
+    current: false,
     changes: [
       { type: "NEU", text: "Review-Pipeline mit Prüffortschritt — Fortschrittsbalken zeigt '7/11 Findings geprüft' mit Prozentangabe. Status-Dots (✓ ✕ ✎) auf jedem Finding sichtbar, auch im eingeklappten Zustand" },
       { type: "NEU", text: "Batch-Accept — 'Alle Niedrig-Findings akzeptieren' akzeptiert alle ungeprüften Niedrig-Findings mit einem Klick" },
