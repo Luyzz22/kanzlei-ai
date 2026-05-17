@@ -5,10 +5,23 @@ export const metadata: Metadata = { title: "Release Notes", description: "Alle �
 
 const releases = [
   {
+    version: "4.1.0",
+    date: "17. Mai 2026",
+    title: "Playbook Miner, Radar v2, AI Act Art. 50 Compliance",
+    current: true,
+    changes: [
+      { type: "NEU", text: "Playbook Miner Alpha — automatische Klausel-Policies aus Review-Historie. Erkennt 5 Patterns (Auto-Accept, Immer prüfen, Bevorzugte Formulierung, Review empfohlen, Inkonsistent) mit Konfidenz-Score, bevorzugten Standardformulierungen und Reviewer-Zuordnung" },
+      { type: "NEU", text: "Regulatory Radar v2 — Remediation-Maßnahmen pro Regulierung mit Status-Tracking (Offen → In Arbeit → Erledigt), Fortschrittsbalken, Fristberechnung und kopierbaren Nachtragsklausel-Vorlagen für EU AI Act, NIS2 und LkSG" },
+      { type: "NEU", text: "AI Act Art. 50 KI-Kennzeichnung — verpflichtende Transparenz-Badges auf allen KI-generierten Inhalten (Analyse-Findings, Vertragsvergleiche). Deadline-konform bis 02.08.2026" },
+      { type: "CHANGE", text: "Sidebar-Navigation um Playbook Miner erweitert (NEU-Badge unter Workspace)" },
+      { type: "CHANGE", text: "Regulierungen in der Watchlist enthalten jetzt konkrete RemediationAction-Objekte mit Klausel-Amendments" },
+    ]
+  },
+  {
     version: "4.0.0",
     date: "17. Mai 2026",
     title: "Evidence Graph, Eval Dashboard & Vertragsvergleich v2",
-    current: true,
+    current: false,
     changes: [
       { type: "NEU", text: "Evidence Graph MVP — klickbare Begründungskette pro Finding mit Rechtsgrundlagen (normBasis mit DIREKT/ZWINGEND/B2B-INDIZ/ANALOG-Markern), Argumentationskette als nummerierte Timeline, Gegenargumenten für Verhandlungsvorbereitung, Einschränkungen der KI-Bewertung und Konfidenz-Faktoren mit gewichteten Balken" },
       { type: "NEU", text: "Continuous Eval Dashboard — Qualitätsmonitoring unter /workspace/eval-dashboard mit Override-Raten, Drift Detection (automatischer Alert bei >10pp Anstieg), Konfidenz-Kalibrierung (werden High-Confidence-Findings häufiger akzeptiert?), Provider-Vergleich, Prompt-Version-Tracking und Sparkline-Trends für Konfidenz, Risiko, Kosten und Latenz" },
