@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { getRadarMatches, getPortfolioStats } from "@/lib/documents/workspace-analytics"
 import { REGULATION_WATCHLIST } from "@/lib/regulatory/watchlist"
+import { RadarRemediationPanel } from "@/components/regulatory/radar-remediation-panel"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -166,6 +167,15 @@ export default async function VertragsradarPage() {
                         )}
                       </div>
                     </div>
+                  )}
+
+                  {/* v2: Remediation-Maßnahmen */}
+                  {reg.remediationActions && reg.remediationActions.length > 0 && (
+                    <RadarRemediationPanel
+                      regulationId={reg.id}
+                      actions={reg.remediationActions}
+                      enforcementDate={reg.enforcementDate}
+                    />
                   )}
                 </div>
               )
