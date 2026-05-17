@@ -15,6 +15,17 @@ import { KNOWN_CELEX, eurLexUrlForCelex } from "./eurlex-client"
 
 export type RegulationCategory = "ai" | "data-protection" | "cybersecurity" | "supply-chain" | "tax-invoice" | "labor"
 
+export interface RemediationAction {
+  id: string
+  title: string
+  description: string
+  priority: "kritisch" | "hoch" | "mittel"
+  /** Empfohlene Frist in Tagen ab heute */
+  suggestedDays: number
+  /** Vorgeschlagener Klausel-Nachtrag */
+  clauseAmendment?: string
+}
+
 export interface WatchedRegulation {
   id: string
   celex: string
@@ -29,6 +40,8 @@ export interface WatchedRegulation {
   description: string
   source: "eur-lex" | "bgbl" | "manual"
   emoji: string
+  /** v2: Konkrete Remediation-Maßnahmen pro Regulierung */
+  remediationActions?: RemediationAction[]
 }
 
 export const REGULATION_WATCHLIST: WatchedRegulation[] = [
@@ -45,7 +58,25 @@ export const REGULATION_WATCHLIST: WatchedRegulation[] = [
     impactedClauses: ["ai-transparency", "human-oversight", "high-risk-classification", "conformity-assessment"],
     description: "Verpflichtungen für Anbieter und Anwender von KI-Systemen. High-Risk-Systeme erfordern Transparenz, Dokumentation, Human Oversight (Art. 14).",
     source: "eur-lex",
-    emoji: "🤖"
+    emoji: "🤖",
+    remediationActions: [
+      {
+        id: "aiact-1",
+        title: "KI-Transparenzklausel ergänzen",
+        description: "Art. 50 EU AI Act verpflichtet Anbieter, Nutzer über den KI-Einsatz zu informieren. Verträge mit KI-Dienstleistern benötigen eine Transparenzklausel.",
+        priority: "kritisch",
+        suggestedDays: 60,
+        clauseAmendment: "Der Auftragnehmer verpflichtet sich, den Einsatz von Systemen künstlicher Intelligenz im Rahmen der Leistungserbringung gegenüber dem Auftraggeber offenzulegen. Insbesondere sind Art, Umfang, Zweck und Risikokategorie gemäß der Verordnung (EU) 2024/1689 (AI Act) zu benennen. Der Auftraggeber ist berechtigt, eine Dokumentation nach Art. 13 AI Act anzufordern."
+      },
+      {
+        id: "aiact-2",
+        title: "Human-Oversight-Regelung aufnehmen",
+        description: "Art. 14 AI Act verlangt für High-Risk-Systeme eine menschliche Aufsicht. Verträge müssen klären, wer die Aufsichtspflicht trägt.",
+        priority: "hoch",
+        suggestedDays: 60,
+        clauseAmendment: "Soweit der Auftragnehmer KI-Systeme einsetzt, die nach der Verordnung (EU) 2024/1689 als hochriskant einzustufen sind, stellt er die menschliche Aufsicht gemäß Art. 14 sicher. Der Auftragnehmer benennt eine verantwortliche natürliche Person und dokumentiert die Aufsichtsmaßnahmen."
+      }
+    ]
   },
   {
     id: "gdpr-2026",
@@ -75,7 +106,25 @@ export const REGULATION_WATCHLIST: WatchedRegulation[] = [
     impactedClauses: ["cybersecurity", "incident-reporting", "supply-chain-security", "audit-rights"],
     description: "Cybersecurity-Anforderungen in der Lieferkette für betroffene Sektoren. Art. 21 verpflichtet zu Incident Reporting binnen 24h.",
     source: "eur-lex",
-    emoji: "🛡️"
+    emoji: "🛡️",
+    remediationActions: [
+      {
+        id: "nis2-1",
+        title: "Cybersecurity-Annex ergänzen",
+        description: "Art. 21 NIS2 verlangt Mindest-Sicherheitsmaßnahmen in der Lieferkette. Verträge mit ICT-Dienstleistern brauchen einen Cybersecurity-Annex.",
+        priority: "hoch",
+        suggestedDays: 45,
+        clauseAmendment: "Der Auftragnehmer verpflichtet sich zur Einhaltung angemessener Cybersicherheitsmaßnahmen gemäß Art. 21 der Richtlinie (EU) 2022/2555 (NIS2). Hierzu zählen insbesondere: (a) Risikomanagement für Netz- und Informationssysteme, (b) Incident-Response-Plan mit Meldepflicht binnen 24 Stunden, (c) Backup- und Wiederherstellungskonzepte, (d) regelmäßige Sicherheitsaudits."
+      },
+      {
+        id: "nis2-2",
+        title: "Incident-Reporting-Klausel aufnehmen",
+        description: "NIS2 Art. 23 verpflichtet zur Meldung erheblicher Sicherheitsvorfälle binnen 24h. Verträge müssen die Meldekette definieren.",
+        priority: "hoch",
+        suggestedDays: 45,
+        clauseAmendment: "Der Auftragnehmer meldet dem Auftraggeber erhebliche Sicherheitsvorfälle im Sinne von Art. 23 NIS2 unverzüglich, spätestens binnen 24 Stunden nach Kenntnis. Die Meldung umfasst: Art des Vorfalls, betroffene Systeme, ergriffene Sofortmaßnahmen und voraussichtliche Auswirkungen."
+      }
+    ]
   },
   {
     id: "dora",
@@ -105,7 +154,17 @@ export const REGULATION_WATCHLIST: WatchedRegulation[] = [
     impactedClauses: ["human-rights", "environmental", "code-of-conduct", "audit-rights", "termination-rights"],
     description: "Sorgfaltspflichten in der Lieferkette für Unternehmen ab 1.000 Mitarbeitern. Menschenrechts- und Umweltklauseln verpflichtend.",
     source: "manual",
-    emoji: "🔗"
+    emoji: "🔗",
+    remediationActions: [
+      {
+        id: "lksg-1",
+        title: "Code of Conduct-Klausel aufnehmen",
+        description: "§ 6 LkSG verlangt die Verankerung menschenrechtlicher und umweltbezogener Sorgfaltspflichten in Lieferantenverträgen.",
+        priority: "hoch",
+        suggestedDays: 30,
+        clauseAmendment: "Der Auftragnehmer verpflichtet sich zur Einhaltung des Verhaltenskodex des Auftraggebers (Anlage X). Dies umfasst insbesondere: Verbot von Kinder- und Zwangsarbeit, Einhaltung des Arbeitsschutzes, Verbot umweltschädlicher Praktiken. Der Auftragnehmer gewährt dem Auftraggeber ein Auditrecht zur Überprüfung der Einhaltung mit angemessener Ankündigung."
+      }
+    ]
   },
   {
     id: "e-rechnung-de",
