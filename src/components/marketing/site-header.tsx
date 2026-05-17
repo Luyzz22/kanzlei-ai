@@ -61,9 +61,20 @@ export function SiteHeader() {
       <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
         {/* Logo */}
         <Link href={isLoggedIn ? "/dashboard" : "/"} className="flex items-center gap-2.5 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#003856]">
-            <span className="text-[11px] font-bold tracking-tight text-white">KA</span>
-          </div>
+          <svg className="h-8 w-8" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#004d7a"/><stop offset="100%" stopColor="#003856"/></linearGradient>
+              <linearGradient id="ha" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#D4A853"/><stop offset="100%" stopColor="#C8985A"/></linearGradient>
+            </defs>
+            <path d="M16 2L5 7v10c0 7.2 4.7 12.1 11 13 6.3-.9 11-5.8 11-13V7L16 2z" fill="url(#hg)"/>
+            <path d="M16 4.5L7 8.5v8.5c0 5.8 3.8 9.8 9 10.5 5.2-.7 9-4.7 9-10.5V8.5L16 4.5z" fill="none" stroke="#fff" strokeWidth="0.5" opacity="0.15"/>
+            <line x1="11" y1="11" x2="21" y2="11" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+            <line x1="11" y1="14.5" x2="19" y2="14.5" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+            <line x1="11" y1="18" x2="17" y2="18" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" opacity="0.35"/>
+            <circle cx="21" cy="19" r="2.8" fill="url(#ha)"/><circle cx="21" cy="19" r="1.2" fill="#fff"/>
+            <line x1="19.5" y1="17.5" x2="17" y2="14.5" stroke="url(#ha)" strokeWidth="0.6" opacity="0.6"/>
+            <line x1="18.8" y1="19.5" x2="17" y2="18" stroke="url(#ha)" strokeWidth="0.6" opacity="0.6"/>
+          </svg>
           <span className="text-[15px] font-semibold tracking-tight text-gray-900">KanzleiAI</span>
         </Link>
 
