@@ -8,6 +8,9 @@ type ComparisonFinding = {
   docB: string
   severity: "niedrig" | "mittel" | "hoch"
   assessment: string
+  riskDelta?: number
+  normBasis?: Array<{ norm: string; marker: string }>
+  suggestedRevision?: string
 }
 
 type ComparisonResult = {
@@ -127,7 +130,7 @@ export default function VergleichPage() {
       ) : (
         <div className="mt-8 space-y-6">
           {/* Score Header */}
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-4">
             <div className={`rounded-2xl border p-5 text-center ${result.overallRisk >= 70 ? "border-red-200 bg-red-50" : result.overallRisk >= 40 ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"}`}>
               <p className="text-[11px] font-semibold uppercase text-gray-500">Abweichungs-Risiko</p>
               <p className={`mt-1 text-[32px] font-bold ${result.overallRisk >= 70 ? "text-red-700" : result.overallRisk >= 40 ? "text-amber-700" : "text-emerald-700"}`}>{result.overallRisk}</p>
@@ -139,6 +142,14 @@ export default function VergleichPage() {
             <div className="rounded-2xl border border-gray-200 bg-white p-5 text-center">
               <p className="text-[11px] font-semibold uppercase text-gray-500">Abweichungen</p>
               <p className="mt-1 text-[32px] font-bold text-gray-900">{result.findings.length}</p>
+            </div>
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 text-center">
+              <p className="text-[11px] font-semibold uppercase text-gray-500">Ø Risiko-Delta</p>
+              {(() => {
+                const deltas = result.findings.filter(f => f.riskDelta != null).map(f => f.riskDelta!)
+                const avg = deltas.length > 0 ? Math.round(deltas.reduce((a, b) => a + b, 0) / deltas.length) : 0
+                return <p className={`mt-1 text-[32px] font-bold ${avg > 0 ? "text-rose-600" : avg < 0 ? "text-blue-600" : "text-slate-500"}`}>{avg > 0 ? "+" : ""}{avg}</p>
+              })()}
             </div>
           </div>
 
@@ -175,6 +186,42 @@ export default function VergleichPage() {
                         </div>
                       </div>
                       <p className="mt-3 text-[13px] text-gray-600">{f.assessment}</p>
+                      {/* v4: Risk Delta */}
+                      {f.riskDelta != null && f.riskDelta !== 0 && (
+                        <div className="mt-3 flex items-center gap-3 rounded-lg border border-slate-100 bg-white/80 px-3 py-2">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Risiko-Delta</span>
+                          <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                            {f.riskDelta > 0 ? (
+                              <div className="ml-[50%] h-full rounded-r-full bg-rose-500" style={{ width: `${Math.min(Math.abs(f.riskDelta), 100) / 2}%` }} />
+                            ) : (
+                              <div className="h-full rounded-l-full bg-blue-500" style={{ width: `${Math.min(Math.abs(f.riskDelta), 100) / 2}%`, marginLeft: `${50 - Math.min(Math.abs(f.riskDelta), 100) / 2}%` }} />
+                            )}
+                          </div>
+                          <span className={`text-[11px] font-semibold tabular-nums ${f.riskDelta > 0 ? "text-rose-600" : "text-blue-600"}`}>
+                            {f.riskDelta > 0 ? `A +${f.riskDelta}` : `B ${f.riskDelta}`}
+                          </span>
+                        </div>
+                      )}
+                      {/* v4: Norm Basis */}
+                      {f.normBasis && f.normBasis.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {f.normBasis.map((n, ni) => {
+                            const mc = n.marker === "ZWINGEND" ? "bg-rose-50 text-rose-700 border-rose-200" : n.marker === "DIREKT" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : n.marker === "B2B-INDIZ" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-blue-50 text-blue-700 border-blue-200"
+                            return (
+                              <span key={ni} className={`rounded-md border px-2 py-0.5 text-[10px] font-semibold ${mc}`}>
+                                {n.norm} <span className="opacity-60">({n.marker})</span>
+                              </span>
+                            )
+                          })}
+                        </div>
+                      )}
+                      {/* v4: Suggested Revision */}
+                      {f.suggestedRevision && (
+                        <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">Kompromissvorschlag</p>
+                          <p className="mt-1 whitespace-pre-wrap text-[12px] leading-relaxed text-emerald-900">{f.suggestedRevision}</p>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
