@@ -11,6 +11,7 @@ import {
 } from "@/app/workspace/dokumente/[id]/actions"
 import { AnalysisFindingReviewForm } from "@/components/documents/analysis-finding-review-form"
 import { EvidenceGraphPanel } from "@/components/documents/evidence-graph-panel"
+import { AiTransparencyBadge } from "@/components/compliance/ai-transparency-badge"
 import { StatusBadge } from "@/components/marketing/status-badge"
 import type {
   WorkbenchAiContractAnalysisProps,
@@ -394,6 +395,9 @@ export function ContractAnalysisPanel({ documentId, canStartAnalysis, canReviewF
                   </div>
                 )
               })()}
+
+              {/* AI Act Art. 50 — KI-Kennzeichnung */}
+              <AiTransparencyBadge system="KanzleiAI" />
 
               <FindingsSummaryBar findings={analysis.findings} riskScore={analysis.run.riskScore01} filter={severityFilter} onFilter={setSeverityFilter} />
 
