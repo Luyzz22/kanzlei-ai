@@ -18,6 +18,7 @@ const workspaceNav = [
   { label: "Review & Freigabe", href: "/workspace/review-queue", emoji: "✅" },
   { label: "Playbook Miner", href: "/workspace/playbooks", emoji: "📖", badge: "NEU" },
   { label: "AGB-Vergleich", href: "/workspace/vergleich", emoji: "⚖️" },
+  { label: "Präzedenz-Suche", href: "/workspace/similarity", emoji: "🔍", badge: "NEU" },
   { label: "Benchmarking", href: "/workspace/benchmarking", emoji: "📊" },
   { label: "Vertragsradar", href: "/workspace/vertragsradar", emoji: "🛰️", badge: "NEU" },
   { label: "Verhandlungssimulator", href: "/workspace/verhandlung", emoji: "🎯", badge: "BETA" },
