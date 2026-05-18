@@ -133,6 +133,7 @@ model Tenant {
   promptReleases         PromptRelease[]
   governanceSettings TenantGovernanceSettings?
   dynamicsIntegration DynamicsIntegration?
+  playbookRules      PlaybookRule[]
 }
 
 model TenantMember {
@@ -531,6 +532,29 @@ model AnalysisFindingReview {
   @@index([tenantId, analysisFindingId, reviewedAt])
   @@index([analysisRunId])
   @@index([reviewerId, reviewedAt])
+}
+
+/// Playbook Miner: persistierte Klausel-Regeln aus Review-Entscheidungen
+model PlaybookRule {
+  id                String   @id @default(cuid())
+  tenantId          String
+  category          String   @db.VarChar(120)
+  pattern           String   @db.VarChar(40)     // AUTO_ACCEPT, ALWAYS_REJECT, PREFERRED_REVISION, NEEDS_REVIEW, INCONSISTENT
+  confidence        Float    @default(0)
+  description       String?  @db.Text
+  preferredRevision String?  @db.Text
+  isActive          Boolean  @default(false)
+  samplesCount      Int      @default(0)
+  acceptanceRate    Float?
+  overrideRate      Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+  createdBy         String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, category])
+  @@index([tenantId, isActive])
 }
 
 /// Globale Prompt-Metadaten (kein Mandantenbezug; Zugriff nur Plattform-Admin)
