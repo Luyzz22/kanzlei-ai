@@ -6,6 +6,7 @@ import {
   isModelTypeAvailable,
   sortModelsByProviderPriority
 } from "@/lib/ai/provider-availability"
+import { log } from "@/lib/security/secure-logging"
 
 export type PipelineStage = "CLASSIFICATION" | "EXTRACTION" | "RISK_AND_GUIDANCE"
 
@@ -15,6 +16,12 @@ export type RouterContext = {
   complexity?: "niedrig" | "mittel" | "hoch"
   mimeType?: string
   preferLocalOrPrivate?: boolean
+  /** Tenant-ID für Provider-Governance (Policy Guard R-02) */
+  tenantId?: string
+  /** Tenant-spezifische Provider-Allowlist (R-02: geladen aus TenantGovernanceSettings) */
+  allowedProviders?: string[]
+  /** Tenant hat EU-Only aktiviert (R-02) */
+  preferEuModels?: boolean
   /**
    * Eval / Modellvergleich: erzwingt das Primärmodell je Pipeline-Stufe (Fallback-Kette bleibt über Verfügbarkeit).
    */
@@ -116,13 +123,54 @@ export function getFallbackChainForStage(primary: ModelType, stage: PipelineStag
   }
 }
 
+/** Maps ModelType to provider name for governance checks */
+function modelToProvider(model: ModelType): string {
+  switch (model) {
+    case ModelType.GPT_4O_MINI: return "openai"
+    case ModelType.CLAUDE_SONNET_4: return "anthropic"
+    case ModelType.GEMINI_2_5_PRO: return "gemini"
+    case ModelType.LLAMA_COMPAT: return "llama"
+    default: return "unknown"
+  }
+}
+
+const US_PROVIDER_NAMES = ["openai", "anthropic", "gemini"]
+
+/** R-02 Fix: Filter execution chain by tenant governance settings */
+function filterByTenantGovernance(chain: ModelType[], ctx: RouterContext): ModelType[] {
+  let filtered = chain
+
+  // EU-Only Mode: block US providers
+  if (ctx.preferEuModels) {
+    const before = filtered.length
+    filtered = filtered.filter(m => !US_PROVIDER_NAMES.includes(modelToProvider(m)))
+    if (filtered.length < before) {
+      log.info("router.eu_only_filter", { removed: before - filtered.length, tenantId: ctx.tenantId })
+    }
+  }
+
+  // Provider Allowlist: only allow explicitly listed providers
+  if (ctx.allowedProviders && ctx.allowedProviders.length > 0) {
+    const allowed = ctx.allowedProviders
+    const before = filtered.length
+    filtered = filtered.filter(m => allowed.includes(modelToProvider(m)))
+    if (filtered.length < before) {
+      log.info("router.allowlist_filter", { allowed, removed: before - filtered.length, tenantId: ctx.tenantId })
+    }
+  }
+
+  return filtered
+}
+
 export function buildModelExecutionPlan(stage: PipelineStage, ctx: RouterContext): ModelType[] {
   const forced = ctx.evalPrimaryByStage?.[stage]
   const primary = forced ?? selectPrimaryModelForStage(stage, ctx)
   const fallbacks = uniqueModels(getFallbackChainForStage(primary, stage)).filter((m) => m !== primary)
   const sortedFallbacks = sortModelsByProviderPriority(fallbacks)
   const chain = [primary, ...sortedFallbacks]
-  return filterModelsByAvailability(chain)
+  const available = filterModelsByAvailability(chain)
+  // R-02: Apply tenant governance filter (allowedProviders, preferEuModels)
+  return filterByTenantGovernance(available, ctx)
 }
 
 export function getSelectionReasonForStage(stage: PipelineStage, model: ModelType, ctx: RouterContext): string {
@@ -211,13 +259,13 @@ export function getFilteredExecutionChain(metadata: DocumentMetadata): ModelType
 
 export function logModelSelection(documentMetadata: DocumentMetadata, selectedModel: ModelType): void {
   if (process.env.AI_AUDIT_VERBOSE !== "true") return
-  console.info("[AI-Model-Router] Modellauswahl", {
+  log.info("model_selection", {
     documentId: documentMetadata.documentId,
-    analysisType: documentMetadata.analysisType,
+    analysisType: String(documentMetadata.analysisType),
     documentLength: documentMetadata.documentLength,
     hasVisualElements: Boolean(documentMetadata.hasVisualElements),
-    selectedModel,
-    available: getAvailableModelTypes(),
+    selectedModel: String(selectedModel),
+    available: getAvailableModelTypes().map(String),
     reason: getSelectionReason(selectedModel)
   })
 }
