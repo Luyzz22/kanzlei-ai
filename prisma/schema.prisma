@@ -168,6 +168,10 @@ model TenantGovernanceSettings {
   approvalRestrictedToPrivilegedRoles     Boolean  @default(true)
   archivingRestrictedToPrivilegedRoles    Boolean  @default(true)
   reviewStartRestrictedToPrivilegedRoles  Boolean  @default(false)
+  /// R-02 Fix: Provider-Allowlist pro Tenant (leer = alle erlaubt)
+  allowedProviders                        String[]
+  /// R-02 Fix: EU-Only-Modus — blockiert US-Provider (OpenAI, Anthropic, Gemini)
+  preferEuModels                          Boolean  @default(false)
   defaultDocumentRetentionDays             Int      @default(365)
   auditEvidenceRetentionDays               Int      @default(1825)
   reviewDueDays                            Int      @default(14)
@@ -204,6 +208,10 @@ model Document {
   reviewOwnerId String?
   reviewDueAt DateTime?
   createdAt    DateTime @default(now())
+  /// R-06 Fix: Soft-Delete Zeitstempel (DSGVO Art. 17)
+  deletedAt    DateTime?
+  /// R-06 Fix: Automatische Löschung nach Ablauf (DSGVO Art. 5, 25)
+  retentionUntil DateTime?
 
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   uploadedBy   User?         @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
@@ -442,6 +450,8 @@ model AnalysisRun {
   contractClassification      String?                @db.VarChar(60)
   partyConstellation          String?                @db.VarChar(60)
   agbKontrolleAnwendbar       Boolean?
+  /// R-06 Fix: Soft-Delete (DSGVO Art. 17)
+  deletedAt                   DateTime?
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   document  Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
