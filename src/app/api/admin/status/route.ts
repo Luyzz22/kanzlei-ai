@@ -1,8 +1,29 @@
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
 
+/**
+ * Admin Status Endpoint — Audit R-04 Fix
+ *
+ * In Production: Nur authentifizierte ADMIN/OWNER-User dürfen zugreifen.
+ * Sensitive Werte (URLs, Secrets) werden NICHT mehr exponiert.
+ * Gibt nur Boolean-Status für Provider-Verfügbarkeit zurück.
+ */
 export async function GET(): Promise<NextResponse> {
+  // Production: Auth + Role Check erforderlich
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
+  }
+
+  // Nur ADMIN oder OWNER dürfen den Status sehen
+  const role = (session.user as { role?: string }).role
+  if (role !== "ADMIN" && role !== "OWNER") {
+    return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 })
+  }
+
+  // Nur Boolean-Status — KEINE URLs, Secrets, Keys oder Konfigurationswerte
   return NextResponse.json({
     providers: {
       openai: Boolean(process.env.OPENAI_API_KEY?.trim()),
@@ -12,16 +33,10 @@ export async function GET(): Promise<NextResponse> {
     },
     router: {
       enabled: process.env.AI_ROUTER_ENABLED === "true",
-      priority: process.env.AI_PROVIDER_PRIORITY || "openai,anthropic,gemini,llama",
     },
     auth: {
-      nextauthUrl: process.env.NEXTAUTH_URL || "not set",
-      secretSet: Boolean(process.env.NEXTAUTH_SECRET),
       google: Boolean(process.env.AUTH_GOOGLE_ID),
-      microsoft: Boolean(process.env.AUTH_MICROSOFT_ID),
-    },
-    seed: {
-      secretSet: Boolean(process.env.SEED_SECRET),
+      microsoft: Boolean(process.env.AUTH_MICROSOFT_TENANT_ID),
     }
   })
 }
