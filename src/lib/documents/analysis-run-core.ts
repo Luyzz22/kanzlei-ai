@@ -349,10 +349,19 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
     return { ok: false, code: "NOT_FOUND", message: "Dokument im Mandanten nicht gefunden." }
   }
 
+  // R-02: Load tenant governance settings for provider filtering
+  const governance = await prisma.tenantGovernanceSettings.findUnique({
+    where: { tenantId: input.tenantId },
+    select: { allowedProviders: true, preferEuModels: true }
+  }).catch(() => null)
+
   const routerCtx: RouterContext = {
     documentLength: text.length,
     mimeType: preflight.mimeType ?? undefined,
-    preferLocalOrPrivate: process.env.AI_SENSITIVE_USE_LLAMA === "true"
+    preferLocalOrPrivate: process.env.AI_SENSITIVE_USE_LLAMA === "true",
+    tenantId: input.tenantId,
+    allowedProviders: (governance?.allowedProviders as string[] | null) ?? undefined,
+    preferEuModels: governance?.preferEuModels ?? undefined
   }
 
   const promptResolver = createTenantContractPromptResolver(input.tenantId, preflight.documentType)
