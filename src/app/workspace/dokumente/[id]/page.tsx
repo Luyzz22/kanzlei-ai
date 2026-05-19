@@ -1,3 +1,6 @@
+/** Vercel Pro: 300s Timeout für Server-Actions (Analyse-Pipeline braucht 60-120s) */
+export const maxDuration = 300
+
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 
