@@ -1,6 +1,15 @@
 export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { log } from "@/lib/security/secure-logging"
+
+/**
+ * DATEV Buchungsstapel CSV Export
+ *
+ * SECURITY: Dieser Endpoint formatiert nur — die Daten kommen vom Client.
+ * Review-Enforcement muss im UI erfolgen (Export-Button nur für FREIGEGEBEN).
+ * TODO: Server-seitige Verifizierung der AnalysisRun.reviewState = FREIGEGEBEN
+ */
 
 // DATEV Buchungsstapel CSV format (simplified)
 // Based on DATEV-Format 510 (Buchungssätze)
@@ -53,7 +62,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
     })
   } catch (error) {
-    console.error("[DATEV EXPORT]", error)
+    log.error("datev_export_failed", { error: error instanceof Error ? error.message : "unknown" })
     return NextResponse.json({ error: "Export fehlgeschlagen" }, { status: 500 })
   }
 }
