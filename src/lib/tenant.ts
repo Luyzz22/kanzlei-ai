@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 
 export type TenantContext = {
@@ -59,7 +60,14 @@ export async function requireAdmin(): Promise<TenantContext | null> {
 /**
  * Sets the RLS tenant context for raw SQL queries.
  * Call this before any $queryRaw or $executeRaw that touches tenant tables.
+ *
+ * SECURITY: Uses Prisma.sql tagged template (parameterized) instead of
+ * $executeRawUnsafe to prevent SQL injection (Audit finding).
  */
 export async function setRlsTenantId(tenantId: string): Promise<void> {
-  await prisma.$executeRawUnsafe(`SET app.current_tenant_id = '${tenantId}'`)
+  // Validate tenantId format (CUID) before any SQL
+  if (!/^c[a-z0-9]{24,}$/i.test(tenantId) && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+    throw new Error("Invalid tenantId format — potential injection attempt")
+  }
+  await prisma.$executeRaw(Prisma.sql`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`)
 }
