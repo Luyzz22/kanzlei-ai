@@ -50,11 +50,16 @@ export abstract class BaseAIProvider implements AIProvider {
         const isRateLimited = message.toLowerCase().includes("rate") || message.includes("429")
         const backoffMs = isRateLimited ? 500 * 2 ** (attempt - 1) : 300 * attempt
 
-        console.warn(`[AI:${providerName}] Versuch ${attempt}/${this.maxRetries} fehlgeschlagen.`, {
-          message,
+        // R-07: Redacted retry logging — no PII in logs
+        console.warn(JSON.stringify({
+          event: "ai_provider_retry",
+          provider: providerName,
+          attempt,
+          maxRetries: this.maxRetries,
+          errorCode: message.slice(0, 100),
           backoffMs,
           isRateLimited
-        })
+        }))
 
         if (attempt < this.maxRetries) {
           await new Promise((resolve) => setTimeout(resolve, backoffMs))
