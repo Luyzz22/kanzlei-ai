@@ -79,6 +79,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const result = await analyzeWithRouter(metadata, prompt, documentText)
 
     // Fire webhook for high-risk analyses (non-blocking)
+    // R-03 Fix: Nur Hash/ID übertragen — KEINE Vertragsinhalte
     try {
       const parsed = typeof result.analysis === "string" ? JSON.parse(result.analysis) : result.analysis
       if (parsed.riskScore && parsed.riskScore >= 70 && process.env.WEBHOOK_SECRET) {
@@ -87,7 +88,13 @@ export async function POST(request: Request): Promise<NextResponse> {
           headers: { "Content-Type": "application/json", "x-api-key": process.env.WEBHOOK_SECRET },
           body: JSON.stringify({
             type: "analysis.high_risk",
-            data: { riskScore: parsed.riskScore, product: documentText.slice(0, 100), model: result.modelUsed, findingsCount: parsed.findings?.length ?? 0 }
+            data: {
+              riskScore: parsed.riskScore,
+              model: result.modelUsed,
+              findingsCount: parsed.findings?.length ?? 0,
+              // KEINE Vertragsinhalte — nur Metadaten (DSGVO Art. 5, BRAO §43a)
+              timestamp: new Date().toISOString()
+            }
           })
         }).catch(() => {})
       }
