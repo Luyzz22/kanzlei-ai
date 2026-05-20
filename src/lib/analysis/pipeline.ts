@@ -25,7 +25,7 @@ type PipelineInput = {
 };
 
 export async function runAnalysisPipeline({
-  runId: _runId,
+  runId: 
   tenantId,
   documentId,
   onProgress,
