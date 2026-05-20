@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
     data: {
       tenantId,
       documentId,
+      userId: session.user.id,
       status: "QUEUED",
       progress: 0,
       // GoBD-nahe Aufbewahrungsfrist: 6 Jahre
