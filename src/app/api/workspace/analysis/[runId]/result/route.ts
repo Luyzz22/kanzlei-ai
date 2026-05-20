@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getTenantId } from "@/lib/tenant";
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access";
 
 export const runtime = "nodejs";
 
@@ -14,7 +14,8 @@ export async function GET(
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
 
-  const tenantId = await getTenantId(session);
+  const tenantCtx = await resolveTenantContextForUser(session.user.id);
+  const tenantId = tenantCtx.status === "single" ? tenantCtx.tenantId : null;
   if (!tenantId) {
     return NextResponse.json({ error: "no_tenant" }, { status: 403 });
   }
