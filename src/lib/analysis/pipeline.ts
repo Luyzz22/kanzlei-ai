@@ -13,7 +13,7 @@ import { prisma } from "@/lib/prisma";
 
 // ─── Importiere die bestehende Pipeline ───────────────────
 // ANPASSEN: Pfad und Funktionsname an dein bestehendes Export anpassen
-import { runAnalysis } from "@/lib/ai/analysis-pipeline";
+import { runPersistedContractAnalysis } from "@/lib/documents/analysis-run-core";
 // Falls der Import anders heißt:
 // import { analyzeContract } from "@/lib/ai/analysis-pipeline";
 
