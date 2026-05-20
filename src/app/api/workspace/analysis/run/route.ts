@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const run = await prisma.analysisRun.findUnique({
     where: { id: runId },
-    select: { id: true, tenantId: true, documentId: true, status: true },
+    select: { id: true, tenantId: true, documentId: true, userId: true, status: true },
   });
 
   if (!run) {
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
       runId,
       tenantId: run.tenantId,
       documentId: run.documentId,
+      actorId: run.userId,
       onProgress: async (progress: number, stage: string) => {
         await prisma.analysisRun.update({
           where: { id: runId },
