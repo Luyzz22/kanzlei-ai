@@ -13,7 +13,7 @@ import { prisma } from "@/lib/prisma";
 
 // ─── Importiere die bestehende Pipeline ───────────────────
 // ANPASSEN: Pfad und Funktionsname an dein bestehendes Export anpassen
-import { runPersistedContractAnalysis } from "@/lib/documents/analysis-run-core"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import { runPersistedContractAnalysis } from "@/lib/documents/analysis-run-core";
 // Falls der Import anders heißt:
 // import { analyzeContract } from "@/lib/ai/analysis-pipeline";
 
@@ -25,7 +25,6 @@ type PipelineInput = {
 };
 
 export async function runAnalysisPipeline({
-  runId: 
   tenantId,
   documentId,
   onProgress,
@@ -70,7 +69,7 @@ export async function runAnalysisPipeline({
 
   // ─── Bestehende Pipeline aufrufen ──────────────────────
   // ANPASSEN: Parameter an deine bestehende Signatur anpassen
-  const result = await runAnalysis({
+  const result = await runPersistedContractAnalysis({
     documentId: doc.id,
     documentText: doc.text,
     tenantId,
