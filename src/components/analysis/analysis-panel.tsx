@@ -22,7 +22,7 @@ import {
   FileSearch,
   Upload,
   RotateCcw,
-  Download,
+
   ExternalLink,
   CheckCircle2,
 } from "lucide-react";
