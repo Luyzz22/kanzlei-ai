@@ -2,6 +2,23 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["fra1"],
   "buildCommand": "npx prisma migrate deploy && npx prisma generate && npm run build",
+  "functions": {
+    "src/app/workspace/dokumente/[id]/**": {
+      "maxDuration": 300
+    },
+    "src/app/api/analyze/**": {
+      "maxDuration": 300
+    },
+    "src/app/api/analyze-quick/**": {
+      "maxDuration": 300
+    },
+    "src/app/api/compare/**": {
+      "maxDuration": 300
+    },
+    "src/app/api/copilot/**": {
+      "maxDuration": 300
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/radar-sync",
@@ -10,6 +27,10 @@
     {
       "path": "/api/cron/data-retention",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/retention-purge",
+      "schedule": "0 4 * * *"
     }
   ]
 }
