@@ -9,8 +9,6 @@ import { auth } from "@/lib/auth"
 import { submitAnalysisFindingReview, finalizeAnalysisReview } from "@/lib/documents/analysis-finding-review-core"
 import { createDocumentComment } from "@/lib/documents/comments-core"
 import { processDocumentExtraction } from "@/lib/documents/processing-core"
-import { runPersistedContractAnalysis } from "@/lib/documents/analysis-run-core"
-import { getWorkspaceDocumentById } from "@/lib/documents/workspace-core"
 import { prisma } from "@/lib/prisma"
 import {
   assignDocumentReviewOwner,
@@ -44,50 +42,25 @@ export async function startContractAnalysisAction(
     return { status: "error", message: "Bitte melden Sie sich an." }
   }
 
-  const tenantContext = await resolveTenantContextForUser(session.user.id)
-  if (tenantContext.status === "none") {
-    return { status: "error", message: "Kein Mandantenkontext hinterlegt." }
-  }
-  if (tenantContext.status === "multiple") {
-    return { status: "error", message: "Kein eindeutiger Mandantenkontext." }
-  }
-
-  const doc = await getWorkspaceDocumentById(tenantContext.tenantId, documentId)
-  if (!doc) {
-    return { status: "error", message: "Dokument in diesem Arbeitsbereich nicht gefunden." }
-  }
-
-  if (doc.processingStatus !== "VERARBEITET") {
-    return {
-      status: "error",
-      message: "Die KI-Analyse setzt eine abgeschlossene Textextraktion voraus."
-    }
-  }
-
-  const text = doc.extractedTextPreview?.trim() ?? ""
-  if (!text) {
-    return { status: "error", message: "Keine Textgrundlage für die Analyse verfügbar." }
-  }
-
   try {
-    const result = await runPersistedContractAnalysis({
-      tenantId: tenantContext.tenantId,
-      documentId,
-      actorId: session.user.id,
-      documentText: text,
-      documentSha256: doc.sha256
+    // Analyse läuft in dedizierter API-Route mit maxDuration: 300s.
+    // Server Actions können kein eigenes maxDuration setzen — daher der Umweg.
+    const baseUrl = process.env.NEXTAUTH_URL || "https://www.kanzlei-ai.com"
+    const { cookies } = await import("next/headers")
+    const cookieHeader = (await cookies()).toString()
+
+    const res = await fetch(`${baseUrl}/api/workspace/run-analysis`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookieHeader
+      },
+      body: JSON.stringify({ documentId })
     })
 
-    if (!result.ok) {
-      if (result.code === "FORBIDDEN") {
-        return { status: "error", message: "Für diese Aktion fehlt die Berechtigung." }
-      }
-      if (result.code === "NO_PROVIDER") {
-        return { status: "error", message: result.message }
-      }
-      if (result.code === "ALREADY_RUNNING") {
-        return { status: "error", message: result.message }
-      }
+    const result = await res.json()
+
+    if (result.status === "error") {
       return { status: "error", message: result.message ?? "Die Analyse ist fehlgeschlagen." }
     }
 
@@ -99,10 +72,10 @@ export async function startContractAnalysisAction(
       message: "KI-Vertragsanalyse abgeschlossen. Ergebnisse sind unten einsehbar — bitte fachlich prüfen (Human-in-the-Loop)."
     }
   } catch (err) {
-    console.error("[startContractAnalysisAction] Unerwarteter Fehler:", err instanceof Error ? err.message : err)
+    console.error("[startContractAnalysisAction]", err instanceof Error ? err.message : err)
     return {
       status: "error",
-      message: "Die Analyse wurde unterbrochen (Zeitlimit überschritten). Bitte versuchen Sie es erneut — bei wiederholtem Fehler ist ein Upgrade auf den Pro-Plan erforderlich."
+      message: "Die Analyse wurde unterbrochen. Bitte versuchen Sie es erneut."
     }
   }
 }
