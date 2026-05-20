@@ -5,7 +5,7 @@ import { resolveTenantContextForUser } from "@/lib/admin/tenant-access";
 
 export const runtime = "nodejs";
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ items: [], unread: 0 });
