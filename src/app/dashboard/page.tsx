@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { ReleaseNotesWidget } from "@/components/dashboard/release-notes-widget"
 
 type DashboardStats = {
   totalAnalyses: number
@@ -82,15 +83,8 @@ function DashboardContent() {
         </div>
       )}
 
-      {/* What's New Banner */}
-      <Link href="/release-notes" className="flex items-center gap-3 rounded-xl border border-gold-200 bg-gold-50 px-5 py-3 transition-colors hover:bg-gold-100/50">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#003856] text-[10px] font-bold text-white">3.1</span>
-        <div className="flex-1">
-          <p className="text-[13px] font-medium text-gray-900">Neu: Review-Pipeline, PDF-Export, Norm-Analogie &amp; Branchenmodul</p>
-          <p className="text-[11px] text-gray-500">Freigabe-Workflow, Batch-Accept, Klassifikationsblock, Cross-Clause-Pflichtpr{"ü"}fungen</p>
-        </div>
-        <span className="text-[12px] text-gold-600">Release Notes {"→"}</span>
-      </Link>
+      {/* Release Notes — dynamische 3-Eintrag-Liste (ersetzt vormals hardcoded "v3.1"-Banner) */}
+      <ReleaseNotesWidget count={3} />
 
       <div>
         <h1 className="text-[1.5rem] font-semibold tracking-tight text-gray-950">Dashboard</h1>
