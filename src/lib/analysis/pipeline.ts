@@ -14,6 +14,7 @@ type PipelineInput = {
 }
 
 export async function runAnalysisPipeline({
+  runId,
   tenantId,
   documentId,
   actorId,
@@ -40,6 +41,7 @@ export async function runAnalysisPipeline({
     actorId,
     documentText: text,
     documentSha256: doc.sha256,
+    existingRunId: runId,
   })
 
   await onProgress(85, "risk")
