@@ -28,55 +28,29 @@ export type ContractAnalysisFormState = {
   message?: string
 }
 
+/**
+ * @deprecated v4.2 — ersetzt durch die Async-Pipeline mit <AnalysisPanel />.
+ * Die Komponente nutzt direkt POST /api/workspace/analysis/start +
+ * Polling auf /api/workspace/analysis/{runId}/status, das ist robuster
+ * (kein 504-Risiko, kein blockierender Server-Action-Roundtrip).
+ *
+ * Wird nur noch behalten, um Formular-Imports nicht hart zu brechen.
+ * Returnt immer einen Fehler — UI sollte die alte Form-Action nicht mehr binden.
+ */
 export async function startContractAnalysisAction(
   _: ContractAnalysisFormState,
   formData: FormData
 ): Promise<ContractAnalysisFormState> {
   const documentId = String(formData.get("documentId") ?? "").trim()
-  if (!documentId) {
-    return { status: "error", message: "Die Analyse konnte nicht gestartet werden." }
-  }
-
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { status: "error", message: "Bitte melden Sie sich an." }
-  }
-
-  try {
-    // Analyse läuft in dedizierter API-Route mit maxDuration: 300s.
-    // Server Actions können kein eigenes maxDuration setzen — daher der Umweg.
-    const baseUrl = process.env.NEXTAUTH_URL || "https://www.kanzlei-ai.com"
-    const { cookies } = await import("next/headers")
-    const cookieHeader = (await cookies()).toString()
-
-    const res = await fetch(`${baseUrl}/api/workspace/run-analysis`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookieHeader
-      },
-      body: JSON.stringify({ documentId })
-    })
-
-    const result = await res.json()
-
-    if (result.status === "error") {
-      return { status: "error", message: result.message ?? "Die Analyse ist fehlgeschlagen." }
-    }
-
-    revalidatePath(`/workspace/dokumente/${documentId}`)
-    revalidatePath("/workspace/dokumente")
-
-    return {
-      status: "success",
-      message: "KI-Vertragsanalyse abgeschlossen. Ergebnisse sind unten einsehbar — bitte fachlich prüfen (Human-in-the-Loop)."
-    }
-  } catch (err) {
-    console.error("[startContractAnalysisAction]", err instanceof Error ? err.message : err)
-    return {
-      status: "error",
-      message: "Die Analyse wurde unterbrochen. Bitte versuchen Sie es erneut."
-    }
+  console.warn(
+    "[deprecated] startContractAnalysisAction called",
+    JSON.stringify({ documentId, at: new Date().toISOString() })
+  )
+  return {
+    status: "error",
+    message:
+      "Diese Server Action wurde durch das Async-Analyse-Pattern ersetzt. " +
+      "Bitte die Seite neu laden — die Analyse startet jetzt direkt im AnalysisPanel."
   }
 }
 
