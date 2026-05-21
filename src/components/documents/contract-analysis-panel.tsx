@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState } from "react"
 import { useFormState } from "react-dom"
 import { useRouter } from "next/navigation"
 
@@ -11,6 +11,7 @@ import {
 } from "@/app/workspace/dokumente/[id]/actions"
 import { AnalysisFindingReviewForm } from "@/components/documents/analysis-finding-review-form"
 import { EvidenceGraphPanel } from "@/components/documents/evidence-graph-panel"
+import { AnalysisPanel } from "@/components/analysis/analysis-panel"
 import { AiTransparencyBadge } from "@/components/compliance/ai-transparency-badge"
 import { StatusBadge } from "@/components/marketing/status-badge"
 import type {
@@ -205,34 +206,16 @@ function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
 /* ================================================================== */
 export function ContractAnalysisPanel({ documentId, canStartAnalysis, canReviewFindings, analysis }: ContractAnalysisPanelProps) {
   const router = useRouter()
-  const [analysisState, setAnalysisState] = useState<{ status: "idle" | "pending" | "success" | "error"; message?: string }>({ status: "idle" })
   const [finalizeState, finalizeAction] = useFormState(finalizeAnalysisReviewAction, initialState)
   const [batchState, batchAcceptAction] = useFormState(batchAcceptFindingsAction, initialState)
   const [severityFilter, setSeverityFilter] = useState<"ALL" | "HOCH" | "MITTEL" | "NIEDRIG">("ALL")
   const [openFindings, setOpenFindings] = useState<Set<string>>(new Set())
   const [metaOpen, setMetaOpen] = useState(false)
 
-  // Client-seitiger fetch auf die API-Route mit maxDuration: 300s
-  // Server Actions können kein maxDuration — daher direkter Browser-Fetch.
-  const startAnalysis = useCallback(async () => {
-    setAnalysisState({ status: "pending" })
-    try {
-      const res = await fetch("/api/workspace/run-analysis", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId })
-      })
-      const result = await res.json()
-      if (result.status === "error") {
-        setAnalysisState({ status: "error", message: result.message ?? "Analyse fehlgeschlagen." })
-      } else {
-        setAnalysisState({ status: "success", message: "KI-Vertragsanalyse abgeschlossen. Ergebnisse werden geladen…" })
-        router.refresh()
-      }
-    } catch {
-      setAnalysisState({ status: "error", message: "Verbindung zur Analyse-API fehlgeschlagen." })
-    }
-  }, [documentId, router])
+  // v4.2: Analyse läuft über das Async-Pipeline-Pattern via <AnalysisPanel />.
+  // Der alte synchrone Fetch auf /api/workspace/run-analysis ist obsolet und
+  // wurde durch start + Polling auf /api/workspace/analysis/start ersetzt.
+  // Bei Abschluss revalidieren wir die Page-Daten (Findings, Klassifikation).
 
   function toggleFinding(id: string) { setOpenFindings(prev => { const next = new Set(prev); if (next.has(id)) { next.delete(id) } else { next.add(id) }; return next }) }
   function expandAll() { if (!analysis) return; setOpenFindings(new Set(getFilteredFindings().map(f => f.id))) }
@@ -247,17 +230,10 @@ export function ContractAnalysisPanel({ documentId, canStartAnalysis, canReviewF
       </div>
 
       {canStartAnalysis ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={startAnalysis}
-            disabled={analysisState.status === "pending"}
-            className="inline-flex rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {analysisState.status === "pending" ? "Analyse läuft …" : "KI-Vertragsanalyse starten"}
-          </button>
-          {analysisState.message ? (<p className={`text-sm ${analysisState.status === "success" ? "text-emerald-700" : "text-rose-700"}`}>{analysisState.message}</p>) : null}
-        </div>
+        <AnalysisPanel
+          documentId={documentId}
+          onResult={() => router.refresh()}
+        />
       ) : (<p className="text-sm text-slate-600">Start erst nach erfolgreicher Textextraktion möglich.</p>)}
 
       {analysis ? (
