@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access";
@@ -67,37 +68,39 @@ export async function POST(req: NextRequest) {
     select: { id: true, status: true },
   });
 
-  // Worker async triggern — fire-and-forget mit `keepalive: true`,
-  // damit Vercel den Request nicht killt sobald diese Lambda ihre Response
-  // geschickt hat. `req.nextUrl.origin` ist robuster als NEXTAUTH_URL
-  // (z.B. bei Branch-Deployments oder Preview-URLs).
+  // Worker async triggern via Vercel waitUntil() — die offizielle API für
+  // Background-Work in Lambdas. waitUntil signalisiert dem Runtime: "halte
+  // diese Promise nach der Response am Leben bis sie resolved". Ohne das wird
+  // die Lambda nach response.json() eingefroren und der fetch nie geflusht.
+  // `req.nextUrl.origin` ist robuster als NEXTAUTH_URL (Branch/Preview-Deploys).
   const workerUrl = `${req.nextUrl.origin}/api/workspace/analysis/run`;
-  fetch(workerUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Worker-Token": process.env.WORKER_TOKEN!,
-    },
-    body: JSON.stringify({ runId: run.id }),
-    cache: "no-store",
-    keepalive: true,
-  })
-    .then(async (res) => {
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        console.error("[analysis.start] worker non-ok response:", {
-          status: res.status,
-          runId: run.id,
-          body: body.slice(0, 500),
-        });
-      }
+  waitUntil(
+    fetch(workerUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Worker-Token": process.env.WORKER_TOKEN!,
+      },
+      body: JSON.stringify({ runId: run.id }),
+      cache: "no-store",
     })
-    .catch((err) => {
-      console.error("[analysis.start] worker dispatch failed:", {
-        runId: run.id,
-        message: err?.message ?? String(err),
-      });
-    });
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.text().catch(() => "");
+          console.error("[analysis.start] worker non-ok response:", {
+            status: res.status,
+            runId: run.id,
+            body: body.slice(0, 500),
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("[analysis.start] worker dispatch failed:", {
+          runId: run.id,
+          message: err?.message ?? String(err),
+        });
+      }),
+  );
 
   return NextResponse.json({
     runId: run.id,
