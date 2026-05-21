@@ -72,8 +72,21 @@ export async function POST(req: NextRequest) {
   // Background-Work in Lambdas. waitUntil signalisiert dem Runtime: "halte
   // diese Promise nach der Response am Leben bis sie resolved". Ohne das wird
   // die Lambda nach response.json() eingefroren und der fetch nie geflusht.
-  // `req.nextUrl.origin` ist robuster als NEXTAUTH_URL (Branch/Preview-Deploys).
-  const workerUrl = `${req.nextUrl.origin}/api/workspace/analysis/run`;
+  //
+  // WICHTIG: req.nextUrl.origin gibt die DEPLOYMENT-URL zurück
+  // (z.B. https://kanzlei-XXX-sbs-deutschland-gmb-h.vercel.app), die hinter
+  // Vercel Deployment Protection (SSO) sitzt → fetch bekommt 401 HTML.
+  // NEXTAUTH_URL ist auf die Production-Domain gesetzt (www.kanzlei-ai.com),
+  // die offen ist und unseren eigenen X-Worker-Token-Check verwendet.
+  const baseUrl =
+    process.env.NEXTAUTH_URL?.replace(/\/$/, "") ?? req.nextUrl.origin;
+  const workerUrl = `${baseUrl}/api/workspace/analysis/run`;
+
+  console.log("[analysis.start] dispatching worker:", {
+    workerUrl,
+    runId: run.id,
+  });
+
   waitUntil(
     fetch(workerUrl, {
       method: "POST",
@@ -90,13 +103,20 @@ export async function POST(req: NextRequest) {
           console.error("[analysis.start] worker non-ok response:", {
             status: res.status,
             runId: run.id,
+            workerUrl,
             body: body.slice(0, 500),
+          });
+        } else {
+          console.log("[analysis.start] worker dispatched ok:", {
+            status: res.status,
+            runId: run.id,
           });
         }
       })
       .catch((err) => {
         console.error("[analysis.start] worker dispatch failed:", {
           runId: run.id,
+          workerUrl,
           message: err?.message ?? String(err),
         });
       }),
