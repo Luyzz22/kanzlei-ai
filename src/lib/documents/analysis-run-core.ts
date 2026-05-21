@@ -254,6 +254,13 @@ type RunInput = {
   actorId: string
   documentText: string
   documentSha256?: string | null
+  /**
+   * Wenn vom Async-Worker aufgerufen, der bereits einen AnalysisRun
+   * mit status=RUNNING angelegt hat: dessen ID hier durchreichen.
+   * - Skip self-lock im preflight (sonst Self-Lock)
+   * - Skip tx.analysisRun.create (Run existiert schon, dann nur update)
+   */
+  existingRunId?: string
 }
 
 export async function runPersistedContractAnalysis(input: RunInput): Promise<RunContractAnalysisResult> {
@@ -272,7 +279,7 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
     }
   }
 
-  const runId = randomUUID()
+  const runId = input.existingRunId ?? randomUUID()
   const wallStart = Date.now()
 
   const preflight = await withTenant(input.tenantId, async (tx) => {
@@ -292,7 +299,10 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
       where: {
         tenantId: input.tenantId,
         documentId: input.documentId,
-        status: AnalysisRunStatus.RUNNING
+        status: AnalysisRunStatus.RUNNING,
+        // Wenn der Worker uns aufgerufen hat: schließe den eigenen Run aus,
+        // sonst Self-Lock (der Run wurde vom Worker auf RUNNING gesetzt).
+        ...(input.existingRunId ? { id: { not: input.existingRunId } } : {})
       },
       select: { id: true }
     })
@@ -306,18 +316,32 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
     })
     const nextSequence = (seqAgg._max.runSequence ?? 0) + 1
 
-    await tx.analysisRun.create({
-      data: {
-        id: runId,
-        tenantId: input.tenantId,
-        documentId: input.documentId,
-        userId: input.actorId,
-        status: AnalysisRunStatus.RUNNING,
-        promptVersion: CONTRACT_ANALYSIS_PROMPT_VERSION,
-        runSequence: nextSequence,
-        documentContentHash: input.documentSha256 ?? doc.sha256 ?? null
-      }
-    })
+    if (input.existingRunId) {
+      // Async-Worker-Path: Run existiert schon (vom Worker angelegt + RUNNING gesetzt).
+      // Nur die zusätzlichen Felder ergänzen, status bleibt RUNNING.
+      await tx.analysisRun.update({
+        where: { id: runId },
+        data: {
+          promptVersion: CONTRACT_ANALYSIS_PROMPT_VERSION,
+          runSequence: nextSequence,
+          documentContentHash: input.documentSha256 ?? doc.sha256 ?? null
+        }
+      })
+    } else {
+      // Legacy-Sync-Path: Run komplett neu anlegen.
+      await tx.analysisRun.create({
+        data: {
+          id: runId,
+          tenantId: input.tenantId,
+          documentId: input.documentId,
+          userId: input.actorId,
+          status: AnalysisRunStatus.RUNNING,
+          promptVersion: CONTRACT_ANALYSIS_PROMPT_VERSION,
+          runSequence: nextSequence,
+          documentContentHash: input.documentSha256 ?? doc.sha256 ?? null
+        }
+      })
+    }
 
     await writeAuditEventTx(tx, {
       tenantId: input.tenantId,
