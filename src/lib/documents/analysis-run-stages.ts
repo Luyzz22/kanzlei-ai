@@ -123,10 +123,15 @@ type LoadedDocumentContext = {
   routerCtx: RouterContext
 }
 
+type LoadFailureCode = "DOCUMENT_NOT_FOUND" | "DOCUMENT_NOT_PROCESSED" | "NO_TEXT_CONTENT"
+
 async function loadDocumentAndPrepareContext(
   tenantId: string,
   documentId: string
-): Promise<{ ok: true; context: LoadedDocumentContext } | { ok: false; code: StageOutcome extends { ok: false; code: infer C } ? C : never; message: string }> {
+): Promise<
+  | { ok: true; context: LoadedDocumentContext }
+  | { ok: false; code: LoadFailureCode; message: string }
+> {
   const doc = await getWorkspaceDocumentById(tenantId, documentId)
   if (!doc) {
     return { ok: false, code: "DOCUMENT_NOT_FOUND", message: "Dokument nicht gefunden." }
