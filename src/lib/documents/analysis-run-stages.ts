@@ -152,10 +152,20 @@ async function loadDocumentAndPrepareContext(
   const normalizedText = normalizeDocumentTextForAnalysis(text, maxChars)
   const inputTextHash = hashTextSha256(normalizedText)
 
+  // R-02 Policy Guard: Tenant-Governance laden für Provider-Filterung
+  const governance = await prisma.tenantGovernanceSettings
+    .findUnique({
+      where: { tenantId },
+      select: { allowedProviders: true, preferEuModels: true }
+    })
+    .catch(() => null)
+
   assertAnyProviderConfigured()
   const routerCtx: RouterContext = {
+    documentLength: normalizedText.length,
     tenantId,
-    documentId
+    allowedProviders: (governance?.allowedProviders as string[] | null) ?? undefined,
+    preferEuModels: governance?.preferEuModels ?? undefined
   }
 
   return {
