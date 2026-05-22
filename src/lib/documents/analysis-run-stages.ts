@@ -121,6 +121,7 @@ type LoadedDocumentContext = {
   normalizedText: string
   inputTextHash: string
   routerCtx: RouterContext
+  documentTypeHint: string
 }
 
 type LoadFailureCode = "DOCUMENT_NOT_FOUND" | "DOCUMENT_NOT_PROCESSED" | "NO_TEXT_CONTENT"
@@ -170,7 +171,18 @@ async function loadDocumentAndPrepareContext(
 
   return {
     ok: true,
-    context: { normalizedText, inputTextHash, routerCtx }
+    context: {
+      normalizedText,
+      inputTextHash,
+      routerCtx,
+      // documentType ist im Schema String @default("Sonstiges"), aber wir
+      // sind defensiv falls getWorkspaceDocumentById nicht selectiert oder
+      // anderes Format liefert. "Sonstiges" matcht den DB-Default.
+      documentTypeHint:
+        typeof (doc as { documentType?: unknown }).documentType === "string"
+          ? (doc as { documentType: string }).documentType
+          : "Sonstiges"
+    }
   }
 }
 
@@ -242,9 +254,9 @@ export async function runPersistedClassificationStage(input: StageInput): Promis
 
   const ctxResult = await loadDocumentAndPrepareContext(input.tenantId, input.documentId)
   if (!ctxResult.ok) return ctxResult
-  const { normalizedText, inputTextHash, routerCtx } = ctxResult.context
+  const { normalizedText, inputTextHash, routerCtx, documentTypeHint } = ctxResult.context
 
-  const promptResolver = createTenantContractPromptResolver(input.tenantId, null)
+  const promptResolver = createTenantContractPromptResolver(input.tenantId, documentTypeHint)
 
   let stage: ClassificationStageResult
   try {
@@ -335,7 +347,7 @@ export async function runPersistedExtractionStage(input: StageInput): Promise<St
   const classificationPayload = previousState.classification?.payload ?? null
   const promptResolver = createTenantContractPromptResolver(
     input.tenantId,
-    classificationPayload?.contractClassification ?? null
+    classificationPayload?.contractClassification ?? ctxResult.context.documentTypeHint
   )
 
   let stage: ExtractionStageResult
@@ -452,7 +464,7 @@ export async function runPersistedRiskStage(input: StageInput): Promise<StageOut
   const classificationPayload = previousState.classification?.payload ?? null
   const promptResolver = createTenantContractPromptResolver(
     input.tenantId,
-    classificationPayload?.contractClassification ?? null
+    classificationPayload?.contractClassification ?? ctxResult.context.documentTypeHint
   )
 
   // ── Stage 3 ausführen ──────────────────────────────────────────────
