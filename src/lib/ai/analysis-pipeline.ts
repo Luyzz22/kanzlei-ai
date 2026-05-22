@@ -105,6 +105,41 @@ export type ContractPipelineSuccess = {
   promptMetadata: ContractPipelinePromptMetadata
 }
 
+// ============================================================================
+// v5.0 Stage-Chunked Pipeline — Stage-Output Types
+// ============================================================================
+
+export type StageResolvedPrompt = {
+  key: string
+  version: string
+  source?: "database" | "registry_default"
+}
+
+export type ClassificationStageResult = {
+  classification: ClassificationStagePayload | null
+  classificationResolved: StageResolvedPrompt | null
+  stageLogs: StageAttemptLog[]
+  fallbackKeys: string[]
+}
+
+export type ExtractionStageResult = {
+  extraction: ExtractionStagePayload
+  extractionModel: ModelType
+  extractionTokens: number
+  extractionResolved: StageResolvedPrompt
+  stageLogs: StageAttemptLog[]
+  fallbackKeys: string[]
+}
+
+export type RiskStageResult = {
+  risk: RiskAndGuidanceStagePayload
+  riskModel: ModelType
+  riskTokens: number
+  riskResolved: StageResolvedPrompt
+  stageLogs: StageAttemptLog[]
+  fallbackKeys: string[]
+}
+
 export class PipelineStageFailureError extends Error {
   readonly code = "PIPELINE_STAGE_FAILED"
   constructor(
@@ -340,123 +375,219 @@ async function runJsonStage<T>(
   throw new PipelineStageFailureError(prismaStage, "Alle Anbieterversuche für diese Pipeline-Stufe sind fehlgeschlagen.")
 }
 
-export async function runContractAnalysisPipeline(
-  documentText: string,
+// ============================================================================
+// v5.0 Stage-Chunked Pipeline — einzelne Stage-Funktionen + Aggregator
+// ============================================================================
+// Diese ermöglichen es dem Async-Worker (/api/workspace/analysis/run), jede
+// Stage als eigenen Lambda-Aufruf auszuführen, mit DB-State-Persistierung
+// zwischen den Stages. Damit umgehen wir den 300s-Hardlimit für Lambdas bei
+// langen Vertragsanalysen.
+//
+// Für Schnellanalyse / synchrone Aufrufe bleibt `runContractAnalysisPipeline`
+// als Kompatibilitäts-Shim erhalten (siehe unten).
+// ============================================================================
+
+/**
+ * Stage 0: Classification.
+ * Non-blocking: bei Fehler wird mit classification=null returnt (Pipeline läuft weiter).
+ */
+export async function runClassificationStage(
+  normalizedText: string,
   ctx: RouterContext,
   resolver: ContractPromptResolver
-): Promise<ContractPipelineSuccess> {
-  const maxChars = Number.parseInt(process.env.AI_MAX_INPUT_CHARS ?? "120000", 10) || 120_000
-  const normalized = normalizeDocumentTextForAnalysis(documentText, maxChars)
-  const inputTextHash = hashTextSha256(normalized)
-
+): Promise<ClassificationStageResult> {
   const stageLogs: StageAttemptLog[] = []
-  const fallbackModelKeys: string[] = []
-
-  // ──────────────────────────────────────────────────────────────
-  // STEP 0: CLASSIFICATION (NEU)
-  // Bestimmt den rechtlichen Bewertungsrahmen für alle weiteren Steps.
-  // Non-blocking: bei Fehler wird ohne Klassifikation fortgefahren.
-  // ──────────────────────────────────────────────────────────────
+  const fallbackKeys: string[] = []
   let classificationData: ClassificationStagePayload | null = null
-  let classificationResolved: { key: string; version: string; source?: "database" | "registry_default" } | null = null
+  let classificationResolved: StageResolvedPrompt | null = null
 
   try {
-    const classResolved = await resolver.resolveClassification(normalized)
-    classificationResolved = classResolved
-
-    const classResult = await runJsonStage(
+    const resolved = await resolver.resolveClassification(normalizedText)
+    classificationResolved = {
+      key: resolved.key,
+      version: resolved.version,
+      source: resolved.source
+    }
+    const result = await runJsonStage(
       "CLASSIFICATION",
       classificationStageSchema,
       ctx,
-      classResolved.text,
-      normalized,
+      resolved.text,
+      normalizedText,
       stageLogs,
-      fallbackModelKeys
+      fallbackKeys
     )
-    classificationData = classResult.data
+    classificationData = result.data
   } catch (err) {
-    // Classification ist non-blocking — logge den Fehler, fahre ohne Kontext fort.
-    // Dies stellt sicher, dass die Pipeline abwärtskompatibel bleibt.
     console.warn(
-      "[Pipeline] Classification (Step 0) fehlgeschlagen — fahre ohne Klassifikationskontext fort:",
+      "[Pipeline.v5] Classification (Stage 0) fehlgeschlagen — fahre ohne Klassifikationskontext fort:",
       err instanceof Error ? err.message : err
     )
   }
 
-  // ──────────────────────────────────────────────────────────────
-  // STEP 1: EXTRACTION (mit Classification-Kontext, wenn vorhanden)
-  // ──────────────────────────────────────────────────────────────
-  const extractionResolved = await resolver.resolveExtraction(normalized, classificationData)
+  return { classification: classificationData, classificationResolved, stageLogs, fallbackKeys }
+}
 
-  const extraction = await runJsonStage(
+/**
+ * Stage 1: Extraction.
+ * Blocking: bei Fehler wird PipelineStageFailureError geworfen.
+ */
+export async function runExtractionStage(
+  normalizedText: string,
+  ctx: RouterContext,
+  resolver: ContractPromptResolver,
+  classification: ClassificationStagePayload | null
+): Promise<ExtractionStageResult> {
+  const stageLogs: StageAttemptLog[] = []
+  const fallbackKeys: string[] = []
+
+  const resolved = await resolver.resolveExtraction(normalizedText, classification)
+  const result = await runJsonStage(
     "EXTRACTION",
     extractionStageSchema,
     ctx,
-    extractionResolved.text,
-    normalized,
+    resolved.text,
+    normalizedText,
     stageLogs,
-    fallbackModelKeys
+    fallbackKeys
   )
 
+  return {
+    extraction: result.data,
+    extractionModel: result.model,
+    extractionTokens: result.tokens,
+    extractionResolved: {
+      key: resolved.key,
+      version: resolved.version,
+      source: resolved.source
+    },
+    stageLogs,
+    fallbackKeys
+  }
+}
+
+/**
+ * Stage 2: Risk & Guidance.
+ * Blocking. Braucht Extraction-Output als Kontext.
+ */
+export async function runRiskStage(
+  normalizedText: string,
+  ctx: RouterContext,
+  resolver: ContractPromptResolver,
+  classification: ClassificationStagePayload | null,
+  extraction: ExtractionStagePayload
+): Promise<RiskStageResult> {
+  const stageLogs: StageAttemptLog[] = []
+  const fallbackKeys: string[] = []
+
   const extractionSummary = JSON.stringify({
-    contractType: extraction.data.contractType,
-    parties: extraction.data.parties,
-    term: extraction.data.term
+    contractType: extraction.contractType,
+    parties: extraction.parties,
+    term: extraction.term
   })
+  const contractTypeLabel = extraction.contractType ?? ""
 
-  const contractTypeLabel = extraction.data.contractType ?? ""
-
-  // ──────────────────────────────────────────────────────────────
-  // STEP 2: RISK & GUIDANCE (mit Classification + Extraction-Kontext)
-  // ──────────────────────────────────────────────────────────────
-  const riskResolved = await resolver.resolveRisk(normalized, extractionSummary, contractTypeLabel, classificationData)
-
-  const risk = await runJsonStage(
+  const resolved = await resolver.resolveRisk(
+    normalizedText,
+    extractionSummary,
+    contractTypeLabel,
+    classification
+  )
+  const result = await runJsonStage(
     "RISK_AND_GUIDANCE",
     riskAndGuidanceStageSchema,
     ctx,
-    riskResolved.text,
-    normalized,
+    resolved.text,
+    normalizedText,
     stageLogs,
-    fallbackModelKeys
+    fallbackKeys
   )
 
-  // ──────────────────────────────────────────────────────────────
-  // Aggregation & Result Assembly
-  // ──────────────────────────────────────────────────────────────
-  const extractionLog = stageLogs.find((l) => l.stage === AnalysisPipelineStageName.EXTRACTION && l.wasSuccessful)
-  const riskLog = stageLogs.find((l) => l.stage === AnalysisPipelineStageName.RISK_AND_GUIDANCE && l.wasSuccessful)
-  const classLog = stageLogs.find((l) => l.stage === AnalysisPipelineStageName.CLASSIFICATION && l.wasSuccessful)
+  return {
+    risk: result.data,
+    riskModel: result.model,
+    riskTokens: result.tokens,
+    riskResolved: {
+      key: resolved.key,
+      version: resolved.version,
+      source: resolved.source
+    },
+    stageLogs,
+    fallbackKeys
+  }
+}
 
-  const primaryModel = extraction.model
+/**
+ * Aggregator: bündelt die drei Stage-Outputs zu einem ContractPipelineSuccess.
+ * Reine Funktion, keine I/O. Vom Worker am Ende der Risk-Stage aufgerufen.
+ */
+export function assembleContractPipelineSuccess(args: {
+  classification: ClassificationStagePayload | null
+  classificationResolved: StageResolvedPrompt | null
+  extraction: ExtractionStagePayload
+  extractionModel: ModelType
+  extractionResolved: StageResolvedPrompt
+  risk: RiskAndGuidanceStagePayload
+  riskModel: ModelType
+  riskResolved: StageResolvedPrompt
+  stageLogs: StageAttemptLog[]
+  fallbackModelKeys: string[]
+  inputTextHash: string
+}): ContractPipelineSuccess {
+  const {
+    classification,
+    classificationResolved,
+    extraction,
+    extractionModel,
+    extractionResolved,
+    risk,
+    riskModel,
+    riskResolved,
+    stageLogs,
+    fallbackModelKeys,
+    inputTextHash
+  } = args
 
+  const extractionLog = stageLogs.find(
+    (l) => l.stage === AnalysisPipelineStageName.EXTRACTION && l.wasSuccessful
+  )
+  const riskLog = stageLogs.find(
+    (l) => l.stage === AnalysisPipelineStageName.RISK_AND_GUIDANCE && l.wasSuccessful
+  )
+  const classLog = stageLogs.find(
+    (l) => l.stage === AnalysisPipelineStageName.CLASSIFICATION && l.wasSuccessful
+  )
+
+  const primaryModel = extractionModel
   const totalTokens = stageLogs.reduce((s, l) => s + (l.tokensUsed ?? 0), 0)
+
   let totalCost = 0
-  if (classLog) totalCost += calculateCost(classificationData ? extraction.model : ModelType.GPT_4O_MINI, classLog.tokensUsed)
-  if (extractionLog) totalCost += calculateCost(extraction.model, extractionLog.tokensUsed)
-  if (riskLog) totalCost += calculateCost(risk.model, riskLog.tokensUsed)
+  if (classLog)
+    totalCost += calculateCost(classification ? extractionModel : ModelType.GPT_4O_MINI, classLog.tokensUsed)
+  if (extractionLog) totalCost += calculateCost(extractionModel, extractionLog.tokensUsed)
+  if (riskLog) totalCost += calculateCost(riskModel, riskLog.tokensUsed)
 
   const routerParts = [
-    classificationData
-      ? `Klassifikation: ${classificationData.contractClassification} (${apiModelLabel(extraction.model)})`
+    classification
+      ? `Klassifikation: ${classification.contractClassification} (${apiModelLabel(extractionModel)})`
       : "Klassifikation: übersprungen",
-    `Extraktion: ${apiModelLabel(extraction.model)}`,
-    `Risiko & Empfehlungen: ${apiModelLabel(risk.model)}`,
+    `Extraktion: ${apiModelLabel(extractionModel)}`,
+    `Risiko & Empfehlungen: ${apiModelLabel(riskModel)}`,
     fallbackModelKeys.length ? `Fallback-Versuche: ${fallbackModelKeys.join("; ")}` : "Keine Fallbacks nötig"
   ]
   const routerSummary = routerParts.join(" · ")
 
   const aggregateConfidence =
-    risk.data.aggregateConfidence ?? risk.data.riskScore01 ?? extraction.data.extractionConfidence ?? null
+    risk.aggregateConfidence ?? risk.riskScore01 ?? extraction.extractionConfidence ?? null
 
   const extractionSource = extractionResolved.source ?? "registry_default"
   const riskSource = riskResolved.source ?? "registry_default"
   const classificationSource = classificationResolved?.source ?? "registry_default"
 
   return {
-    classification: classificationData,
-    extraction: extraction.data,
-    risk: risk.data,
+    classification,
+    extraction,
+    risk,
     stageLogs,
     primaryModel,
     primaryProvider: modelTypeToProviderKind(primaryModel),
@@ -479,4 +610,37 @@ export async function runContractAnalysisPipeline(
       riskSource
     }
   }
+}
+
+/**
+ * Kompatibilitäts-Shim: ruft die 3 Stages sequenziell.
+ * Bestehende synchrone Aufrufer (Schnellanalyse, Tests, Eval-Tools) bleiben unverändert.
+ * Async-Worker für Tiefenanalyse nutzt die einzelnen Stage-Funktionen direkt.
+ */
+export async function runContractAnalysisPipeline(
+  documentText: string,
+  ctx: RouterContext,
+  resolver: ContractPromptResolver
+): Promise<ContractPipelineSuccess> {
+  const maxChars = Number.parseInt(process.env.AI_MAX_INPUT_CHARS ?? "120000", 10) || 120_000
+  const normalized = normalizeDocumentTextForAnalysis(documentText, maxChars)
+  const inputTextHash = hashTextSha256(normalized)
+
+  const cls = await runClassificationStage(normalized, ctx, resolver)
+  const ext = await runExtractionStage(normalized, ctx, resolver, cls.classification)
+  const risk = await runRiskStage(normalized, ctx, resolver, cls.classification, ext.extraction)
+
+  return assembleContractPipelineSuccess({
+    classification: cls.classification,
+    classificationResolved: cls.classificationResolved,
+    extraction: ext.extraction,
+    extractionModel: ext.extractionModel,
+    extractionResolved: ext.extractionResolved,
+    risk: risk.risk,
+    riskModel: risk.riskModel,
+    riskResolved: risk.riskResolved,
+    stageLogs: [...cls.stageLogs, ...ext.stageLogs, ...risk.stageLogs],
+    fallbackModelKeys: [...cls.fallbackKeys, ...ext.fallbackKeys, ...risk.fallbackKeys],
+    inputTextHash
+  })
 }
