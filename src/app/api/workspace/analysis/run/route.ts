@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { waitUntil } from "@vercel/functions"
 
 import { prisma } from "@/lib/prisma"
-import { runNextStageForRun, type StageName } from "@/lib/documents/analysis-run-stages"
+import { runNextStageForRun } from "@/lib/documents/analysis-run-stages"
 
 export const runtime = "nodejs"
 // 300s reicht für eine einzelne Stage komfortabel.
