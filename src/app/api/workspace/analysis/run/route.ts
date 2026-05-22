@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   }
 
   // State-Guard
-  if (run.status === "COMPLETED" || run.status === "FAILED" || run.status === "CANCELED") {
+  if (run.status === "COMPLETED" || run.status === "FAILED") {
     return NextResponse.json(
       { error: "invalid_state", current: run.status },
       { status: 409 }
