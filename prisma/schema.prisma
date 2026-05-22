@@ -460,6 +460,13 @@ model AnalysisRun {
   /// R-06 Fix: Soft-Delete (DSGVO Art. 17)
   deletedAt                   DateTime?
 
+  /// v5.0 Stage-Chunked Pipeline: persistierter Zwischenstate zwischen Stages.
+  /// Enthält {classification, extraction, stageLogs[], fallbackKeys[]} während der
+  /// Lauf zwischen Stages pausiert. Wird beim COMPLETE-Übergang konsumiert und
+  /// in das finale `result`-Feld + assoziierte Tabellen (findings, decisions)
+  /// aggregiert. Nullable, weil Legacy-Sync-Runs (Schnellanalyse) es nicht nutzen.
+  stageStateJson              Json?
+
   tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   document  Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
