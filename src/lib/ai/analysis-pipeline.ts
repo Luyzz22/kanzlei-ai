@@ -205,48 +205,46 @@ function toPrismaStage(stage: PipelineStage): AnalysisPipelineStageName {
 /**
  * Max-Token-Budget pro Stage.
  *
- * Wir setzen jede Stage auf das größtmögliche Output-Budget. Die tatsächliche
- * Obergrenze pro Anbieter wird dann durch providerMaxOutputTokens() gekappt
- * (siehe Aufruf in runJsonStage).
+ * Wir setzen jede Stage so hoch, dass komplexe Verträge nicht trunciert werden,
+ * aber unter dem Limit der konservativsten Anbieter bleibt. Die echte Obergrenze
+ * pro Anbieter wird dann durch providerMaxOutputTokens() gekappt.
  *
- * Hintergrund: bei komplexen Verträgen mit 9+ Findings, Cross-Clause-Analyse,
- * Kalibrierungsmatrix etc. wurde der Risk-Output bei 16384 truncated → JSON_PARSE.
- * Da max_tokens nur ein Cap ist (kein Ziel) und Anthropic OTPM-Rate-Limit
- * ohnehin nur auf tatsächlich generierten Tokens basiert, ist hohes max_tokens
- * der sichere Default.
+ * Hintergrund:
+ * - 64000 wurde von Anthropic Claude Sonnet 4.5 bei manchen Model-Aliasen
+ *   (insb. ohne Datum-Suffix) mit 400-Error abgelehnt — Standard-Tier braucht
+ *   teils anthropic-beta: output-128k-2025-02-19 Header für > 32k.
+ * - 32768 wird von allen aktuellen Modellen ohne Beta-Header akzeptiert.
+ * - max_tokens ist nur ein Cap (Anthropic zählt nur tatsächlich generierte
+ *   Tokens für OTPM-Rate-Limits), daher hoch ohne Kosten-Nachteil.
  */
 function maxTokensForStage(stage: PipelineStage): number {
   switch (stage) {
     case "CLASSIFICATION":
-      // Classification ist konzeptionell kompakt, aber wir lassen Headroom für
-      // Sonderfälle (sehr komplexe Constellation-Beschreibungen).
       return 16384
     case "EXTRACTION":
-      // Bei umfangreichen Verträgen mit vielen Parties/legalTopics/structuredData
-      // kann der Output über 8192 hinausgehen.
       return 32768
     case "RISK_AND_GUIDANCE":
-      // Maximum: ein Risk-Output mit 30+ Findings, Cross-Clause, Kalibrierung
-      // und vollständigem Evidence-Graph kann jenseits von 30k Tokens liegen.
-      return 64000
+      // 32768 ist getestet OK bei Anthropic. Höher (z.B. 64000) löst bei
+      // einigen Model-Aliasen sofortigen 400 Bad Request aus.
+      return 32768
   }
 }
 
 /**
- * Pro-Provider maximale Output-Tokens, die der jeweilige API-Endpoint akzeptiert.
- * Wird benutzt um den Stage-Default auf die individuelle Provider-Obergrenze zu kappen.
+ * Pro-Provider maximale Output-Tokens, die der jeweilige API-Endpoint akzeptiert
+ * ohne Beta-Header oder Service-Tier-Upgrade.
  *
- * - Claude Sonnet 4.5: 64000 Output-Tokens (synchroner Messages API).
- * - Gemini 2.5 Pro:   65536 Output-Tokens.
- * - OpenAI gpt-4o:    16384 Output-Tokens (höhere Werte werden abgewiesen).
- * - LLAMA_COMPAT:     konservativ 16384.
+ * - Claude Sonnet 4.5 (default tier): 32768 sicher; 64000 braucht u.U. Beta-Header.
+ * - Gemini 2.5 Pro: 32768 ist konservativ ausreichend (native bis 65536).
+ * - OpenAI gpt-4o: 16384 (Provider-Hard-Limit).
+ * - LLAMA_COMPAT: 16384.
  */
 function providerMaxOutputTokens(model: ModelType): number {
   switch (model) {
     case ModelType.CLAUDE_SONNET_4:
-      return 64000
+      return 32768
     case ModelType.GEMINI_2_5_PRO:
-      return 65536
+      return 32768
     case ModelType.GPT_4O_MINI:
       return 16384
     case ModelType.LLAMA_COMPAT:
