@@ -44,6 +44,9 @@ export class OpenAIProvider extends BaseAIProvider {
       const response = (await client.chat.completions.create({
         model: chatModelId(),
         temperature: 0.2,
+        // max_tokens explizit setzen — OpenAI verwendet sonst einen niedrigen Default
+        // (oft 4096), was für Risk-Stage zu wenig ist. Fallback 16384 (gpt-4o Cap).
+        max_tokens: input.maxTokens ?? 16384,
         messages: [{ role: "user", content: `${input.prompt}\n\n${input.documentText}` }],
         ...(input.jsonMode ? { response_format: { type: "json_object" as const } } : {})
       })) as ChatCompletion
