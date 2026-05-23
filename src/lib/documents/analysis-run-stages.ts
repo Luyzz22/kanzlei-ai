@@ -43,12 +43,14 @@ import {
   type StageResolvedPrompt
 } from "@/lib/ai/analysis-pipeline"
 import { createTenantContractPromptResolver } from "@/lib/ai/prompt-governance.server"
+import { contractAnalysisClaudeOnly } from "@/lib/ai/claude-model-config"
 import {
   type ClassificationStagePayload,
   type ExtractionStagePayload
 } from "@/lib/ai/schemas/contract-analysis"
 import { writeAuditEventTx } from "@/lib/audit-write"
 import { classificationFieldsForDb } from "@/lib/documents/classification-db-fields"
+import { getDocumentTextForAnalysis } from "@/lib/documents/document-analysis-text"
 import { getWorkspaceDocumentById } from "@/lib/documents/workspace-core"
 import { sendAnalysisCompleteNotification } from "@/lib/email/analysis-notification"
 import { prisma } from "@/lib/prisma"
@@ -145,13 +147,20 @@ async function loadDocumentAndPrepareContext(
       message: "Dokument ist noch nicht verarbeitet."
     }
   }
-  const text = doc.extractedTextPreview?.trim() ?? ""
-  if (!text) {
-    return { ok: false, code: "NO_TEXT_CONTENT", message: "Kein Text im Dokument verfügbar." }
+
+  const textResult = await getDocumentTextForAnalysis(tenantId, documentId)
+  if (!textResult.ok) {
+    const code =
+      textResult.code === "NOT_FOUND"
+        ? "DOCUMENT_NOT_FOUND"
+        : textResult.code === "NOT_PROCESSED"
+          ? "DOCUMENT_NOT_PROCESSED"
+          : "NO_TEXT_CONTENT"
+    return { ok: false, code, message: textResult.message }
   }
 
   const maxChars = Number.parseInt(process.env.AI_MAX_INPUT_CHARS ?? "120000", 10) || 120_000
-  const normalizedText = normalizeDocumentTextForAnalysis(text, maxChars)
+  const normalizedText = normalizeDocumentTextForAnalysis(textResult.text, maxChars)
   const inputTextHash = hashTextSha256(normalizedText)
 
   // R-02 Policy Guard: Tenant-Governance laden für Provider-Filterung
@@ -215,7 +224,8 @@ async function persistFailure(
    * möglich ist (welcher Provider mit welchem ErrorCode abgewiesen hat).
    * Ohne dies geht der Per-Versuch-Debug-Spur mit dem Lambda verloren.
    */
-  stageLogs: StageAttemptLog[] = []
+  stageLogs: StageAttemptLog[] = [],
+  failedCurrentStage: StageName | null = null
 ): Promise<void> {
   await withTenant(tenantId, async (tx) => {
     await tx.analysisRun.update({
@@ -226,7 +236,8 @@ async function persistFailure(
         errorCode: errorCode.slice(0, 64),
         error: message.slice(0, 1000),
         fallbackReason: message.slice(0, 4000),
-        durationMs: Date.now() - wallStart
+        durationMs: Date.now() - wallStart,
+        ...(failedCurrentStage ? { currentStage: failedCurrentStage } : {})
       }
     })
 
@@ -284,7 +295,20 @@ export async function runPersistedClassificationStage(input: StageInput): Promis
     return { ok: false, code: "RUN_NOT_FOUND", message: "Run nicht gefunden." }
 
   const ctxResult = await loadDocumentAndPrepareContext(input.tenantId, input.documentId)
-  if (!ctxResult.ok) return ctxResult
+  if (!ctxResult.ok) {
+    await persistFailure(
+      input.tenantId,
+      input.runId,
+      input.actorId,
+      input.documentId,
+      ctxResult.code,
+      ctxResult.message,
+      wallStart,
+      [],
+      "classification"
+    )
+    return ctxResult
+  }
   const { normalizedText, inputTextHash, routerCtx, documentTypeHint } = ctxResult.context
 
   const promptResolver = createTenantContractPromptResolver(input.tenantId, documentTypeHint)
@@ -294,7 +318,21 @@ export async function runPersistedClassificationStage(input: StageInput): Promis
     stage = await runClassificationStage(normalizedText, routerCtx, promptResolver)
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unbekannter Klassifikationsfehler"
-    // Classification ist non-blocking — wir loggen, fahren aber zur Extraction fort.
+    if (contractAnalysisClaudeOnly()) {
+      const failureStageLogs = err instanceof PipelineStageFailureError ? err.stageLogs : []
+      await persistFailure(
+        input.tenantId,
+        input.runId,
+        input.actorId,
+        input.documentId,
+        "PIPELINE_STAGE_FAILED",
+        message,
+        wallStart,
+        failureStageLogs,
+        "classification"
+      )
+      return { ok: false, code: "PIPELINE_STAGE_FAILED", message }
+    }
     console.warn(
       "[Pipeline.v5.classification] non-blocking failure:",
       message
@@ -354,7 +392,20 @@ export async function runPersistedExtractionStage(input: StageInput): Promise<St
     return { ok: false, code: "RUN_NOT_FOUND", message: "Run nicht gefunden." }
 
   const ctxResult = await loadDocumentAndPrepareContext(input.tenantId, input.documentId)
-  if (!ctxResult.ok) return ctxResult
+  if (!ctxResult.ok) {
+    await persistFailure(
+      input.tenantId,
+      input.runId,
+      input.actorId,
+      input.documentId,
+      ctxResult.code,
+      ctxResult.message,
+      wallStart,
+      [],
+      "extraction"
+    )
+    return ctxResult
+  }
   const { normalizedText, inputTextHash, routerCtx } = ctxResult.context
 
   const previousState = readState(run.stageStateJson, inputTextHash)
@@ -368,7 +419,9 @@ export async function runPersistedExtractionStage(input: StageInput): Promise<St
       input.documentId,
       "STATE_HASH_MISMATCH",
       msg,
-      wallStart
+      wallStart,
+      [],
+      "extraction"
     )
     return { ok: false, code: "STATE_HASH_MISMATCH", message: msg }
   }
@@ -395,7 +448,8 @@ export async function runPersistedExtractionStage(input: StageInput): Promise<St
       code,
       message,
       wallStart,
-      failureStageLogs
+      failureStageLogs,
+      "extraction"
     )
     console.error(`[Pipeline.v5.extraction] runId=${input.runId} FAILED: ${message} (attempts=${failureStageLogs.length})`)
     return { ok: false, code, message }
@@ -462,7 +516,20 @@ export async function runPersistedRiskStage(input: StageInput): Promise<StageOut
     return { ok: false, code: "RUN_NOT_FOUND", message: "Run nicht gefunden." }
 
   const ctxResult = await loadDocumentAndPrepareContext(input.tenantId, input.documentId)
-  if (!ctxResult.ok) return ctxResult
+  if (!ctxResult.ok) {
+    await persistFailure(
+      input.tenantId,
+      input.runId,
+      input.actorId,
+      input.documentId,
+      ctxResult.code,
+      ctxResult.message,
+      wallStart,
+      [],
+      "risk"
+    )
+    return ctxResult
+  }
   const { normalizedText, inputTextHash, routerCtx } = ctxResult.context
 
   const previousState = readState(run.stageStateJson, inputTextHash)
@@ -475,7 +542,9 @@ export async function runPersistedRiskStage(input: StageInput): Promise<StageOut
       input.documentId,
       "STATE_HASH_MISMATCH",
       msg,
-      wallStart
+      wallStart,
+      [],
+      "risk"
     )
     return { ok: false, code: "STATE_HASH_MISMATCH", message: msg }
   }
@@ -488,7 +557,9 @@ export async function runPersistedRiskStage(input: StageInput): Promise<StageOut
       input.documentId,
       "EXTRACTION_REQUIRED",
       msg,
-      wallStart
+      wallStart,
+      [],
+      "risk"
     )
     return { ok: false, code: "EXTRACTION_REQUIRED", message: msg }
   }
@@ -523,7 +594,8 @@ export async function runPersistedRiskStage(input: StageInput): Promise<StageOut
       code,
       message,
       wallStart,
-      failureStageLogs
+      failureStageLogs,
+      "risk"
     )
     console.error(`[Pipeline.v5.risk] runId=${input.runId} FAILED: ${message} (attempts=${failureStageLogs.length})`)
     return { ok: false, code, message }

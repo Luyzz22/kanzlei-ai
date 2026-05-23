@@ -39,8 +39,8 @@
  * ```
  */
 
-/** Reproduzierbarer Default — datiertes Sonnet 4.6 Snapshot. */
-export const DEFAULT_ANTHROPIC_CHAT_MODEL = "claude-sonnet-4-6-20260217"
+/** Reproduzierbarer Default — Sonnet 4.5 (breiter verfügbar als 4.6). */
+export const DEFAULT_ANTHROPIC_CHAT_MODEL = "claude-sonnet-4-5-20250929"
 
 /** Standard-Tier ohne Beta-Header — sicher bei allen aktuellen Sonnet-4.x Snapshots. */
 export const ANTHROPIC_SAFE_MAX_OUTPUT_TOKENS = 32_768
@@ -51,7 +51,7 @@ export const ANTHROPIC_EXTENDED_OUTPUT_BETA = "output-128k-2025-02-19"
 const ALIAS_TO_PINNED: Record<string, string> = {
   "claude-sonnet-4-5": "claude-sonnet-4-5-20250929",
   "claude-sonnet-4-6": "claude-sonnet-4-6-20260217",
-  "claude-sonnet-4": "claude-sonnet-4-6-20260217"
+  "claude-sonnet-4": "claude-sonnet-4-5-20250929"
 }
 
 export type AnthropicModelProfile = {

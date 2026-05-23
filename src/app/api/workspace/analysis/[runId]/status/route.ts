@@ -28,6 +28,7 @@ export async function GET(
       progress: true,
       currentStage: true,
       error: true,
+      errorCode: true,
       startedAt: true,
       completedAt: true,
     },

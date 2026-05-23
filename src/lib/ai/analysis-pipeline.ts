@@ -28,6 +28,7 @@ import {
 } from "@/lib/ai/prompt-registry/contract-defaults"
 import { calculateCost } from "@/lib/ai/cost-tracker"
 import { createProvider } from "@/lib/ai/providers"
+import { formatStageFailureMessage } from "@/lib/ai/pipeline-failure-messages"
 import {
   type ClassificationStagePayload,
   type ExtractionStagePayload,
@@ -331,9 +332,19 @@ async function runJsonStage<T>(
   const prismaStage = toPrismaStage(pipelineStage)
   const plan = buildModelExecutionPlan(pipelineStage, ctx)
   if (plan.length === 0) {
-    const message = contractAnalysisClaudeOnly()
+    let message = contractAnalysisClaudeOnly()
       ? "Claude Sonnet ist für Vertragsanalyse vorgeschrieben (AI_CONTRACT_ANALYSIS_CLAUDE_ONLY). ANTHROPIC_API_KEY prüfen."
       : "Kein konfigurierter KI-Anbieter für diese Stufe."
+    if (contractAnalysisClaudeOnly() && ctx.preferEuModels) {
+      message =
+        "Claude ist vorgeschrieben, aber Mandanten-Governance (Nur-EU-Modelle) blockiert Anthropic. Bitte Governance-Einstellung anpassen."
+    } else if (
+      contractAnalysisClaudeOnly() &&
+      ctx.allowedProviders?.length &&
+      !ctx.allowedProviders.includes("anthropic")
+    ) {
+      message = `Claude ist vorgeschrieben, aber erlaubte Anbieter sind: ${ctx.allowedProviders.join(", ")}.`
+    }
     throw new PipelineStageFailureError(prismaStage, message)
   }
 
@@ -485,7 +496,7 @@ async function runJsonStage<T>(
 
   throw new PipelineStageFailureError(
     prismaStage,
-    "Alle Anbieterversuche für diese Pipeline-Stufe sind fehlgeschlagen.",
+    formatStageFailureMessage(stageLogs),
     stageLogs,
     fallbackKeys
   )
@@ -519,6 +530,9 @@ export async function runClassificationStage(
     )
     classificationData = result.data
   } catch (err) {
+    if (contractAnalysisClaudeOnly()) {
+      throw err
+    }
     console.warn(
       "[Pipeline.v5] Classification fehlgeschlagen — Pipeline fährt ohne Klassifikationskontext fort:",
       err instanceof Error ? err.message : err
