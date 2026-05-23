@@ -23,13 +23,20 @@ function chatModelId(): string {
   return process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-4o"
 }
 
+function buildOpenAIUserContent(input: AnalyzeInput): string {
+  const docBlock = input.documentText?.trim()
+    ? `\n\nVERTRAGSTEXT:\n${input.documentText.trim()}`
+    : ""
+  return `${input.prompt}${docBlock}`
+}
+
 export class OpenAIProvider extends BaseAIProvider {
   constructor(config?: Partial<AIProviderConfig>) {
     super({
       apiKey: config?.apiKey ?? process.env.OPENAI_API_KEY ?? "",
       model: ModelType.GPT_4O_MINI,
-      timeoutMs: config?.timeoutMs ?? 45_000,
-      maxRetries: config?.maxRetries ?? 3
+      timeoutMs: config?.timeoutMs ?? 120_000,
+      maxRetries: config?.maxRetries ?? 2
     })
   }
 
@@ -44,20 +51,22 @@ export class OpenAIProvider extends BaseAIProvider {
       const response = (await client.chat.completions.create({
         model: chatModelId(),
         temperature: 0.2,
-        // max_tokens explizit setzen — OpenAI verwendet sonst einen niedrigen Default
-        // (oft 4096), was für Risk-Stage zu wenig ist. Fallback 16384 (gpt-4o Cap).
-        max_tokens: input.maxTokens ?? 16384,
-        messages: [{ role: "user", content: `${input.prompt}\n\n${input.documentText}` }],
+        max_tokens: input.maxTokens ?? 16_384,
+        messages: [{ role: "user", content: buildOpenAIUserContent(input) }],
         ...(input.jsonMode ? { response_format: { type: "json_object" as const } } : {})
       })) as ChatCompletion
 
-      const outputText: string = extractOpenAIContent(response)
+      const outputText = extractOpenAIContent(response)
+      const finishReason =
+        (response.choices[0] as { finish_reason?: string | null } | undefined)?.finish_reason ??
+        null
 
       return {
         model: this.config.model,
         outputText,
         parsedOutput: this.parseJsonSafely(outputText),
         tokensUsed: response.usage?.total_tokens ?? this.estimateTokens(outputText),
+        stopReason: finishReason === "length" ? "max_tokens" : finishReason,
         raw: response
       }
     }, "openai")
@@ -70,7 +79,7 @@ export class OpenAIProvider extends BaseAIProvider {
       model: chatModelId(),
       stream: true,
       temperature: 0.2,
-      messages: [{ role: "user", content: `${input.prompt}\n\n${input.documentText}` }]
+      messages: [{ role: "user", content: buildOpenAIUserContent(input) }]
     })
 
     if (!isChatCompletionStream(streamResponse)) {

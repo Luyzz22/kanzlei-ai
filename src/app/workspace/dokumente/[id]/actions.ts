@@ -6,9 +6,15 @@ import { FindingReviewDecision } from "@prisma/client"
 
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { auth } from "@/lib/auth"
-import { submitAnalysisFindingReview, finalizeAnalysisReview } from "@/lib/documents/analysis-finding-review-core"
+import {
+  finalizeAnalysisReview,
+  submitAnalysisFindingReview
+} from "@/lib/documents/analysis-finding-review-core"
 import { createDocumentComment } from "@/lib/documents/comments-core"
 import { processDocumentExtraction } from "@/lib/documents/processing-core"
+import { runPersistedContractAnalysis } from "@/lib/documents/analysis-run-core"
+import { getDocumentTextForAnalysis } from "@/lib/documents/document-analysis-text"
+import { getWorkspaceDocumentById } from "@/lib/documents/workspace-core"
 import { prisma } from "@/lib/prisma"
 import {
   assignDocumentReviewOwner,
@@ -28,29 +34,75 @@ export type ContractAnalysisFormState = {
   message?: string
 }
 
-/**
- * @deprecated v4.2 — ersetzt durch die Async-Pipeline mit <AnalysisPanel />.
- * Die Komponente nutzt direkt POST /api/workspace/analysis/start +
- * Polling auf /api/workspace/analysis/{runId}/status, das ist robuster
- * (kein 504-Risiko, kein blockierender Server-Action-Roundtrip).
- *
- * Wird nur noch behalten, um Formular-Imports nicht hart zu brechen.
- * Returnt immer einen Fehler — UI sollte die alte Form-Action nicht mehr binden.
- */
 export async function startContractAnalysisAction(
   _: ContractAnalysisFormState,
   formData: FormData
 ): Promise<ContractAnalysisFormState> {
   const documentId = String(formData.get("documentId") ?? "").trim()
-  console.warn(
-    "[deprecated] startContractAnalysisAction called",
-    JSON.stringify({ documentId, at: new Date().toISOString() })
-  )
+  if (!documentId) {
+    return { status: "error", message: "Die Analyse konnte nicht gestartet werden." }
+  }
+
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { status: "error", message: "Bitte melden Sie sich an." }
+  }
+
+  const tenantContext = await resolveTenantContextForUser(session.user.id)
+  if (tenantContext.status === "none") {
+    return { status: "error", message: "Kein Mandantenkontext hinterlegt." }
+  }
+  if (tenantContext.status === "multiple") {
+    return { status: "error", message: "Kein eindeutiger Mandantenkontext." }
+  }
+
+  const doc = await getWorkspaceDocumentById(tenantContext.tenantId, documentId)
+  if (!doc) {
+    return { status: "error", message: "Dokument in diesem Arbeitsbereich nicht gefunden." }
+  }
+
+  if (doc.processingStatus !== "VERARBEITET") {
+    return {
+      status: "error",
+      message: "Die KI-Analyse setzt eine abgeschlossene Textextraktion voraus."
+    }
+  }
+
+  const text = doc.extractedTextPreview?.trim() ?? ""
+  if (!text) {
+    return { status: "error", message: "Keine Textgrundlage für die Analyse verfügbar." }
+  }
+
+  const textResult = await getDocumentTextForAnalysis(tenantContext.tenantId, documentId)
+  const analysisText = textResult.ok ? textResult.text : text
+
+  const result = await runPersistedContractAnalysis({
+    tenantId: tenantContext.tenantId,
+    documentId,
+    actorId: session.user.id,
+    documentText: analysisText,
+    documentSha256: doc.sha256
+  })
+
+  if (!result.ok) {
+    if (result.code === "FORBIDDEN") {
+      return { status: "error", message: "Für diese Aktion fehlt die Berechtigung." }
+    }
+    if (result.code === "NO_PROVIDER") {
+      return { status: "error", message: result.message }
+    }
+    if (result.code === "ALREADY_RUNNING") {
+      return { status: "error", message: result.message }
+    }
+    return { status: "error", message: result.message }
+  }
+
+  revalidatePath(`/workspace/dokumente/${documentId}`)
+  revalidatePath("/workspace/dokumente")
+
   return {
-    status: "error",
-    message:
-      "Diese Server Action wurde durch das Async-Analyse-Pattern ersetzt. " +
-      "Bitte die Seite neu laden — die Analyse startet jetzt direkt im AnalysisPanel."
+    status: "success",
+    message: "KI-Vertragsanalyse abgeschlossen. Ergebnisse sind unten einsehbar — bitte fachlich prüfen (Human-in-the-Loop)."
   }
 }
 
@@ -373,7 +425,6 @@ export async function submitAnalysisFindingReviewAction(
   const comment = String(formData.get("comment") ?? "").trim() || null
   const modifiedTitle = String(formData.get("modifiedTitle") ?? "").trim() || null
   const modifiedDescription = String(formData.get("modifiedDescription") ?? "").trim() || null
-  const modifiedSuggestedRevision = String(formData.get("modifiedSuggestedRevision") ?? "").trim() || null
 
   if (!documentId || !findingId) return { status: "error", message: reviewInitialError }
 
@@ -405,8 +456,7 @@ export async function submitAnalysisFindingReviewAction(
     decision,
     comment,
     modifiedTitle,
-    modifiedDescription,
-    modifiedSuggestedRevision
+    modifiedDescription
   })
 
   if (!result.ok) {
@@ -475,7 +525,7 @@ export async function batchAcceptFindingsAction(
   const findingIdsRaw = String(formData.get("findingIds") ?? "").trim()
   if (!documentId || !findingIdsRaw) return { status: "error", message: "Fehlende Parameter." }
 
-  const findingIds = findingIdsRaw.split(",").map(s => s.trim()).filter(Boolean)
+  const findingIds = findingIdsRaw.split(",").map((s) => s.trim()).filter(Boolean)
   if (findingIds.length === 0) return { status: "error", message: "Keine Findings ausgewählt." }
 
   const context = await getActionContext()

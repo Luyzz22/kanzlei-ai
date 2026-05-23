@@ -136,8 +136,8 @@ export async function getWorkbenchAiContractAnalysis(
     })
     if (!doc) return null
 
-    const run = await tx.analysisRun.findFirst({
-      where: { tenantId, documentId },
+    const completedRun = await tx.analysisRun.findFirst({
+      where: { tenantId, documentId, status: AnalysisRunStatus.COMPLETED },
       orderBy: [{ runSequence: "desc" }, { startedAt: "desc" }],
       include: {
         extraction: true,
@@ -153,6 +153,26 @@ export async function getWorkbenchAiContractAnalysis(
         }
       }
     })
+
+    const run =
+      completedRun ??
+      (await tx.analysisRun.findFirst({
+        where: { tenantId, documentId },
+        orderBy: [{ runSequence: "desc" }, { startedAt: "desc" }],
+        include: {
+          extraction: true,
+          findings: {
+            orderBy: { createdAt: "asc" },
+            take: 50,
+            include: {
+              reviews: {
+                orderBy: { reviewedAt: "desc" },
+                include: { reviewer: { select: { name: true } } }
+              }
+            }
+          }
+        }
+      }))
 
     if (!run) return null
 
@@ -396,6 +416,7 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unbekannter Fehler"
     const errCode = e instanceof PipelineStageFailureError ? "PIPELINE_STAGE_FAILED" : "PIPELINE_FAILED"
+    const failureLogs = e instanceof PipelineStageFailureError ? e.stageLogs : []
 
     await withTenant(input.tenantId, async (tx) => {
       await tx.analysisRun.update({
@@ -404,10 +425,32 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
           status: AnalysisRunStatus.FAILED,
           completedAt: new Date(),
           errorCode: errCode,
+          error: message.slice(0, 1000),
           fallbackReason: message.slice(0, 4000),
           durationMs: Date.now() - wallStart
         }
       })
+
+      if (failureLogs.length > 0) {
+        await tx.analysisProviderDecision.createMany({
+          data: failureLogs.map((l) => ({
+            analysisRunId: runId,
+            stage: l.stage,
+            attemptOrder: l.attemptOrder,
+            provider: l.provider,
+            model: l.model,
+            selectionReason: l.selectionReason,
+            wasPrimaryChoice: l.wasPrimaryChoice,
+            wasSuccessful: l.wasSuccessful,
+            fallbackFromProvider: l.fallbackFromProvider,
+            latencyMs: l.latencyMs,
+            tokensUsed: l.tokensUsed,
+            errorCode: l.errorCode,
+            structuredValid: l.structuredValid
+          }))
+        })
+      }
+
       await writeAuditEventTx(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,

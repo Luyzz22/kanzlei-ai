@@ -1,102 +1,114 @@
 import { z } from "zod"
 
 /** Version der Prompts / Erwartungsstruktur — bei Schema-Änderungen erhöhen. */
-export const CONTRACT_ANALYSIS_PROMPT_VERSION = "2026-05-16"
+export const CONTRACT_ANALYSIS_PROMPT_VERSION = "2026-04-24"
 
 /**
- * UNIFIED ANALYSIS SCHEMA v4 (2026-05-16)
+ * UNIFIED ANALYSIS SCHEMA v2 (2026-04-24)
  *
- * Neu in v4:
- * - Evidence Graph MVP: Strukturierte Begründungskette pro Finding
- *   (normBasis, reasoningSteps, counterArguments, limitations)
- * - confidenceFactors jetzt persistiert in DB (war v3 nur im Prompt-Output)
+ * Ziel: Single source of truth für beide Analyse-Pipelines (Schnellanalyse
+ * und Dokument-Workflow). Alle Felder nullable/optional, damit alte
+ * Pipeline-Versionen weiterhin valide sind (Backward Compat).
  *
- * v3 (2026-05-11): Classification Stage, Kontextinjektion
- * Backward-kompatibel: Alle v2/v3-Felder bleiben nullable/optional.
+ * Neu in v2:
+ * - findings[].quote              — Klauselzitat aus dem Vertrag
+ * - findings[].suggestedRevision  — Konkreter Formulierungsvorschlag
+ * - extraction.structuredData     — Kunde/Anbieter/AVV/Haftung/IP/etc.
+ * - extraction.deadlines          — Kündigungsfristen, Laufzeiten, etc.
  */
 
 const severityLiteral = z.enum(["niedrig", "mittel", "hoch"])
 
-// =======================================================================
-// CLASSIFICATION STAGE (Step 0) — NEU
-// =======================================================================
+const SEVERITY_ALIASES: Record<string, "niedrig" | "mittel" | "hoch"> = {
+  niedrig: "niedrig",
+  low: "niedrig",
+  gering: "niedrig",
+  mittel: "mittel",
+  medium: "mittel",
+  moderat: "mittel",
+  hoch: "hoch",
+  high: "hoch",
+  kritisch: "hoch",
+  critical: "hoch"
+}
 
-export const contractClassificationEnum = z.enum([
-  "AGB",
-  "Individualvertrag",
-  "Mischform"
-])
+/** Normalisiert LLM-Severity (EN/DE) vor Zod-Validation. */
+export function normalizeSeverityValue(value: unknown): unknown {
+  if (typeof value !== "string") return value
+  return SEVERITY_ALIASES[value.trim().toLowerCase()] ?? value
+}
 
-export const partyConstellationEnum = z.enum([
-  "B2B",
-  "B2C",
-  "Oeffentliche_Hand"
-])
+/** Normalisiert riskScore: 75 → 0.75, "0,8" → 0.8 */
+export function normalizeRiskScore01(value: unknown): unknown {
+  if (typeof value === "string") {
+    const n = Number.parseFloat(value.replace(",", "."))
+    if (Number.isFinite(n)) {
+      return n > 1 ? n / 100 : n
+    }
+    return value
+  }
+  if (typeof value === "number" && Number.isFinite(value) && value > 1) {
+    return value / 100
+  }
+  return value
+}
 
-export const clientRoleEnum = z.enum([
-  "Auftraggeber",
-  "Lieferant",
-  "Neutral"
-])
+/** Rekursive Vorverarbeitung für Risk-JSON vor Schema-Validation. */
+export function preprocessRiskStageJson(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw
+  const obj = { ...(raw as Record<string, unknown>) }
 
-export const industryClassificationEnum = z.enum([
-  "Produktion",
-  "Dienstleistung",
-  "Finanzprodukt",
-  "International",
-  "Sonstige"
-])
+  if ("riskScore01" in obj) {
+    obj.riskScore01 = normalizeRiskScore01(obj.riskScore01)
+  }
+  if ("aggregateConfidence" in obj) {
+    const v = obj.aggregateConfidence
+    if (typeof v === "number" && v > 1) obj.aggregateConfidence = v / 100
+  }
+  if (Array.isArray(obj.findings)) {
+    obj.findings = obj.findings.map((f) => {
+      if (!f || typeof f !== "object") return f
+      const finding = { ...(f as Record<string, unknown>) }
+      if ("severity" in finding) {
+        finding.severity = normalizeSeverityValue(finding.severity)
+      }
+      if (typeof finding.confidence === "number" && finding.confidence > 1) {
+        finding.confidence = finding.confidence / 100
+      }
+      return finding
+    })
+  }
+  return obj
+}
+
+/** Kompakte Zod-Fehler für ProviderDecision.errorCode (max 64 Zeichen DB). */
+export function formatZodIssuesForErrorCode(error: z.ZodError, maxLen = 64): string {
+  const parts = error.issues.slice(0, 3).map((i) => {
+    const path = i.path.length ? i.path.join(".") : "root"
+    return `${path}:${i.code}`
+  })
+  const joined = `SCHEMA_INVALID:${parts.join(",")}`
+  return joined.length > maxLen ? joined.slice(0, maxLen) : joined
+}
+
+/** Volle Zod-Issues für Runtime-Logs. */
+export function formatZodIssuesVerbose(error: z.ZodError): string {
+  return error.issues
+    .slice(0, 8)
+    .map((i) => `${i.path.join(".") || "root"}: ${i.message} (${i.code})`)
+    .join(" | ")
+}
 
 export const classificationStageSchema = z.object({
-  /** AGB (einseitig vorformuliert, § 305 BGB), Individualvertrag, Mischform */
-  contractClassification: contractClassificationEnum,
-  /** Konfidenz der Vertragstyp-Klassifikation (0-1) */
-  classificationConfidence: z.coerce.number().min(0).max(1),
-  /** Begründung für die Klassifikation */
-  classificationReasoning: z.string().min(1).max(2000),
-  /** Welche Klauseln als AGB-typisch identifiziert wurden (bei Mischform) */
-  agbIndicators: z.array(z.string().max(500)).max(10).optional(),
-
-  /** B2B (beide Vollkaufleute), B2C (ein Verbraucher), Öffentliche Hand */
-  partyConstellation: partyConstellationEnum,
-  /** Begründung für die Parteikonstellation */
-  partyConstellationReasoning: z.string().max(1000).optional(),
-
-  /** Mandantenrolle: Auftraggeber/Käufer, Lieferant/Verkäufer, Neutral */
-  clientRole: clientRoleEnum,
-
-  /** Brancheneinordnung für branchenspezifische Normen */
-  industryClassification: industryClassificationEnum,
-  /** Ob internationaler Bezug vorliegt (CISG, Incoterms etc.) */
-  internationalElement: z.boolean(),
-  /** CISG ausgeschlossen? */
-  cisgExcluded: z.boolean().nullable().optional(),
-
-  /** Anwendbare Rechtsnormen-Matrix */
-  applicableNorms: z.array(z.object({
-    norm: z.string().max(200),
-    relevance: z.enum(["primär", "sekundär", "prüfenswert"]),
-    note: z.string().max(500).optional()
-  })).max(20),
-
-  /** Kontrolle nach §§ 305-310 BGB anwendbar? */
-  agbKontrolleAnwendbar: z.boolean(),
-
-  /** Welcher AGB-Kontroll-Maßstab gilt? */
-  agbKontrollmassstab: z.string().max(500).nullable().optional(),
-
-  /** Zusammenfassendes Klassifikations-Statement für nachfolgende Stages */
-  classificationSummary: z.string().min(1).max(1500),
-
-  /** Model-Notizen */
-  modelNotes: z.string().max(1000).optional()
+  contractClassification: z.string().min(1).max(120),
+  partyConstellation: z.string().max(200).optional(),
+  agbKontrolleAnwendbar: z.boolean().nullable().optional(),
+  b2bOrB2c: z.enum(["b2b", "b2c", "gemischt", "unklar"]).optional(),
+  classificationConfidence: z.coerce.number().min(0).max(1).optional(),
+  modelNotes: z.string().max(2000).optional()
 })
 
 export type ClassificationStagePayload = z.infer<typeof classificationStageSchema>
-
-// =======================================================================
-// EXTRACTION STAGE (Step 1) — unverändert
-// =======================================================================
 
 export const contractPartySchema = z.object({
   name: z.string().min(1).max(400),
@@ -167,10 +179,6 @@ export const extractionStageSchema = z.object({
   modelNotes: z.string().max(2000).optional()
 })
 
-// =======================================================================
-// RISK & GUIDANCE STAGE (Step 2) — unverändert
-// =======================================================================
-
 export const pipelineFindingSchema = z.object({
   category: z.string().min(1).max(64),
   title: z.string().min(1).max(240),
@@ -183,58 +191,71 @@ export const pipelineFindingSchema = z.object({
   /** v2: konkreter Formulierungsvorschlag (neue Klauselfassung) */
   suggestedRevision: z.string().max(4000).nullable().optional(),
   /** C.4: Konfidenz-Explainability — Aufschlüsselung der Konfidenz-Faktoren */
-  confidenceFactors: z.object({
-    /** Normklarheit (30%): BGH-Rspr eindeutig=1.0, streitig=0.4, kein Präzedenz=0.2 */
-    normClarity: z.coerce.number().min(0).max(1),
-    /** Klauselklarheit (25%): eindeutig=1.0, mehrdeutig=0.4, widersprüchlich=0.2 */
-    clauseClarity: z.coerce.number().min(0).max(1),
-    /** Vertragskontext (20%): AGB klar=1.0, Individualvertrag möglich=0.4, unklar=0.2 */
-    contractContext: z.coerce.number().min(0).max(1),
-    /** Branchenkompatibilität (15%): Standard klar=1.0, unklar=0.4, kein Kontext=0.2 */
-    industryFit: z.coerce.number().min(0).max(1),
-    /** Präzedenzlage (10%): BGH direkt=1.0, OLG=0.7, nur Literatur=0.4, Neuland=0.2 */
-    precedent: z.coerce.number().min(0).max(1),
-    /** Welcher Faktor die Konfidenz am stärksten begrenzt */
-    limitingFactor: z.string().max(200).optional()
-  }).nullable().optional(),
+  confidenceFactors: z
+    .object({
+      normClarity: z.coerce.number().min(0).max(1),
+      clauseClarity: z.coerce.number().min(0).max(1),
+      contractContext: z.coerce.number().min(0).max(1),
+      industryFit: z.coerce.number().min(0).max(1),
+      precedent: z.coerce.number().min(0).max(1),
+      limitingFactor: z.string().max(200).optional()
+    })
+    .nullable()
+    .optional(),
   /** Evidence Graph MVP: Strukturierte Begründungskette pro Finding */
-  evidenceGraph: z.object({
-    /** Primäre Rechtsgrundlagen mit Anwendbarkeitsmarker */
-    normBasis: z.array(z.object({
-      norm: z.string().max(200),
-      marker: z.enum(["DIREKT", "ZWINGEND", "B2B-INDIZ", "ANALOG"]),
-      relevance: z.string().max(500)
-    })).max(8).optional(),
-    /** Begründungsschritte: Dokumentstelle → Rechtsnorm → Bewertung */
-    reasoningSteps: z.array(z.object({
-      step: z.coerce.number().int().min(1).max(10),
-      label: z.string().max(100),
-      content: z.string().max(2000)
-    })).max(10).optional(),
-    /** Mögliche Gegenargumente / alternative Interpretationen */
-    counterArguments: z.array(z.string().max(1000)).max(5).optional(),
-    /** Einschränkungen / Unsicherheiten dieser Bewertung */
-    limitations: z.array(z.string().max(1000)).max(5).optional()
-  }).nullable().optional()
+  evidenceGraph: z
+    .object({
+      normBasis: z
+        .array(
+          z.object({
+            norm: z.string().max(200),
+            marker: z.enum(["DIREKT", "ZWINGEND", "B2B-INDIZ", "ANALOG"]),
+            relevance: z.string().max(500)
+          })
+        )
+        .max(8)
+        .optional(),
+      reasoningSteps: z
+        .array(
+          z.object({
+            step: z.coerce.number().int().min(1).max(10),
+            label: z.string().max(100),
+            content: z.string().max(2000)
+          })
+        )
+        .max(10)
+        .optional(),
+      counterArguments: z.array(z.string().max(1000)).max(5).optional(),
+      limitations: z.array(z.string().max(1000)).max(5).optional()
+    })
+    .nullable()
+    .optional()
 })
 
 /** C.1: Cross-Clause-Interaktion — Wechselwirkung zwischen Klauseln */
 export const clauseInteractionSchema = z.object({
-  /** Betroffene Klauselreferenzen (z.B. ["§ 1", "§ 3"]) */
   clauseRefs: z.array(z.string().max(100)).min(2).max(5),
-  /** Art der Interaktion */
   interactionType: z.enum(["verstärkend", "kompensierend", "widersprüchlich", "kumulativ"]),
-  /** Beschreibung des kombinierten Risikos */
   combinedRiskDescription: z.string().min(1).max(3000),
-  /** Kombinierte Severity (kann höher als Einzelrisiken sein) */
   combinedSeverity: severityLiteral,
-  /** Abhilfemaßnahme für die Kombination */
   remediation: z.string().max(2000).optional()
+})
+
+export const riskFindingsStageSchema = z.object({
+  findings: z.array(pipelineFindingSchema).max(40),
+  riskScore01: z.coerce.number().min(0).max(1),
+  aggregateConfidence: z.coerce.number().min(0).max(1).optional()
+})
+
+export const riskGuidanceStageSchema = z.object({
+  recommendedMeasures: z.array(z.string().min(1).max(1200)).max(30),
+  negotiationHints: z.array(z.string().min(1).max(1200)).max(20),
+  explanationSummary: z.string().min(1).max(4000),
+  aggregateConfidence: z.coerce.number().min(0).max(1).optional()
 })
 
 export const riskAndGuidanceStageSchema = z.object({
   findings: z.array(pipelineFindingSchema).max(40),
-  /** C.1: Klauselinteraktionen — kombinierte Risiken zwischen Klauseln */
   clauseInteractions: z.array(clauseInteractionSchema).max(10).optional(),
   riskScore01: z.coerce.number().min(0).max(1),
   recommendedMeasures: z.array(z.string().min(1).max(1200)).max(30),
@@ -247,16 +268,11 @@ export type ExtractionStagePayload = z.infer<typeof extractionStageSchema>
 export type RiskAndGuidanceStagePayload = z.infer<typeof riskAndGuidanceStageSchema>
 
 export const fullContractAnalysisSchema = z.object({
-  classification: classificationStageSchema.optional(),
   extraction: extractionStageSchema,
   risk: riskAndGuidanceStageSchema
 })
 
 export type FullContractAnalysisPayload = z.infer<typeof fullContractAnalysisSchema>
-
-// =======================================================================
-// JSON-Parsing Utilities
-// =======================================================================
 
 /**
  * Entfernt Markdown-Code-Fences (```json ... ```) aus LLM-Antworten.

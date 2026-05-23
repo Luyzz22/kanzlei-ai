@@ -3,20 +3,27 @@ import { createHash } from "node:crypto"
 import { z } from "zod"
 
 import {
+  anthropicEffectiveMaxOutputTokens,
+  resolveAnthropicModelProfile
+} from "@/lib/ai/claude-model-config"
+import {
   buildModelExecutionPlan,
   getSelectionReasonForStage,
   type PipelineStage,
   type RouterContext
 } from "@/lib/ai/analysis-router"
 import {
-  buildClassificationPromptBody,
-  buildExtractionPromptBody,
-  buildRiskAndGuidancePromptBody,
+  buildClassificationPromptInstructions,
+  buildExtractionPromptInstructions,
+  buildRiskAndGuidancePromptInstructions,
+  buildRiskFindingsPromptInstructions,
+  buildRiskGuidancePromptInstructions,
   CONTRACT_CLASSIFICATION_PROMPT_KEY,
   CONTRACT_EXTRACTION_PROMPT_KEY,
   CONTRACT_PROMPT_BUNDLE_KEY,
   CONTRACT_RISK_PROMPT_KEY,
-  CONTRACT_ANALYSIS_PROMPT_VERSION
+  CONTRACT_ANALYSIS_PROMPT_VERSION,
+  shouldSplitRiskStage
 } from "@/lib/ai/prompt-registry/contract-defaults"
 import { calculateCost } from "@/lib/ai/cost-tracker"
 import { createProvider } from "@/lib/ai/providers"
@@ -26,8 +33,13 @@ import {
   type RiskAndGuidanceStagePayload,
   classificationStageSchema,
   extractionStageSchema,
+  formatZodIssuesForErrorCode,
+  formatZodIssuesVerbose,
   parseJsonUnknown,
-  riskAndGuidanceStageSchema
+  preprocessRiskStageJson,
+  riskAndGuidanceStageSchema,
+  riskFindingsStageSchema,
+  riskGuidanceStageSchema
 } from "@/lib/ai/schemas/contract-analysis"
 import { ModelType } from "@/types/ai"
 import { AiProviderKind, AnalysisPipelineStageName } from "@prisma/client"
@@ -105,10 +117,6 @@ export type ContractPipelineSuccess = {
   promptMetadata: ContractPipelinePromptMetadata
 }
 
-// ============================================================================
-// v5.0 Stage-Chunked Pipeline — Stage-Output Types
-// ============================================================================
-
 export type StageResolvedPrompt = {
   key: string
   version: string
@@ -153,6 +161,27 @@ export class PipelineStageFailureError extends Error {
   }
 }
 
+function providerKindToModelType(provider: AiProviderKind): ModelType {
+  switch (provider) {
+    case AiProviderKind.OPENAI:
+      return ModelType.GPT_4O_MINI
+    case AiProviderKind.ANTHROPIC:
+      return ModelType.CLAUDE_SONNET_4
+    case AiProviderKind.GOOGLE_GEMINI:
+      return ModelType.GEMINI_2_5_PRO
+    case AiProviderKind.LLAMA_COMPAT:
+      return ModelType.LLAMA_COMPAT
+    default:
+      return ModelType.GPT_4O_MINI
+  }
+}
+
+function totalCostFromStageLogs(stageLogs: StageAttemptLog[]): number {
+  return stageLogs
+    .filter((l) => l.wasSuccessful)
+    .reduce((sum, l) => sum + calculateCost(providerKindToModelType(l.provider), l.tokensUsed), 0)
+}
+
 function modelTypeToProviderKind(model: ModelType): AiProviderKind {
   switch (model) {
     case ModelType.GPT_4O_MINI:
@@ -171,14 +200,10 @@ function modelTypeToProviderKind(model: ModelType): AiProviderKind {
 function apiModelLabel(model: ModelType): string {
   switch (model) {
     case ModelType.GPT_4O_MINI:
-      // Default angeglichen an chatModelId() im OpenAI-Provider — beide nutzen gpt-4o.
-      // Der ENUM-Name (GPT_4O_MINI) ist historisch, der echte API-Call läuft mit gpt-4o.
       return process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-4o"
     case ModelType.CLAUDE_SONNET_4:
-      return process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-sonnet-4-6"
+      return resolveAnthropicModelProfile().modelId
     case ModelType.GEMINI_2_5_PRO:
-      // Default auf 2.5-pro angeglichen an geminiModelId() im Gemini-Provider.
-      // gemini-1.5-pro ist deprecated und gibt PROVIDER_ERROR.
       return process.env.GEMINI_CHAT_MODEL?.trim() || "gemini-2.5-pro"
     case ModelType.LLAMA_COMPAT:
       return process.env.LLAMA_MODEL?.trim() || "llama-compat"
@@ -187,10 +212,6 @@ function apiModelLabel(model: ModelType): string {
   }
 }
 
-/**
- * Mapping PipelineStage → Prisma-Enum.
- * CLASSIFICATION ist neu und muss im Prisma-Schema existieren.
- */
 function toPrismaStage(stage: PipelineStage): AnalysisPipelineStageName {
   switch (stage) {
     case "CLASSIFICATION":
@@ -202,54 +223,48 @@ function toPrismaStage(stage: PipelineStage): AnalysisPipelineStageName {
   }
 }
 
-/**
- * Max-Token-Budget pro Stage.
- *
- * Wir setzen jede Stage so hoch, dass komplexe Verträge nicht trunciert werden,
- * aber unter dem Limit der konservativsten Anbieter bleibt. Die echte Obergrenze
- * pro Anbieter wird dann durch providerMaxOutputTokens() gekappt.
- *
- * Hintergrund:
- * - 64000 wurde von Anthropic Claude Sonnet 4.5 bei manchen Model-Aliasen
- *   (insb. ohne Datum-Suffix) mit 400-Error abgelehnt — Standard-Tier braucht
- *   teils anthropic-beta: output-128k-2025-02-19 Header für > 32k.
- * - 32768 wird von allen aktuellen Modellen ohne Beta-Header akzeptiert.
- * - max_tokens ist nur ein Cap (Anthropic zählt nur tatsächlich generierte
- *   Tokens für OTPM-Rate-Limits), daher hoch ohne Kosten-Nachteil.
- */
 function maxTokensForStage(stage: PipelineStage): number {
   switch (stage) {
     case "CLASSIFICATION":
-      return 16384
+      return 16_384
     case "EXTRACTION":
-      return 32768
+      return 32_768
     case "RISK_AND_GUIDANCE":
-      // 32768 ist getestet OK bei Anthropic. Höher (z.B. 64000) löst bei
-      // einigen Model-Aliasen sofortigen 400 Bad Request aus.
-      return 32768
+      return 64_000
   }
 }
 
-/**
- * Pro-Provider maximale Output-Tokens, die der jeweilige API-Endpoint akzeptiert
- * ohne Beta-Header oder Service-Tier-Upgrade.
- *
- * - Claude Sonnet 4.5 (default tier): 32768 sicher; 64000 braucht u.U. Beta-Header.
- * - Gemini 2.5 Pro: 32768 ist konservativ ausreichend (native bis 65536).
- * - OpenAI gpt-4o: 16384 (Provider-Hard-Limit).
- * - LLAMA_COMPAT: 16384.
- */
-function providerMaxOutputTokens(model: ModelType): number {
+function providerMaxOutputTokens(model: ModelType, stage: PipelineStage): number {
   switch (model) {
-    case ModelType.CLAUDE_SONNET_4:
-      return 32768
+    case ModelType.CLAUDE_SONNET_4: {
+      const useExtended = stage === "RISK_AND_GUIDANCE"
+      return anthropicEffectiveMaxOutputTokens(maxTokensForStage(stage), useExtended)
+    }
     case ModelType.GEMINI_2_5_PRO:
-      return 32768
+      return 32_768
     case ModelType.GPT_4O_MINI:
-      return 16384
+      return 16_384
     case ModelType.LLAMA_COMPAT:
-      return 16384
+      return 16_384
   }
+}
+
+function preprocessForStage(pipelineStage: PipelineStage, parsed: unknown): unknown {
+  if (pipelineStage === "RISK_AND_GUIDANCE") {
+    return preprocessRiskStageJson(parsed)
+  }
+  return parsed
+}
+
+function providerErrorCode(err: unknown, stopReason?: string | null): string {
+  if (stopReason === "max_tokens") return "MAX_TOKENS_HIT"
+  const msg = err instanceof Error ? err.message : String(err)
+  const lower = msg.toLowerCase()
+  if (lower.includes("rate") || msg.includes("429")) return "RATE_LIMIT"
+  if (lower.includes("401") || lower.includes("authentication")) return "AUTH"
+  if (lower.includes("400") || lower.includes("invalid")) return "PROVIDER_BAD_REQUEST"
+  if (lower.includes("timeout")) return "TIMEOUT"
+  return "PROVIDER_ERROR"
 }
 
 export function normalizeDocumentTextForAnalysis(raw: string, maxChars: number): string {
@@ -262,32 +277,26 @@ export function hashTextSha256(text: string): string {
   return createHash("sha256").update(text, "utf8").digest("hex")
 }
 
-/** Registry-only resolver (keine DB) — für Tests und Offline-Evals. */
 export function createRegistryOnlyContractPromptResolver(): ContractPromptResolver {
   return {
-    resolveClassification: async (normalizedDocument: string) => ({
+    resolveClassification: async () => ({
       key: CONTRACT_CLASSIFICATION_PROMPT_KEY,
       version: CONTRACT_ANALYSIS_PROMPT_VERSION,
-      text: buildClassificationPromptBody(normalizedDocument, CONTRACT_ANALYSIS_PROMPT_VERSION),
+      text: buildClassificationPromptInstructions(CONTRACT_ANALYSIS_PROMPT_VERSION),
       source: "registry_default"
     }),
-    resolveExtraction: async (normalizedDocument: string, classification?: ClassificationStagePayload | null) => ({
+    resolveExtraction: async (_normalizedDocument, classification) => ({
       key: CONTRACT_EXTRACTION_PROMPT_KEY,
       version: CONTRACT_ANALYSIS_PROMPT_VERSION,
-      text: buildExtractionPromptBody(normalizedDocument, CONTRACT_ANALYSIS_PROMPT_VERSION, classification),
+      text: buildExtractionPromptInstructions(CONTRACT_ANALYSIS_PROMPT_VERSION, classification),
       source: "registry_default"
     }),
-    resolveRisk: async (
-      normalizedDocument: string,
-      extractionSummary: string,
-      _contractTypeLabel: string,
-      classification?: ClassificationStagePayload | null
-    ) => ({
+    resolveRisk: async (normalizedDocument, extractionSummary, _contractTypeLabel, classification) => ({
       key: CONTRACT_RISK_PROMPT_KEY,
       version: CONTRACT_ANALYSIS_PROMPT_VERSION,
-      text: buildRiskAndGuidancePromptBody(
-        normalizedDocument,
+      text: buildRiskAndGuidancePromptInstructions(
         extractionSummary,
+        normalizedDocument.length,
         CONTRACT_ANALYSIS_PROMPT_VERSION,
         classification
       ),
@@ -300,7 +309,7 @@ async function runJsonStage<T>(
   pipelineStage: PipelineStage,
   schema: z.ZodType<T>,
   ctx: RouterContext,
-  prompt: string,
+  promptInstructions: string,
   documentText: string,
   stageLogs: StageAttemptLog[],
   fallbackKeys: string[]
@@ -319,18 +328,45 @@ async function runJsonStage<T>(
     const reason = getSelectionReasonForStage(pipelineStage, model, ctx)
     const started = Date.now()
     let tokensUsed = 0
-    let structuredValid = false
     let errorCode: string | null = null
     const prevProvider = i > 0 ? modelTypeToProviderKind(plan[i - 1]!) : null
 
     try {
       const provider = createProvider(model)
       const stageMaxTokens = maxTokensForStage(pipelineStage)
-      // Stage-Default auf Provider-Obergrenze kappen (OpenAI cappt bei 16384,
-      // Claude/Gemini erlauben mehr). Vermeidet "max_tokens out of range"-Errors.
-      const effectiveMaxTokens = Math.min(stageMaxTokens, providerMaxOutputTokens(model))
-      const response = await provider.analyze({ prompt, documentText, jsonMode: true, maxTokens: effectiveMaxTokens })
+      const effectiveMaxTokens = Math.min(stageMaxTokens, providerMaxOutputTokens(model, pipelineStage))
+
+      const response = await provider.analyze({
+        prompt: promptInstructions,
+        documentText,
+        jsonMode: true,
+        maxTokens: effectiveMaxTokens
+      })
+
       tokensUsed = response.tokensUsed
+      const stopReason = response.stopReason ?? null
+
+      if (stopReason === "max_tokens") {
+        errorCode = "MAX_TOKENS_HIT"
+        stageLogs.push({
+          stage: prismaStage,
+          attemptOrder: i + 1,
+          provider: providerKind,
+          model: apiModelLabel(model),
+          selectionReason: reason,
+          wasPrimaryChoice: !primaryLogged,
+          wasSuccessful: false,
+          fallbackFromProvider: prevProvider,
+          latencyMs: Date.now() - started,
+          tokensUsed,
+          errorCode,
+          structuredValid: false
+        })
+        primaryLogged = true
+        fallbackKeys.push(`${providerKind}:${apiModelLabel(model)}`)
+        continue
+      }
+
       let parsedJson: unknown
       try {
         parsedJson = parseJsonUnknown(response.outputText)
@@ -355,9 +391,17 @@ async function runJsonStage<T>(
         continue
       }
 
+      parsedJson = preprocessForStage(pipelineStage, parsedJson)
       const validated = schema.safeParse(parsedJson)
       if (!validated.success) {
-        errorCode = "SCHEMA_INVALID"
+        errorCode = formatZodIssuesForErrorCode(validated.error)
+        console.error("[Pipeline.v5.schema_invalid_details]", {
+          stage: pipelineStage,
+          provider: providerKind,
+          model: apiModelLabel(model),
+          tokensUsed,
+          issues: formatZodIssuesVerbose(validated.error)
+        })
         stageLogs.push({
           stage: prismaStage,
           attemptOrder: i + 1,
@@ -377,7 +421,6 @@ async function runJsonStage<T>(
         continue
       }
 
-      structuredValid = true
       stageLogs.push({
         stage: prismaStage,
         attemptOrder: i + 1,
@@ -390,13 +433,20 @@ async function runJsonStage<T>(
         latencyMs: Date.now() - started,
         tokensUsed,
         errorCode: null,
-        structuredValid
+        structuredValid: true
       })
       primaryLogged = true
 
       return { data: validated.data, model, tokens: tokensUsed }
-    } catch {
-      errorCode = "PROVIDER_ERROR"
+    } catch (err) {
+      errorCode = providerErrorCode(err)
+      console.warn("[Pipeline.v5.provider_error]", {
+        stage: pipelineStage,
+        provider: providerKind,
+        model: apiModelLabel(model),
+        errorCode,
+        message: err instanceof Error ? err.message : String(err)
+      })
       stageLogs.push({
         stage: prismaStage,
         attemptOrder: i + 1,
@@ -424,22 +474,6 @@ async function runJsonStage<T>(
   )
 }
 
-// ============================================================================
-// v5.0 Stage-Chunked Pipeline — einzelne Stage-Funktionen + Aggregator
-// ============================================================================
-// Diese ermöglichen es dem Async-Worker (/api/workspace/analysis/run), jede
-// Stage als eigenen Lambda-Aufruf auszuführen, mit DB-State-Persistierung
-// zwischen den Stages. Damit umgehen wir den 300s-Hardlimit für Lambdas bei
-// langen Vertragsanalysen.
-//
-// Für Schnellanalyse / synchrone Aufrufe bleibt `runContractAnalysisPipeline`
-// als Kompatibilitäts-Shim erhalten (siehe unten).
-// ============================================================================
-
-/**
- * Stage 0: Classification.
- * Non-blocking: bei Fehler wird mit classification=null returnt (Pipeline läuft weiter).
- */
 export async function runClassificationStage(
   normalizedText: string,
   ctx: RouterContext,
@@ -469,7 +503,7 @@ export async function runClassificationStage(
     classificationData = result.data
   } catch (err) {
     console.warn(
-      "[Pipeline.v5] Classification (Stage 0) fehlgeschlagen — fahre ohne Klassifikationskontext fort:",
+      "[Pipeline.v5] Classification fehlgeschlagen — Pipeline fährt ohne Klassifikationskontext fort:",
       err instanceof Error ? err.message : err
     )
   }
@@ -477,10 +511,6 @@ export async function runClassificationStage(
   return { classification: classificationData, classificationResolved, stageLogs, fallbackKeys }
 }
 
-/**
- * Stage 1: Extraction.
- * Blocking: bei Fehler wird PipelineStageFailureError geworfen.
- */
 export async function runExtractionStage(
   normalizedText: string,
   ctx: RouterContext,
@@ -515,10 +545,6 @@ export async function runExtractionStage(
   }
 }
 
-/**
- * Stage 2: Risk & Guidance.
- * Blocking. Braucht Extraction-Output als Kontext.
- */
 export async function runRiskStage(
   normalizedText: string,
   ctx: RouterContext,
@@ -532,7 +558,8 @@ export async function runRiskStage(
   const extractionSummary = JSON.stringify({
     contractType: extraction.contractType,
     parties: extraction.parties,
-    term: extraction.term
+    term: extraction.term,
+    legalTopics: extraction.legalTopics?.slice(0, 8)
   })
   const contractTypeLabel = extraction.contractType ?? ""
 
@@ -542,6 +569,63 @@ export async function runRiskStage(
     contractTypeLabel,
     classification
   )
+
+  if (shouldSplitRiskStage(normalizedText.length)) {
+    const findingsPrompt = buildRiskFindingsPromptInstructions(
+      extractionSummary,
+      normalizedText.length,
+      resolved.version,
+      classification
+    )
+    const findingsResult = await runJsonStage(
+      "RISK_AND_GUIDANCE",
+      riskFindingsStageSchema,
+      ctx,
+      findingsPrompt,
+      normalizedText,
+      stageLogs,
+      fallbackKeys
+    )
+
+    const guidancePrompt = buildRiskGuidancePromptInstructions(
+      extractionSummary,
+      JSON.stringify(findingsResult.data.findings),
+      resolved.version
+    )
+    const guidanceResult = await runJsonStage(
+      "RISK_AND_GUIDANCE",
+      riskGuidanceStageSchema,
+      ctx,
+      guidancePrompt,
+      "",
+      stageLogs,
+      fallbackKeys
+    )
+
+    const risk: RiskAndGuidanceStagePayload = {
+      findings: findingsResult.data.findings,
+      riskScore01: findingsResult.data.riskScore01,
+      recommendedMeasures: guidanceResult.data.recommendedMeasures,
+      negotiationHints: guidanceResult.data.negotiationHints,
+      explanationSummary: guidanceResult.data.explanationSummary,
+      aggregateConfidence:
+        guidanceResult.data.aggregateConfidence ?? findingsResult.data.aggregateConfidence
+    }
+
+    return {
+      risk,
+      riskModel: findingsResult.model,
+      riskTokens: findingsResult.tokens + guidanceResult.tokens,
+      riskResolved: {
+        key: resolved.key,
+        version: resolved.version,
+        source: resolved.source
+      },
+      stageLogs,
+      fallbackKeys
+    }
+  }
+
   const result = await runJsonStage(
     "RISK_AND_GUIDANCE",
     riskAndGuidanceStageSchema,
@@ -566,10 +650,6 @@ export async function runRiskStage(
   }
 }
 
-/**
- * Aggregator: bündelt die drei Stage-Outputs zu einem ContractPipelineSuccess.
- * Reine Funktion, keine I/O. Vom Worker am Ende der Risk-Stage aufgerufen.
- */
 export function assembleContractPipelineSuccess(args: {
   classification: ClassificationStagePayload | null
   classificationResolved: StageResolvedPrompt | null
@@ -597,41 +677,21 @@ export function assembleContractPipelineSuccess(args: {
     inputTextHash
   } = args
 
-  const extractionLog = stageLogs.find(
-    (l) => l.stage === AnalysisPipelineStageName.EXTRACTION && l.wasSuccessful
-  )
-  const riskLog = stageLogs.find(
-    (l) => l.stage === AnalysisPipelineStageName.RISK_AND_GUIDANCE && l.wasSuccessful
-  )
-  const classLog = stageLogs.find(
-    (l) => l.stage === AnalysisPipelineStageName.CLASSIFICATION && l.wasSuccessful
-  )
-
   const primaryModel = extractionModel
   const totalTokens = stageLogs.reduce((s, l) => s + (l.tokensUsed ?? 0), 0)
-
-  let totalCost = 0
-  if (classLog)
-    totalCost += calculateCost(classification ? extractionModel : ModelType.GPT_4O_MINI, classLog.tokensUsed)
-  if (extractionLog) totalCost += calculateCost(extractionModel, extractionLog.tokensUsed)
-  if (riskLog) totalCost += calculateCost(riskModel, riskLog.tokensUsed)
+  const totalCost = totalCostFromStageLogs(stageLogs)
 
   const routerParts = [
     classification
-      ? `Klassifikation: ${classification.contractClassification} (${apiModelLabel(extractionModel)})`
+      ? `Klassifikation: ${classification.contractClassification}`
       : "Klassifikation: übersprungen",
     `Extraktion: ${apiModelLabel(extractionModel)}`,
     `Risiko & Empfehlungen: ${apiModelLabel(riskModel)}`,
     fallbackModelKeys.length ? `Fallback-Versuche: ${fallbackModelKeys.join("; ")}` : "Keine Fallbacks nötig"
   ]
-  const routerSummary = routerParts.join(" · ")
 
   const aggregateConfidence =
     risk.aggregateConfidence ?? risk.riskScore01 ?? extraction.extractionConfidence ?? null
-
-  const extractionSource = extractionResolved.source ?? "registry_default"
-  const riskSource = riskResolved.source ?? "registry_default"
-  const classificationSource = classificationResolved?.source ?? "registry_default"
 
   return {
     classification,
@@ -642,7 +702,7 @@ export function assembleContractPipelineSuccess(args: {
     primaryProvider: modelTypeToProviderKind(primaryModel),
     totalTokens,
     totalCost,
-    routerSummary,
+    routerSummary: routerParts.join(" · "),
     fallbackModelKeys,
     inputTextHash,
     aggregateConfidence,
@@ -650,22 +710,17 @@ export function assembleContractPipelineSuccess(args: {
       bundleKey: CONTRACT_PROMPT_BUNDLE_KEY,
       classificationKey: classificationResolved?.key ?? CONTRACT_CLASSIFICATION_PROMPT_KEY,
       classificationVersion: classificationResolved?.version ?? CONTRACT_ANALYSIS_PROMPT_VERSION,
-      classificationSource,
+      classificationSource: classificationResolved?.source ?? "registry_default",
       extractionKey: extractionResolved.key,
       extractionVersion: extractionResolved.version,
-      extractionSource,
+      extractionSource: extractionResolved.source ?? "registry_default",
       riskKey: riskResolved.key,
       riskVersion: riskResolved.version,
-      riskSource
+      riskSource: riskResolved.source ?? "registry_default"
     }
   }
 }
 
-/**
- * Kompatibilitäts-Shim: ruft die 3 Stages sequenziell.
- * Bestehende synchrone Aufrufer (Schnellanalyse, Tests, Eval-Tools) bleiben unverändert.
- * Async-Worker für Tiefenanalyse nutzt die einzelnen Stage-Funktionen direkt.
- */
 export async function runContractAnalysisPipeline(
   documentText: string,
   ctx: RouterContext,
