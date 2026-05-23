@@ -30,6 +30,9 @@ export function formatStageFailureMessage(stageLogs: StageAttemptLogLike[]): str
     case "PROVIDER_BAD_REQUEST":
       return "Anthropic hat die Anfrage abgelehnt — Modell-ID und max_tokens in Vercel ENV prüfen."
     default:
+      if (errorCode.includes("Streaming is required")) {
+        return "Claude-Anfrage erfordert Streaming (intern behoben) — bitte erneut versuchen nach Deploy."
+      }
       if (errorCode.startsWith("SCHEMA_INVALID")) {
         return "KI-Antwort entsprach nicht dem erwarteten Schema — bitte erneut versuchen."
       }

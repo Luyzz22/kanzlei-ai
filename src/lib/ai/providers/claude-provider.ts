@@ -64,14 +64,19 @@ export class ClaudeProvider extends BaseAIProvider {
         ...(betaHeaders ? { defaultHeaders: betaHeaders } : {})
       })
 
-      const response = await client.messages.create({
+      const requestParams = {
         model: anthropicChatModelId(),
         max_tokens: maxTokens,
         temperature: 0.2,
-        messages: [{ role: "user", content: buildClaudeUserContent(input) }]
-      })
+        messages: [{ role: "user" as const, content: buildClaudeUserContent(input) }]
+      }
 
-      const anthropicResponse = response as unknown as {
+      // SDK ≥0.78: non-streaming create() wirft bei max_tokens > ~8–16k
+      // ("Streaming is required for operations that may take longer than…").
+      const stream = await client.messages.stream(requestParams)
+      const finalMessage = await stream.finalMessage()
+
+      const anthropicResponse = finalMessage as unknown as {
         content: Array<{ text?: string }>
         usage?: { input_tokens?: number; output_tokens?: number }
         stop_reason?: string
@@ -90,7 +95,7 @@ export class ClaudeProvider extends BaseAIProvider {
           (anthropicResponse.usage?.input_tokens ?? 0) +
           (anthropicResponse.usage?.output_tokens ?? 0),
         stopReason,
-        raw: response
+        raw: finalMessage
       }
     }, "claude")
   }
