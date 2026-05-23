@@ -18,7 +18,10 @@ export type ExtractDocumentTextInput = {
 export type ExtractDocumentTextResult = {
   status: "success" | "unsupported" | "failed"
   mode: ExtractionMode
+  /** Gekürzte Vorschau für UI/DB (max MAX_PREVIEW_CHARS). */
   textPreview: string | null
+  /** Vollständiger extrahierter Text — nur im Prozess/RAM, nicht in DB persistiert. */
+  fullText: string | null
   errorHint: string | null
 }
 
@@ -175,6 +178,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
       status: "failed",
       mode: "unsupported",
       textPreview: null,
+      fullText: null,
       errorHint: "Keine Dateiablage vorhanden"
     }
   }
@@ -186,6 +190,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
       status: "unsupported",
       mode: "unsupported",
       textPreview: null,
+      fullText: null,
       errorHint: `Dateiformat ${input.mimeType ?? "unbekannt"} wird nicht unterstützt. Erlaubt: PDF, DOCX und TXT.`
     }
   }
@@ -198,6 +203,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
       status: "failed",
       mode: kind === "pdf" ? "pdf-text-layer" : kind === "docx" ? "docx-mammoth" : "txt-direct",
       textPreview: null,
+      fullText: null,
       errorHint: `Datei konnte aus der Ablage nicht gelesen werden${e instanceof Error ? `: ${e.message}` : ""}`
     }
   }
@@ -212,6 +218,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
         status: "failed",
         mode: "txt-direct",
         textPreview: null,
+      fullText: null,
         errorHint: `TXT-Datei konnte nicht dekodiert werden${e instanceof Error ? `: ${e.message}` : ""}`
       }
     }
@@ -227,6 +234,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
           status: "failed",
           mode: "docx-mammoth",
           textPreview: null,
+      fullText: null,
           errorHint: "DOCX enthaelt keinen extrahierbaren Text (möglicherweise nur eingebettete Bilder)."
         }
       }
@@ -236,6 +244,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
         status: "failed",
         mode: "docx-mammoth",
         textPreview: null,
+      fullText: null,
         errorHint: `DOCX konnte nicht gelesen werden${e instanceof Error ? `: ${e.message}` : ""}`
       }
     }
@@ -262,6 +271,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
           status: "failed",
           mode: "pdf-ocr-gemini",
           textPreview: null,
+      fullText: null,
           errorHint: "OCR lieferte keinen verwertbaren Text. Das PDF ist möglicherweise leer, beschaedigt oder schlecht gescannt."
         }
       } catch (ocrErr) {
@@ -269,6 +279,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
           status: "failed",
           mode: "pdf-ocr-gemini",
           textPreview: null,
+      fullText: null,
           errorHint: `OCR-Fallback fehlgeschlagen${ocrErr instanceof Error ? `: ${ocrErr.message}` : ""}. Bitte eine OCR-Version erneut hochladen.`
         }
       }
@@ -279,6 +290,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
       status: "failed",
       mode: "pdf-text-layer",
       textPreview: null,
+      fullText: null,
       errorHint: "Das PDF enthaelt keinen extrahierbaren Text-Layer (möglicherweise gescannt). Bitte eine OCR-Variante der Datei erneut hochladen."
     }
   } catch (e) {
@@ -286,6 +298,7 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
       status: "failed",
       mode: "pdf-text-layer",
       textPreview: null,
+      fullText: null,
       errorHint: `PDF konnte nicht gelesen werden${e instanceof Error ? `: ${e.message}` : ""}`
     }
   }
@@ -297,6 +310,7 @@ function buildResult(text: string, mode: ExtractionMode): ExtractDocumentTextRes
       status: "failed",
       mode,
       textPreview: null,
+      fullText: null,
       errorHint: `Extrahierter Text ist zu kurz (${text.length} Zeichen) für eine belastbare Analyse.`
     }
   }
@@ -307,6 +321,7 @@ function buildResult(text: string, mode: ExtractionMode): ExtractDocumentTextRes
     status: "success",
     mode,
     textPreview,
+    fullText: text,
     errorHint: null
   }
 }

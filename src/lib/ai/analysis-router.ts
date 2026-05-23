@@ -6,7 +6,6 @@ import {
   isModelTypeAvailable,
   sortModelsByProviderPriority
 } from "@/lib/ai/provider-availability"
-import { log } from "@/lib/security/secure-logging"
 
 export type PipelineStage = "CLASSIFICATION" | "EXTRACTION" | "RISK_AND_GUIDANCE"
 
@@ -16,11 +15,8 @@ export type RouterContext = {
   complexity?: "niedrig" | "mittel" | "hoch"
   mimeType?: string
   preferLocalOrPrivate?: boolean
-  /** Tenant-ID für Provider-Governance (Policy Guard R-02) */
   tenantId?: string
-  /** Tenant-spezifische Provider-Allowlist (R-02: geladen aus TenantGovernanceSettings) */
   allowedProviders?: string[]
-  /** Tenant hat EU-Only aktiviert (R-02) */
   preferEuModels?: boolean
   /**
    * Eval / Modellvergleich: erzwingt das Primärmodell je Pipeline-Stufe (Fallback-Kette bleibt über Verfügbarkeit).
@@ -66,13 +62,8 @@ export function selectPrimaryModelForStage(stage: PipelineStage, ctx: RouterCont
     return ModelType.LLAMA_COMPAT
   }
 
-  // CLASSIFICATION: schneller Step, bevorzugt Claude (präzise Rechtsklassifikation)
-  // Für lange Dokumente: Gemini wegen Kontextfenster
   if (stage === "CLASSIFICATION") {
-    if (longDoc) {
-      return envModelToType("LONG_DOCUMENT_MODEL", ModelType.GEMINI_2_5_PRO)
-    }
-    return ModelType.CLAUDE_SONNET_4
+    return envModelToType("SIMPLE_QUERY_MODEL", ModelType.CLAUDE_SONNET_4)
   }
 
   if (stage === "EXTRACTION") {
@@ -86,15 +77,31 @@ export function selectPrimaryModelForStage(stage: PipelineStage, ctx: RouterCont
   }
 
   // RISK_AND_GUIDANCE — Klauselbegründung / Redlining: Claude bevorzugt
-  if (longDoc) {
-    return envModelToType("LONG_DOCUMENT_MODEL", ModelType.GEMINI_2_5_PRO)
+  if (stage === "RISK_AND_GUIDANCE") {
+    if (longDoc) {
+      return envModelToType("LONG_DOCUMENT_MODEL", ModelType.GEMINI_2_5_PRO)
+    }
+    return ModelType.CLAUDE_SONNET_4
   }
+
   return ModelType.CLAUDE_SONNET_4
 }
 
 export function getFallbackChainForStage(primary: ModelType, stage: PipelineStage): ModelType[] {
-  // Classification hat dieselbe Fallback-Logik wie Extraction
-  if (stage === "CLASSIFICATION" || stage === "EXTRACTION") {
+  if (stage === "CLASSIFICATION") {
+    switch (primary) {
+      case ModelType.CLAUDE_SONNET_4:
+        return [ModelType.GPT_4O_MINI, ModelType.GEMINI_2_5_PRO, ModelType.LLAMA_COMPAT]
+      case ModelType.GPT_4O_MINI:
+        return [ModelType.CLAUDE_SONNET_4, ModelType.GEMINI_2_5_PRO, ModelType.LLAMA_COMPAT]
+      case ModelType.GEMINI_2_5_PRO:
+        return [ModelType.CLAUDE_SONNET_4, ModelType.GPT_4O_MINI, ModelType.LLAMA_COMPAT]
+      default:
+        return [ModelType.CLAUDE_SONNET_4, ModelType.GPT_4O_MINI, ModelType.GEMINI_2_5_PRO]
+    }
+  }
+
+  if (stage === "EXTRACTION") {
     switch (primary) {
       case ModelType.GEMINI_2_5_PRO:
         return [ModelType.GPT_4O_MINI, ModelType.CLAUDE_SONNET_4, ModelType.LLAMA_COMPAT]
@@ -123,69 +130,23 @@ export function getFallbackChainForStage(primary: ModelType, stage: PipelineStag
   }
 }
 
-/** Maps ModelType to provider name for governance checks */
-function modelToProvider(model: ModelType): string {
-  switch (model) {
-    case ModelType.GPT_4O_MINI: return "openai"
-    case ModelType.CLAUDE_SONNET_4: return "anthropic"
-    case ModelType.GEMINI_2_5_PRO: return "gemini"
-    case ModelType.LLAMA_COMPAT: return "llama"
-    default: return "unknown"
-  }
-}
-
-const US_PROVIDER_NAMES = ["openai", "anthropic", "gemini"]
-
-/** R-02 Fix: Filter execution chain by tenant governance settings */
-function filterByTenantGovernance(chain: ModelType[], ctx: RouterContext): ModelType[] {
-  let filtered = chain
-
-  // EU-Only Mode: block US providers
-  if (ctx.preferEuModels) {
-    const before = filtered.length
-    filtered = filtered.filter(m => !US_PROVIDER_NAMES.includes(modelToProvider(m)))
-    if (filtered.length < before) {
-      log.info("router.eu_only_filter", { removed: before - filtered.length, tenantId: ctx.tenantId })
-    }
-  }
-
-  // Provider Allowlist: only allow explicitly listed providers
-  if (ctx.allowedProviders && ctx.allowedProviders.length > 0) {
-    const allowed = ctx.allowedProviders
-    const before = filtered.length
-    filtered = filtered.filter(m => allowed.includes(modelToProvider(m)))
-    if (filtered.length < before) {
-      log.info("router.allowlist_filter", { allowed, removed: before - filtered.length, tenantId: ctx.tenantId })
-    }
-  }
-
-  return filtered
-}
-
 export function buildModelExecutionPlan(stage: PipelineStage, ctx: RouterContext): ModelType[] {
   const forced = ctx.evalPrimaryByStage?.[stage]
   const primary = forced ?? selectPrimaryModelForStage(stage, ctx)
   const fallbacks = uniqueModels(getFallbackChainForStage(primary, stage)).filter((m) => m !== primary)
   const sortedFallbacks = sortModelsByProviderPriority(fallbacks)
   const chain = [primary, ...sortedFallbacks]
-  const available = filterModelsByAvailability(chain)
-  // R-02: Apply tenant governance filter (allowedProviders, preferEuModels)
-  return filterByTenantGovernance(available, ctx)
+  return filterModelsByAvailability(chain)
 }
 
 export function getSelectionReasonForStage(stage: PipelineStage, model: ModelType, ctx: RouterContext): string {
   const longDoc = ctx.documentLength >= longDocumentThreshold()
-
   if (stage === "CLASSIFICATION") {
     if (model === ModelType.CLAUDE_SONNET_4) {
-      return "Vertragstypklassifikation: Claude bevorzugt für präzise rechtliche Einordnung (§§ 305-310 BGB)."
-    }
-    if (model === ModelType.GEMINI_2_5_PRO && longDoc) {
-      return "Langes Dokument: Gemini-Kontextfenster für Klassifikation."
+      return "Vertragstyp-Klassifikation: bevorzugt präzise juristische Einordnung."
     }
     return "Klassifikationsstufe: Fallback oder alternativer Anbieter."
   }
-
   if (stage === "EXTRACTION") {
     if (model === ModelType.GEMINI_2_5_PRO && longDoc) {
       return "Langes Dokument: bevorzugt Modell mit großem Kontextfenster (Extraktion)."
@@ -259,13 +220,13 @@ export function getFilteredExecutionChain(metadata: DocumentMetadata): ModelType
 
 export function logModelSelection(documentMetadata: DocumentMetadata, selectedModel: ModelType): void {
   if (process.env.AI_AUDIT_VERBOSE !== "true") return
-  log.info("model_selection", {
+  console.info("[AI-Model-Router] Modellauswahl", {
     documentId: documentMetadata.documentId,
-    analysisType: String(documentMetadata.analysisType),
+    analysisType: documentMetadata.analysisType,
     documentLength: documentMetadata.documentLength,
     hasVisualElements: Boolean(documentMetadata.hasVisualElements),
-    selectedModel: String(selectedModel),
-    available: getAvailableModelTypes().map(String),
+    selectedModel,
+    available: getAvailableModelTypes(),
     reason: getSelectionReason(selectedModel)
   })
 }

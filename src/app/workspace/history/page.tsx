@@ -16,7 +16,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat("de-DE", {
   minute: "2-digit"
 })
 
-type PipelineStageKey = "EXTRACTION" | "RISK_AND_GUIDANCE"
+type PipelineStageKey = "CLASSIFICATION" | "EXTRACTION" | "RISK_AND_GUIDANCE"
 
 type ProviderKindKey = "OPENAI" | "ANTHROPIC" | "GOOGLE_GEMINI" | "LLAMA_COMPAT"
 
@@ -83,11 +83,13 @@ const providerPrettyName: Record<ProviderKindKey, string> = {
 }
 
 const stageIcon: Record<PipelineStageKey, string> = {
+  CLASSIFICATION: "🏷️",
   EXTRACTION: "🔍",
   RISK_AND_GUIDANCE: "⚖️"
 }
 
 const stageShortLabel: Record<PipelineStageKey, string> = {
+  CLASSIFICATION: "Klassifikation",
   EXTRACTION: "Extraktion",
   RISK_AND_GUIDANCE: "Risiko"
 }
@@ -166,6 +168,7 @@ async function loadHistoryForTenant(tenantId: string): Promise<HistoryEntry[]> {
       }
 
       const stageDecisions: StageDecision[] = []
+      if (byStage.CLASSIFICATION) stageDecisions.push(byStage.CLASSIFICATION)
       if (byStage.EXTRACTION) stageDecisions.push(byStage.EXTRACTION)
       if (byStage.RISK_AND_GUIDANCE) stageDecisions.push(byStage.RISK_AND_GUIDANCE)
 
@@ -302,7 +305,7 @@ export default async function HistoryPage() {
             <span>Dokument</span>
             <span>Routing / Modell-Matrix</span>
             <span>Status</span>
-            <span>Risiko</span>
+            <span title="Risiko-Score aus abgeschlossener Analyse (0–100%)">Risiko-Score</span>
             <span>Gestartet</span>
           </div>
 
@@ -386,6 +389,7 @@ export default async function HistoryPage() {
                       ? "text-amber-600"
                       : "text-emerald-600"
                   }`}
+                  title="Risiko-Score (0–100%), nicht Pipeline-Fortschritt"
                 >
                   {riskPercent !== null ? `${riskPercent}%` : "—"}
                 </span>

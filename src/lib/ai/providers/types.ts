@@ -14,6 +14,8 @@ export interface AIAnalysisResponse {
   outputText: string
   parsedOutput: Record<string, unknown>
   tokensUsed: number
+  /** Anthropic stop_reason — max_tokens bei Truncation. */
+  stopReason?: string | null
   raw: unknown
 }
 
