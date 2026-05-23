@@ -207,7 +207,14 @@ async function persistFailure(
   documentId: string,
   errorCode: string,
   message: string,
-  wallStart: number
+  wallStart: number,
+  /**
+   * Optional: Per-Provider-Attempts der gescheiterten Stage.
+   * Werden als AnalysisProviderDecision-Rows persistiert, damit Diagnose
+   * möglich ist (welcher Provider mit welchem ErrorCode abgewiesen hat).
+   * Ohne dies geht der Per-Versuch-Debug-Spur mit dem Lambda verloren.
+   */
+  stageLogs: StageAttemptLog[] = []
 ): Promise<void> {
   await withTenant(tenantId, async (tx) => {
     await tx.analysisRun.update({
@@ -221,6 +228,28 @@ async function persistFailure(
         durationMs: Date.now() - wallStart
       }
     })
+
+    // Per-Provider-Attempts persistieren — auch bei Failure wichtig für Diagnose
+    if (stageLogs.length > 0) {
+      await tx.analysisProviderDecision.createMany({
+        data: stageLogs.map((l) => ({
+          analysisRunId: runId,
+          stage: l.stage,
+          attemptOrder: l.attemptOrder,
+          provider: l.provider,
+          model: l.model,
+          selectionReason: l.selectionReason,
+          wasPrimaryChoice: l.wasPrimaryChoice,
+          wasSuccessful: l.wasSuccessful,
+          fallbackFromProvider: l.fallbackFromProvider,
+          latencyMs: l.latencyMs,
+          tokensUsed: l.tokensUsed,
+          errorCode: l.errorCode,
+          structuredValid: l.structuredValid
+        }))
+      })
+    }
+
     await writeAuditEventTx(tx, {
       tenantId,
       actorId,
@@ -231,7 +260,8 @@ async function persistFailure(
       metadata: {
         errorCode,
         message: message.slice(0, 2000),
-        pipeline: "v5.0_stage_chunked"
+        pipeline: "v5.0_stage_chunked",
+        attemptCount: stageLogs.length
       } satisfies Prisma.InputJsonValue
     })
   })
@@ -356,6 +386,8 @@ export async function runPersistedExtractionStage(input: StageInput): Promise<St
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unbekannter Extraktionsfehler"
     const code = err instanceof PipelineStageFailureError ? "PIPELINE_STAGE_FAILED" : "PIPELINE_ERROR"
+    // Per-Provider-Logs bei Stage-Failure für Diagnose persistieren
+    const failureStageLogs = err instanceof PipelineStageFailureError ? err.stageLogs : []
     await persistFailure(
       input.tenantId,
       input.runId,
@@ -363,9 +395,10 @@ export async function runPersistedExtractionStage(input: StageInput): Promise<St
       input.documentId,
       code,
       message,
-      wallStart
+      wallStart,
+      failureStageLogs
     )
-    console.error(`[Pipeline.v5.extraction] runId=${input.runId} FAILED: ${message}`)
+    console.error(`[Pipeline.v5.extraction] runId=${input.runId} FAILED: ${message} (attempts=${failureStageLogs.length})`)
     return { ok: false, code, message }
   }
 
@@ -480,6 +513,9 @@ export async function runPersistedRiskStage(input: StageInput): Promise<StageOut
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unbekannter Risk-Fehler"
     const code = err instanceof PipelineStageFailureError ? "PIPELINE_STAGE_FAILED" : "PIPELINE_ERROR"
+    // Per-Provider-Logs der Risk-Stage bei Failure für Diagnose persistieren
+    // (Sie liegen sonst nur im RAM und gehen mit dem Lambda verloren.)
+    const failureStageLogs = err instanceof PipelineStageFailureError ? err.stageLogs : []
     await persistFailure(
       input.tenantId,
       input.runId,
@@ -487,9 +523,10 @@ export async function runPersistedRiskStage(input: StageInput): Promise<StageOut
       input.documentId,
       code,
       message,
-      wallStart
+      wallStart,
+      failureStageLogs
     )
-    console.error(`[Pipeline.v5.risk] runId=${input.runId} FAILED: ${message}`)
+    console.error(`[Pipeline.v5.risk] runId=${input.runId} FAILED: ${message} (attempts=${failureStageLogs.length})`)
     return { ok: false, code, message }
   }
 
