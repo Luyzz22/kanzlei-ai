@@ -26,8 +26,10 @@ const publicPrefixes = [
   "/api/auth",
   "/api/scim",
   "/api/health",
-  "/api/admin/status",
-  "/api/admin/seed",
+  // SECURITY: /api/admin/status und /api/admin/seed NICHT mehr public!
+  // Beide Routen haben eigene Auth-Checks (ADMIN/OWNER), aber Middleware
+  // muss ebenfalls Session validieren (Defense-in-Depth).
+  // Ref: Phase 1.3 §3.3 — DSGVO Art. 25, Art. 32, NIS2 Art. 21
   "/api/contact",
   "/api/stripe/webhook",
 ]
