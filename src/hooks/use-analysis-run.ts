@@ -23,6 +23,7 @@ export interface AnalysisRunState {
   currentStage: AnalysisStage;
   result: Record<string, unknown> | null;
   error: string | null;
+  errorCode: string | null;
   startedAt: string | null;
   completedAt: string | null;
   elapsed: number; // Sekunden seit Start
@@ -39,6 +40,7 @@ export function useAnalysisRun() {
     currentStage: null,
     result: null,
     error: null,
+    errorCode: null,
     startedAt: null,
     completedAt: null,
     elapsed: 0,
@@ -104,6 +106,7 @@ export function useAnalysisRun() {
             progress: data.progress,
             currentStage: data.currentStage ?? null,
             error: data.error ?? null,
+            errorCode: data.errorCode ?? null,
             startedAt: data.startedAt ?? s.startedAt,
             completedAt: data.completedAt ?? null,
           }));
@@ -186,6 +189,7 @@ export function useAnalysisRun() {
       currentStage: null,
       result: null,
       error: null,
+      errorCode: null,
       startedAt: null,
       completedAt: null,
       elapsed: 0,

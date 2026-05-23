@@ -157,8 +157,10 @@ const US_PROVIDER_NAMES = ["openai", "anthropic", "gemini"]
 /** R-02: Filter execution chain by tenant governance settings */
 function filterByTenantGovernance(chain: ModelType[], ctx: RouterContext): ModelType[] {
   let filtered = chain
+  // Vertragsanalyse ist Claude-only — EU-Filter würde sonst alle Provider entfernen.
+  const skipEuFilter = contractAnalysisClaudeOnly()
 
-  if (ctx.preferEuModels) {
+  if (ctx.preferEuModels && !skipEuFilter) {
     const before = filtered.length
     filtered = filtered.filter((m) => !US_PROVIDER_NAMES.includes(modelToProvider(m)))
     if (filtered.length < before) {
