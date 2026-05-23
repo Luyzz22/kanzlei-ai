@@ -204,20 +204,31 @@ function toPrismaStage(stage: PipelineStage): AnalysisPipelineStageName {
 
 /**
  * Max-Token-Budget pro Stage.
- * Classification ist kompakt (~500-800 Output-Tokens).
+ *
+ * Wir setzen jede Stage auf das größtmögliche Output-Budget. Die tatsächliche
+ * Obergrenze pro Anbieter wird dann durch providerMaxOutputTokens() gekappt
+ * (siehe Aufruf in runJsonStage).
+ *
+ * Hintergrund: bei komplexen Verträgen mit 9+ Findings, Cross-Clause-Analyse,
+ * Kalibrierungsmatrix etc. wurde der Risk-Output bei 16384 truncated → JSON_PARSE.
+ * Da max_tokens nur ein Cap ist (kein Ziel) und Anthropic OTPM-Rate-Limit
+ * ohnehin nur auf tatsächlich generierten Tokens basiert, ist hohes max_tokens
+ * der sichere Default.
  */
 function maxTokensForStage(stage: PipelineStage): number {
   switch (stage) {
     case "CLASSIFICATION":
-      return 4096
+      // Classification ist konzeptionell kompakt, aber wir lassen Headroom für
+      // Sonderfälle (sehr komplexe Constellation-Beschreibungen).
+      return 16384
     case "EXTRACTION":
-      return 8192
-    case "RISK_AND_GUIDANCE":
-      // Bei komplexen Verträgen (9+ Findings, Cross-Clause, Kalibrierung, etc.)
-      // kann der Risk-Output 15-25k Output-Tokens erreichen. Claude Sonnet 4.5
-      // unterstützt bis zu 64k Output-Tokens. Vorher 16384 → JSON_PARSE-Fail
-      // weil Output an der Grenze truncated wurde.
+      // Bei umfangreichen Verträgen mit vielen Parties/legalTopics/structuredData
+      // kann der Output über 8192 hinausgehen.
       return 32768
+    case "RISK_AND_GUIDANCE":
+      // Maximum: ein Risk-Output mit 30+ Findings, Cross-Clause, Kalibrierung
+      // und vollständigem Evidence-Graph kann jenseits von 30k Tokens liegen.
+      return 64000
   }
 }
 
@@ -225,20 +236,21 @@ function maxTokensForStage(stage: PipelineStage): number {
  * Pro-Provider maximale Output-Tokens, die der jeweilige API-Endpoint akzeptiert.
  * Wird benutzt um den Stage-Default auf die individuelle Provider-Obergrenze zu kappen.
  *
- * - OpenAI gpt-4o cappt selbst bei 16384 Output-Tokens — höhere Werte werden abgewiesen.
- * - Claude Sonnet 4.5 erlaubt bis zu 64000 Output-Tokens. Wir setzen 32768 als sicheren Wert.
- * - Gemini 2.5 erlaubt bis 65536 Output-Tokens. Wir setzen 32768 als sicheren Wert.
+ * - Claude Sonnet 4.5: 64000 Output-Tokens (synchroner Messages API).
+ * - Gemini 2.5 Pro:   65536 Output-Tokens.
+ * - OpenAI gpt-4o:    16384 Output-Tokens (höhere Werte werden abgewiesen).
+ * - LLAMA_COMPAT:     konservativ 16384.
  */
 function providerMaxOutputTokens(model: ModelType): number {
   switch (model) {
     case ModelType.CLAUDE_SONNET_4:
-      return 32768
+      return 64000
     case ModelType.GEMINI_2_5_PRO:
-      return 32768
+      return 65536
     case ModelType.GPT_4O_MINI:
       return 16384
     case ModelType.LLAMA_COMPAT:
-      return 8192
+      return 16384
   }
 }
 
