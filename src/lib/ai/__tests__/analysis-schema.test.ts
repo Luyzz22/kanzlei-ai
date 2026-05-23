@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 
 import {
   extractionStageSchema,
+  normalizeConfidence01,
   normalizeSeverityValue,
   normalizeRiskScore01,
   parseJsonUnknown,
@@ -66,4 +67,44 @@ test("preprocessRiskStageJson normalisiert EN-Severity und Prozent-Scores", () =
 test("normalizeSeverityValue mappt englische Werte", () => {
   assert.equal(normalizeSeverityValue("high"), "hoch")
   assert.equal(normalizeRiskScore01(82), 0.82)
+})
+
+test("preprocessRiskStageJson entfernt null confidence und normalisiert Strings", () => {
+  const raw = {
+    findings: [
+      {
+        category: "x",
+        title: "T",
+        description: "D",
+        severity: "mittel",
+        confidence: null
+      },
+      {
+        category: "y",
+        title: "T2",
+        description: "D2",
+        severity: "hoch",
+        confidence: "85%"
+      }
+    ],
+    riskScore01: 0.4,
+    recommendedMeasures: ["a"],
+    negotiationHints: ["b"],
+    explanationSummary: "ok",
+    aggregateConfidence: "90"
+  }
+  const normalized = preprocessRiskStageJson(raw)
+  const parsed = riskAndGuidanceStageSchema.safeParse(normalized)
+  assert.equal(parsed.success, true)
+  if (parsed.success) {
+    assert.equal(parsed.data.findings[0]?.confidence, undefined)
+    assert.equal(parsed.data.findings[1]?.confidence, 0.85)
+    assert.equal(parsed.data.aggregateConfidence, 0.9)
+  }
+})
+
+test("normalizeConfidence01", () => {
+  assert.equal(normalizeConfidence01(null), undefined)
+  assert.equal(normalizeConfidence01("75%"), 0.75)
+  assert.equal(normalizeConfidence01(82), 0.82)
 })

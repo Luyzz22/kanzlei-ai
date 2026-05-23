@@ -53,6 +53,22 @@ export function normalizeRiskScore01(value: unknown): unknown {
   return value
 }
 
+/** Normalisiert confidence: null weg, "85%" → 0.85, 75 → 0.75 */
+export function normalizeConfidence01(value: unknown): number | undefined {
+  if (value === null || value === undefined) return undefined
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value > 1 ? value / 100 : value
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim()
+    if (!trimmed) return undefined
+    const n = Number.parseFloat(trimmed.replace(",", ".").replace(/%$/, ""))
+    if (Number.isFinite(n)) return n > 1 ? n / 100 : n
+    return undefined
+  }
+  return undefined
+}
+
 /** Rekursive Vorverarbeitung für Risk-JSON vor Schema-Validation. */
 export function preprocessRiskStageJson(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw
@@ -62,8 +78,12 @@ export function preprocessRiskStageJson(raw: unknown): unknown {
     obj.riskScore01 = normalizeRiskScore01(obj.riskScore01)
   }
   if ("aggregateConfidence" in obj) {
-    const v = obj.aggregateConfidence
-    if (typeof v === "number" && v > 1) obj.aggregateConfidence = v / 100
+    const normalized = normalizeConfidence01(obj.aggregateConfidence)
+    if (normalized === undefined) {
+      delete obj.aggregateConfidence
+    } else {
+      obj.aggregateConfidence = normalized
+    }
   }
   if (Array.isArray(obj.findings)) {
     obj.findings = obj.findings.map((f) => {
@@ -72,8 +92,13 @@ export function preprocessRiskStageJson(raw: unknown): unknown {
       if ("severity" in finding) {
         finding.severity = normalizeSeverityValue(finding.severity)
       }
-      if (typeof finding.confidence === "number" && finding.confidence > 1) {
-        finding.confidence = finding.confidence / 100
+      if ("confidence" in finding) {
+        const normalized = normalizeConfidence01(finding.confidence)
+        if (normalized === undefined) {
+          delete finding.confidence
+        } else {
+          finding.confidence = normalized
+        }
       }
       return finding
     })

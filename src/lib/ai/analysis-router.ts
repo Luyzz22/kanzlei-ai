@@ -6,6 +6,7 @@ import {
   isModelTypeAvailable,
   sortModelsByProviderPriority
 } from "@/lib/ai/provider-availability"
+import { contractAnalysisClaudeOnly } from "@/lib/ai/claude-model-config"
 import { log } from "@/lib/security/secure-logging"
 
 export type PipelineStage = "CLASSIFICATION" | "EXTRACTION" | "RISK_AND_GUIDANCE"
@@ -54,6 +55,10 @@ function envModelToType(envName: string, fallback: ModelType): ModelType {
 export function selectPrimaryModelForStage(stage: PipelineStage, ctx: RouterContext): ModelType {
   if (!routerEnabled()) {
     return envModelToType("DEFAULT_MODEL", ModelType.GPT_4O_MINI)
+  }
+
+  if (contractAnalysisClaudeOnly()) {
+    return ModelType.CLAUDE_SONNET_4
   }
 
   const longDoc = ctx.documentLength >= longDocumentThreshold()
@@ -184,7 +189,21 @@ export function buildModelExecutionPlan(stage: PipelineStage, ctx: RouterContext
   const sortedFallbacks = sortModelsByProviderPriority(fallbacks)
   const chain = [primary, ...sortedFallbacks]
   const available = filterModelsByAvailability(chain)
-  return filterByTenantGovernance(available, ctx)
+  let plan = filterByTenantGovernance(available, ctx)
+
+  if (contractAnalysisClaudeOnly()) {
+    const before = plan.length
+    plan = plan.filter((m) => m === ModelType.CLAUDE_SONNET_4)
+    if (before > plan.length) {
+      log.info("router.claude_only", {
+        stage,
+        removed: before - plan.length,
+        tenantId: ctx.tenantId
+      })
+    }
+  }
+
+  return plan
 }
 
 export function getSelectionReasonForStage(stage: PipelineStage, model: ModelType, ctx: RouterContext): string {
