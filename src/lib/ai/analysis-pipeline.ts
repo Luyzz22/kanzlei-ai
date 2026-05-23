@@ -144,7 +144,9 @@ export class PipelineStageFailureError extends Error {
   readonly code = "PIPELINE_STAGE_FAILED"
   constructor(
     readonly stage: AnalysisPipelineStageName,
-    message: string
+    message: string,
+    readonly stageLogs: StageAttemptLog[] = [],
+    readonly fallbackKeys: string[] = []
   ) {
     super(message)
     this.name = "PipelineStageFailureError"
@@ -372,7 +374,12 @@ async function runJsonStage<T>(
     }
   }
 
-  throw new PipelineStageFailureError(prismaStage, "Alle Anbieterversuche für diese Pipeline-Stufe sind fehlgeschlagen.")
+  throw new PipelineStageFailureError(
+    prismaStage,
+    "Alle Anbieterversuche für diese Pipeline-Stufe sind fehlgeschlagen.",
+    stageLogs,
+    fallbackKeys
+  )
 }
 
 // ============================================================================
