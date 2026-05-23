@@ -21,7 +21,6 @@ import { createTenantContractPromptResolver } from "@/lib/ai/prompt-governance.s
 import { prisma } from "@/lib/prisma"
 import { CONTRACT_ANALYSIS_PROMPT_VERSION } from "@/lib/ai/schemas/contract-analysis"
 import { writeAuditEventTx } from "@/lib/audit-write"
-import { getDocumentTextForAnalysis } from "@/lib/documents/document-analysis-text"
 import { withTenant } from "@/lib/tenant-context.server"
 
 function severityFromLiteral(s: "niedrig" | "mittel" | "hoch"): DocumentFindingSeverity {
