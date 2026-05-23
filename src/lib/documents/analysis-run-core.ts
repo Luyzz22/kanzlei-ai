@@ -21,6 +21,7 @@ import { createTenantContractPromptResolver } from "@/lib/ai/prompt-governance.s
 import { prisma } from "@/lib/prisma"
 import { CONTRACT_ANALYSIS_PROMPT_VERSION } from "@/lib/ai/schemas/contract-analysis"
 import { writeAuditEventTx } from "@/lib/audit-write"
+import { classificationFieldsForDb } from "@/lib/documents/classification-db-fields"
 import { sendAnalysisCompleteNotification } from "@/lib/email/analysis-notification"
 import { withTenant } from "@/lib/tenant-context.server"
 
@@ -499,9 +500,7 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
           pipeline.classification != null
             ? (pipeline.classification as unknown as Prisma.InputJsonValue)
             : Prisma.JsonNull,
-        contractClassification: pipeline.classification?.contractClassification ?? null,
-        partyConstellation: pipeline.classification?.partyConstellation ?? null,
-        agbKontrolleAnwendbar: pipeline.classification?.agbKontrolleAnwendbar ?? null,
+        ...classificationFieldsForDb(pipeline.classification),
         promptVersion: pipeline.promptMetadata.extractionVersion,
         reviewState: AnalysisReviewState.ANALYSIERT
       }
