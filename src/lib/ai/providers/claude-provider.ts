@@ -59,17 +59,17 @@ export class ClaudeProvider extends BaseAIProvider {
     return this.withRetry(async () => {
       const anthropicModule = await import("@anthropic-ai/sdk")
       const Anthropic = anthropicModule.default
-      const client = new Anthropic({ apiKey: this.config.apiKey })
+      const client = new Anthropic({
+        apiKey: this.config.apiKey,
+        ...(betaHeaders ? { defaultHeaders: betaHeaders } : {})
+      })
 
-      const response = await client.messages.create(
-        {
-          model: anthropicChatModelId(),
-          max_tokens: maxTokens,
-          temperature: 0.2,
-          messages: [{ role: "user", content: buildClaudeUserContent(input) }]
-        },
-        betaHeaders ? { headers: betaHeaders } : undefined
-      )
+      const response = await client.messages.create({
+        model: anthropicChatModelId(),
+        max_tokens: maxTokens,
+        temperature: 0.2,
+        messages: [{ role: "user", content: buildClaudeUserContent(input) }]
+      })
 
       const anthropicResponse = response as unknown as {
         content: Array<{ text?: string }>
