@@ -171,11 +171,15 @@ function modelTypeToProviderKind(model: ModelType): AiProviderKind {
 function apiModelLabel(model: ModelType): string {
   switch (model) {
     case ModelType.GPT_4O_MINI:
-      return process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-4o-mini"
+      // Default angeglichen an chatModelId() im OpenAI-Provider — beide nutzen gpt-4o.
+      // Der ENUM-Name (GPT_4O_MINI) ist historisch, der echte API-Call läuft mit gpt-4o.
+      return process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-4o"
     case ModelType.CLAUDE_SONNET_4:
       return process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-sonnet-4-6"
     case ModelType.GEMINI_2_5_PRO:
-      return process.env.GEMINI_CHAT_MODEL?.trim() || "gemini-1.5-pro"
+      // Default auf 2.5-pro angeglichen an geminiModelId() im Gemini-Provider.
+      // gemini-1.5-pro ist deprecated und gibt PROVIDER_ERROR.
+      return process.env.GEMINI_CHAT_MODEL?.trim() || "gemini-2.5-pro"
     case ModelType.LLAMA_COMPAT:
       return process.env.LLAMA_MODEL?.trim() || "llama-compat"
     default:
@@ -209,7 +213,32 @@ function maxTokensForStage(stage: PipelineStage): number {
     case "EXTRACTION":
       return 8192
     case "RISK_AND_GUIDANCE":
+      // Bei komplexen Verträgen (9+ Findings, Cross-Clause, Kalibrierung, etc.)
+      // kann der Risk-Output 15-25k Output-Tokens erreichen. Claude Sonnet 4.5
+      // unterstützt bis zu 64k Output-Tokens. Vorher 16384 → JSON_PARSE-Fail
+      // weil Output an der Grenze truncated wurde.
+      return 32768
+  }
+}
+
+/**
+ * Pro-Provider maximale Output-Tokens, die der jeweilige API-Endpoint akzeptiert.
+ * Wird benutzt um den Stage-Default auf die individuelle Provider-Obergrenze zu kappen.
+ *
+ * - OpenAI gpt-4o cappt selbst bei 16384 Output-Tokens — höhere Werte werden abgewiesen.
+ * - Claude Sonnet 4.5 erlaubt bis zu 64000 Output-Tokens. Wir setzen 32768 als sicheren Wert.
+ * - Gemini 2.5 erlaubt bis 65536 Output-Tokens. Wir setzen 32768 als sicheren Wert.
+ */
+function providerMaxOutputTokens(model: ModelType): number {
+  switch (model) {
+    case ModelType.CLAUDE_SONNET_4:
+      return 32768
+    case ModelType.GEMINI_2_5_PRO:
+      return 32768
+    case ModelType.GPT_4O_MINI:
       return 16384
+    case ModelType.LLAMA_COMPAT:
+      return 8192
   }
 }
 
@@ -287,7 +316,10 @@ async function runJsonStage<T>(
     try {
       const provider = createProvider(model)
       const stageMaxTokens = maxTokensForStage(pipelineStage)
-      const response = await provider.analyze({ prompt, documentText, jsonMode: true, maxTokens: stageMaxTokens })
+      // Stage-Default auf Provider-Obergrenze kappen (OpenAI cappt bei 16384,
+      // Claude/Gemini erlauben mehr). Vermeidet "max_tokens out of range"-Errors.
+      const effectiveMaxTokens = Math.min(stageMaxTokens, providerMaxOutputTokens(model))
+      const response = await provider.analyze({ prompt, documentText, jsonMode: true, maxTokens: effectiveMaxTokens })
       tokensUsed = response.tokensUsed
       let parsedJson: unknown
       try {
