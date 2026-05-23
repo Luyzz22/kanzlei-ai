@@ -48,6 +48,7 @@ import {
   type ExtractionStagePayload
 } from "@/lib/ai/schemas/contract-analysis"
 import { writeAuditEventTx } from "@/lib/audit-write"
+import { classificationFieldsForDb } from "@/lib/documents/classification-db-fields"
 import { getWorkspaceDocumentById } from "@/lib/documents/workspace-core"
 import { sendAnalysisCompleteNotification } from "@/lib/email/analysis-notification"
 import { prisma } from "@/lib/prisma"
@@ -222,7 +223,7 @@ async function persistFailure(
       data: {
         status: AnalysisRunStatus.FAILED,
         completedAt: new Date(),
-        errorCode,
+        errorCode: errorCode.slice(0, 64),
         error: message.slice(0, 1000),
         fallbackReason: message.slice(0, 4000),
         durationMs: Date.now() - wallStart
@@ -323,9 +324,7 @@ export async function runPersistedClassificationStage(input: StageInput): Promis
         stage.classification != null
           ? (stage.classification as unknown as Prisma.InputJsonValue)
           : Prisma.JsonNull,
-      contractClassification: stage.classification?.contractClassification ?? null,
-      partyConstellation: stage.classification?.partyConstellation ?? null,
-      agbKontrolleAnwendbar: stage.classification?.agbKontrolleAnwendbar ?? null,
+      ...classificationFieldsForDb(stage.classification),
       classificationPromptKey: stage.classificationResolved?.key ?? null,
       classificationPromptVersion: stage.classificationResolved?.version ?? null,
       inputTextHash
@@ -594,9 +593,7 @@ export async function runPersistedRiskStage(input: StageInput): Promise<StageOut
           pipeline.classification != null
             ? (pipeline.classification as unknown as Prisma.InputJsonValue)
             : Prisma.JsonNull,
-        contractClassification: pipeline.classification?.contractClassification ?? null,
-        partyConstellation: pipeline.classification?.partyConstellation ?? null,
-        agbKontrolleAnwendbar: pipeline.classification?.agbKontrolleAnwendbar ?? null,
+        ...classificationFieldsForDb(pipeline.classification),
         promptVersion: pipeline.promptMetadata.extractionVersion,
         reviewState: AnalysisReviewState.ANALYSIERT,
         // stageStateJson nach erfolgreichem Abschluss zurücksetzen — nicht mehr nötig
