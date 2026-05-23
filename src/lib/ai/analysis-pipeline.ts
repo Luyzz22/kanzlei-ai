@@ -4,6 +4,7 @@ import { z } from "zod"
 
 import {
   anthropicEffectiveMaxOutputTokens,
+  contractAnalysisClaudeOnly,
   resolveAnthropicModelProfile
 } from "@/lib/ai/claude-model-config"
 import {
@@ -260,11 +261,24 @@ function providerErrorCode(err: unknown, stopReason?: string | null): string {
   if (stopReason === "max_tokens") return "MAX_TOKENS_HIT"
   const msg = err instanceof Error ? err.message : String(err)
   const lower = msg.toLowerCase()
-  if (lower.includes("rate") || msg.includes("429")) return "RATE_LIMIT"
-  if (lower.includes("401") || lower.includes("authentication")) return "AUTH"
-  if (lower.includes("400") || lower.includes("invalid")) return "PROVIDER_BAD_REQUEST"
+  if (lower.includes("429") || lower.includes("rate limit") || lower.includes("overloaded")) {
+    return "RATE_LIMIT"
+  }
+  if (lower.includes("invalid x-api-key") || lower.includes("authentication") || lower.includes("401")) {
+    return "AUTH"
+  }
+  if (lower.includes("not_found") || lower.includes("model:")) return "MODEL_NOT_FOUND"
+  if (
+    lower.includes("prompt is too long") ||
+    lower.includes("too many tokens") ||
+    lower.includes("context length")
+  ) {
+    return "INPUT_TOO_LONG"
+  }
+  if (lower.includes("400") || lower.includes("bad request")) return "PROVIDER_BAD_REQUEST"
   if (lower.includes("timeout")) return "TIMEOUT"
-  return "PROVIDER_ERROR"
+  const compact = msg.replace(/\s+/g, " ").slice(0, 60)
+  return compact.length > 0 ? compact : "PROVIDER_ERROR"
 }
 
 export function normalizeDocumentTextForAnalysis(raw: string, maxChars: number): string {
@@ -317,7 +331,10 @@ async function runJsonStage<T>(
   const prismaStage = toPrismaStage(pipelineStage)
   const plan = buildModelExecutionPlan(pipelineStage, ctx)
   if (plan.length === 0) {
-    throw new PipelineStageFailureError(prismaStage, "Kein konfigurierter KI-Anbieter für diese Stufe.")
+    const message = contractAnalysisClaudeOnly()
+      ? "Claude Sonnet ist für Vertragsanalyse vorgeschrieben (AI_CONTRACT_ANALYSIS_CLAUDE_ONLY). ANTHROPIC_API_KEY prüfen."
+      : "Kein konfigurierter KI-Anbieter für diese Stufe."
+    throw new PipelineStageFailureError(prismaStage, message)
   }
 
   let primaryLogged = false

@@ -127,10 +127,20 @@ export function anthropicEffectiveMaxOutputTokens(requested: number, useExtended
   return Math.min(requested, cap)
 }
 
-/** Beta-Headers wenn extended Output angefordert (>32k safe limit). */
+/** Beta-Header nur für Sonnet 4.6 (>32k Output). 4.5 unterstützt 64k ohne 128k-Beta — falsches Beta → sofort 400. */
 export function anthropicBetaHeaders(requestedMaxTokens: number): Record<string, string> | undefined {
   const profile = resolveAnthropicModelProfile()
   if (requestedMaxTokens <= ANTHROPIC_SAFE_MAX_OUTPUT_TOKENS) return undefined
+
+  const isSonnet46 =
+    profile.modelId.includes("4-6") || profile.modelId.includes("20260217")
+  if (!isSonnet46) return undefined
+
   if (profile.extendedMaxOutputTokens <= ANTHROPIC_SAFE_MAX_OUTPUT_TOKENS) return undefined
   return { "anthropic-beta": ANTHROPIC_EXTENDED_OUTPUT_BETA }
+}
+
+/** Vertragsanalyse: nur Claude Sonnet, kein stilles Fallback auf US-Alternativen (Compliance). */
+export function contractAnalysisClaudeOnly(): boolean {
+  return process.env.AI_CONTRACT_ANALYSIS_CLAUDE_ONLY !== "false"
 }
