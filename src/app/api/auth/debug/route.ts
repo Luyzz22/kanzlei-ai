@@ -1,17 +1,46 @@
+export const dynamic = "force-dynamic"
+
 import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
 
-export async function GET() {
+/**
+ * Auth Debug Endpoint — SECURITY HARDENED
+ *
+ * DSGVO Art. 32 / NIS2 Art. 21 / ISO 27001 A.8
+ *
+ * VORHER: Gab NEXTAUTH_URL im Klartext aus, OHNE Auth-Check.
+ *         → Configuration Leakage, Reconnaissance-Angriffsfläche.
+ *
+ * JETZT:
+ * - Production: 404 (kein Debug-Endpunkt in Produktion)
+ * - Non-Production: Admin-Auth erforderlich, keine sensiblen Werte
+ */
+export async function GET(): Promise<NextResponse> {
+  // Production: Endpunkt existiert nicht
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") {
+    return NextResponse.json({ error: "Not Found" }, { status: 404 })
+  }
+
+  // Non-Production: Auth + ADMIN/OWNER Check
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
+  }
+
+  const role = (session.user as { role?: string }).role
+  if (role !== "ADMIN" && role !== "OWNER") {
+    return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 })
+  }
+
+  // Nur Boolean-Status — KEINE URLs, Secrets, Keys, Konfigurationswerte
   return NextResponse.json({
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-    NEXTAUTH_SECRET: !!process.env.NEXTAUTH_SECRET,
-
-    AUTH_GOOGLE_ID: !!process.env.AUTH_GOOGLE_ID,
-    AUTH_GOOGLE_SECRET: !!process.env.AUTH_GOOGLE_SECRET,
-
-    AUTH_MICROSOFT_ID: !!process.env.AUTH_MICROSOFT_ID,
-    AUTH_MICROSOFT_SECRET: !!process.env.AUTH_MICROSOFT_SECRET,
-    AUTH_MICROSOFT_ENTRA_ID_ISSUER: !!process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER,
-    AUTH_MICROSOFT_ALLOWED_TENANT_IDS: !!process.env.AUTH_MICROSOFT_ALLOWED_TENANT_IDS,
-    AUTH_MICROSOFT_ADMIN_ROLES: !!process.env.AUTH_MICROSOFT_ADMIN_ROLES
+    ok: true,
+    environment: process.env.NODE_ENV ?? "unknown",
+    timestamp: new Date().toISOString(),
+    auth: {
+      nextauthConfigured: Boolean(process.env.NEXTAUTH_SECRET),
+      googleConfigured: Boolean(process.env.AUTH_GOOGLE_ID),
+      microsoftConfigured: Boolean(process.env.AUTH_MICROSOFT_ID),
+    }
   })
 }
