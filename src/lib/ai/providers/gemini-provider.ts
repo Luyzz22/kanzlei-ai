@@ -45,14 +45,18 @@ export class GeminiProvider extends BaseAIProvider {
       } as Parameters<typeof client.getGenerativeModel>[0])
 
       const response = await model.generateContent(buildGeminiPrompt(input))
-      const outputText = response.response.text()
+      const geminiResponse = response.response as {
+        text(): string
+        usageMetadata?: { totalTokenCount?: number }
+      }
+      const outputText = geminiResponse.text()
 
       return {
         model: this.config.model,
         outputText,
         parsedOutput: this.parseJsonSafely(outputText),
         tokensUsed:
-          (response.response.usageMetadata?.totalTokenCount as number | undefined) ??
+          geminiResponse.usageMetadata?.totalTokenCount ??
           this.estimateTokens(outputText) + this.estimateTokens(input.documentText),
         stopReason: null,
         raw: response.response

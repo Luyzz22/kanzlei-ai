@@ -57,7 +57,9 @@ export class OpenAIProvider extends BaseAIProvider {
       })) as ChatCompletion
 
       const outputText = extractOpenAIContent(response)
-      const finishReason = response.choices[0]?.finish_reason ?? null
+      const finishReason =
+        (response.choices[0] as { finish_reason?: string | null } | undefined)?.finish_reason ??
+        null
 
       return {
         model: this.config.model,

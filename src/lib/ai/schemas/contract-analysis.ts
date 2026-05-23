@@ -189,7 +189,56 @@ export const pipelineFindingSchema = z.object({
   /** v2: exaktes Zitat der Originalklausel (max 2000 Zeichen) */
   quote: z.string().max(2000).nullable().optional(),
   /** v2: konkreter Formulierungsvorschlag (neue Klauselfassung) */
-  suggestedRevision: z.string().max(4000).nullable().optional()
+  suggestedRevision: z.string().max(4000).nullable().optional(),
+  /** C.4: Konfidenz-Explainability — Aufschlüsselung der Konfidenz-Faktoren */
+  confidenceFactors: z
+    .object({
+      normClarity: z.coerce.number().min(0).max(1),
+      clauseClarity: z.coerce.number().min(0).max(1),
+      contractContext: z.coerce.number().min(0).max(1),
+      industryFit: z.coerce.number().min(0).max(1),
+      precedent: z.coerce.number().min(0).max(1),
+      limitingFactor: z.string().max(200).optional()
+    })
+    .nullable()
+    .optional(),
+  /** Evidence Graph MVP: Strukturierte Begründungskette pro Finding */
+  evidenceGraph: z
+    .object({
+      normBasis: z
+        .array(
+          z.object({
+            norm: z.string().max(200),
+            marker: z.enum(["DIREKT", "ZWINGEND", "B2B-INDIZ", "ANALOG"]),
+            relevance: z.string().max(500)
+          })
+        )
+        .max(8)
+        .optional(),
+      reasoningSteps: z
+        .array(
+          z.object({
+            step: z.coerce.number().int().min(1).max(10),
+            label: z.string().max(100),
+            content: z.string().max(2000)
+          })
+        )
+        .max(10)
+        .optional(),
+      counterArguments: z.array(z.string().max(1000)).max(5).optional(),
+      limitations: z.array(z.string().max(1000)).max(5).optional()
+    })
+    .nullable()
+    .optional()
+})
+
+/** C.1: Cross-Clause-Interaktion — Wechselwirkung zwischen Klauseln */
+export const clauseInteractionSchema = z.object({
+  clauseRefs: z.array(z.string().max(100)).min(2).max(5),
+  interactionType: z.enum(["verstärkend", "kompensierend", "widersprüchlich", "kumulativ"]),
+  combinedRiskDescription: z.string().min(1).max(3000),
+  combinedSeverity: severityLiteral,
+  remediation: z.string().max(2000).optional()
 })
 
 export const riskFindingsStageSchema = z.object({
@@ -207,6 +256,7 @@ export const riskGuidanceStageSchema = z.object({
 
 export const riskAndGuidanceStageSchema = z.object({
   findings: z.array(pipelineFindingSchema).max(40),
+  clauseInteractions: z.array(clauseInteractionSchema).max(10).optional(),
   riskScore01: z.coerce.number().min(0).max(1),
   recommendedMeasures: z.array(z.string().min(1).max(1200)).max(30),
   negotiationHints: z.array(z.string().min(1).max(1200)).max(20),

@@ -69,19 +69,24 @@ export class ClaudeProvider extends BaseAIProvider {
         ...(betaHeaders ? { betas: [betaHeaders["anthropic-beta"]!] } : {})
       } as Parameters<typeof client.messages.create>[0])
 
-      const rawText = extractClaudeText(response.content as Array<{ text?: string }>)
+      const anthropicResponse = response as unknown as {
+        content: Array<{ text?: string }>
+        usage?: { input_tokens?: number; output_tokens?: number }
+        stop_reason?: string
+      }
+      const rawText = extractClaudeText(anthropicResponse.content)
       const outputText = input.jsonMode ? stripMarkdownCodeFences(rawText) : rawText
 
       const stopReason =
-        typeof (response as { stop_reason?: string }).stop_reason === "string"
-          ? (response as { stop_reason: string }).stop_reason
-          : null
+        typeof anthropicResponse.stop_reason === "string" ? anthropicResponse.stop_reason : null
 
       return {
         model: this.config.model,
         outputText,
         parsedOutput: this.parseJsonSafely(outputText),
-        tokensUsed: (response.usage?.input_tokens ?? 0) + (response.usage?.output_tokens ?? 0),
+        tokensUsed:
+          (anthropicResponse.usage?.input_tokens ?? 0) +
+          (anthropicResponse.usage?.output_tokens ?? 0),
         stopReason,
         raw: response
       }

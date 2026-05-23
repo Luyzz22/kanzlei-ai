@@ -21,6 +21,7 @@ import { createTenantContractPromptResolver } from "@/lib/ai/prompt-governance.s
 import { prisma } from "@/lib/prisma"
 import { CONTRACT_ANALYSIS_PROMPT_VERSION } from "@/lib/ai/schemas/contract-analysis"
 import { writeAuditEventTx } from "@/lib/audit-write"
+import { sendAnalysisCompleteNotification } from "@/lib/email/analysis-notification"
 import { withTenant } from "@/lib/tenant-context.server"
 
 function severityFromLiteral(s: "niedrig" | "mittel" | "hoch"): DocumentFindingSeverity {
@@ -67,6 +68,10 @@ export type WorkbenchAiContractAnalysis = {
     | "extractionPromptVersion"
     | "riskPromptKey"
     | "riskPromptVersion"
+    | "classificationJson"
+    | "contractClassification"
+    | "partyConstellation"
+    | "agbKontrolleAnwendbar"
   >
   extraction: {
     contractType: string
@@ -89,12 +94,22 @@ export type WorkbenchAiContractAnalysis = {
     sourceSpan: string | null
     /** v2: konkreter Formulierungsvorschlag zur Risikominimierung */
     suggestedRevision: string | null
+    /** v4: Evidence Graph — klickbare Begründungskette (JSON aus DB) */
+    evidenceGraph: unknown
     latestReview: {
       decision: string
       comment: string | null
       reviewedAt: Date
       reviewerId: string
+      reviewerName: string | null
     } | null
+    allReviews: Array<{
+      decision: string
+      comment: string | null
+      reviewedAt: Date
+      reviewerId: string
+      reviewerName: string | null
+    }>
   }>
   risk: {
     recommendedMeasures: string[]
@@ -130,7 +145,10 @@ export async function getWorkbenchAiContractAnalysis(
           orderBy: { createdAt: "asc" },
           take: 50,
           include: {
-            reviews: { orderBy: { reviewedAt: "desc" }, take: 1 }
+            reviews: {
+              orderBy: { reviewedAt: "desc" },
+              include: { reviewer: { select: { name: true } } }
+            }
           }
         }
       }
@@ -147,7 +165,10 @@ export async function getWorkbenchAiContractAnalysis(
             orderBy: { createdAt: "asc" },
             take: 50,
             include: {
-              reviews: { orderBy: { reviewedAt: "desc" }, take: 1 }
+              reviews: {
+                orderBy: { reviewedAt: "desc" },
+                include: { reviewer: { select: { name: true } } }
+              }
             }
           }
         }
@@ -180,7 +201,12 @@ export async function getWorkbenchAiContractAnalysis(
         extractionPromptKey: run.extractionPromptKey,
         extractionPromptVersion: run.extractionPromptVersion,
         riskPromptKey: run.riskPromptKey,
-        riskPromptVersion: run.riskPromptVersion
+        riskPromptVersion: run.riskPromptVersion,
+        // v3: Classification
+        classificationJson: run.classificationJson ?? null,
+        contractClassification: run.contractClassification ?? null,
+        partyConstellation: run.partyConstellation ?? null,
+        agbKontrolleAnwendbar: run.agbKontrolleAnwendbar ?? null
       },
       extraction: run.extraction
         ? {
@@ -206,14 +232,24 @@ export async function getWorkbenchAiContractAnalysis(
           sourceSpan: f.sourceSpan,
           // v2 — bei älteren Findings null.
           suggestedRevision: f.suggestedRevision,
+          // v4 — Evidence Graph (JSON aus DB, bei älteren Findings null).
+          evidenceGraph: f.evidenceGraph ?? null,
           latestReview: r
             ? {
                 decision: r.decision,
                 comment: r.comment,
                 reviewedAt: r.reviewedAt,
-                reviewerId: r.reviewerId
+                reviewerId: r.reviewerId,
+                reviewerName: r.reviewer?.name ?? null
               }
-            : null
+            : null,
+          allReviews: f.reviews.map((rev) => ({
+            decision: rev.decision,
+            comment: rev.comment,
+            reviewedAt: rev.reviewedAt,
+            reviewerId: rev.reviewerId,
+            reviewerName: rev.reviewer?.name ?? null
+          }))
         }
       }),
       risk: hasRiskPayload
@@ -238,6 +274,13 @@ type RunInput = {
   actorId: string
   documentText: string
   documentSha256?: string | null
+  /**
+   * Wenn vom Async-Worker aufgerufen, der bereits einen AnalysisRun
+   * mit status=RUNNING angelegt hat: dessen ID hier durchreichen.
+   * - Skip self-lock im preflight (sonst Self-Lock)
+   * - Skip tx.analysisRun.create (Run existiert schon, dann nur update)
+   */
+  existingRunId?: string
 }
 
 export async function runPersistedContractAnalysis(input: RunInput): Promise<RunContractAnalysisResult> {
@@ -256,7 +299,7 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
     }
   }
 
-  const runId = randomUUID()
+  const runId = input.existingRunId ?? randomUUID()
   const wallStart = Date.now()
 
   const preflight = await withTenant(input.tenantId, async (tx) => {
@@ -276,7 +319,10 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
       where: {
         tenantId: input.tenantId,
         documentId: input.documentId,
-        status: AnalysisRunStatus.RUNNING
+        status: AnalysisRunStatus.RUNNING,
+        // Wenn der Worker uns aufgerufen hat: schließe den eigenen Run aus,
+        // sonst Self-Lock (der Run wurde vom Worker auf RUNNING gesetzt).
+        ...(input.existingRunId ? { id: { not: input.existingRunId } } : {})
       },
       select: { id: true }
     })
@@ -290,18 +336,32 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
     })
     const nextSequence = (seqAgg._max.runSequence ?? 0) + 1
 
-    await tx.analysisRun.create({
-      data: {
-        id: runId,
-        tenantId: input.tenantId,
-        documentId: input.documentId,
-        userId: input.actorId,
-        status: AnalysisRunStatus.RUNNING,
-        promptVersion: CONTRACT_ANALYSIS_PROMPT_VERSION,
-        runSequence: nextSequence,
-        documentContentHash: input.documentSha256 ?? doc.sha256 ?? null
-      }
-    })
+    if (input.existingRunId) {
+      // Async-Worker-Path: Run existiert schon (vom Worker angelegt + RUNNING gesetzt).
+      // Nur die zusätzlichen Felder ergänzen, status bleibt RUNNING.
+      await tx.analysisRun.update({
+        where: { id: runId },
+        data: {
+          promptVersion: CONTRACT_ANALYSIS_PROMPT_VERSION,
+          runSequence: nextSequence,
+          documentContentHash: input.documentSha256 ?? doc.sha256 ?? null
+        }
+      })
+    } else {
+      // Legacy-Sync-Path: Run komplett neu anlegen.
+      await tx.analysisRun.create({
+        data: {
+          id: runId,
+          tenantId: input.tenantId,
+          documentId: input.documentId,
+          userId: input.actorId,
+          status: AnalysisRunStatus.RUNNING,
+          promptVersion: CONTRACT_ANALYSIS_PROMPT_VERSION,
+          runSequence: nextSequence,
+          documentContentHash: input.documentSha256 ?? doc.sha256 ?? null
+        }
+      })
+    }
 
     await writeAuditEventTx(tx, {
       tenantId: input.tenantId,
@@ -333,10 +393,19 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
     return { ok: false, code: "NOT_FOUND", message: "Dokument im Mandanten nicht gefunden." }
   }
 
+  // R-02: Load tenant governance settings for provider filtering
+  const governance = await prisma.tenantGovernanceSettings.findUnique({
+    where: { tenantId: input.tenantId },
+    select: { allowedProviders: true, preferEuModels: true }
+  }).catch(() => null)
+
   const routerCtx: RouterContext = {
     documentLength: text.length,
     mimeType: preflight.mimeType ?? undefined,
-    preferLocalOrPrivate: process.env.AI_SENSITIVE_USE_LLAMA === "true"
+    preferLocalOrPrivate: process.env.AI_SENSITIVE_USE_LLAMA === "true",
+    tenantId: input.tenantId,
+    allowedProviders: (governance?.allowedProviders as string[] | null) ?? undefined,
+    preferEuModels: governance?.preferEuModels ?? undefined
   }
 
   const promptResolver = createTenantContractPromptResolver(input.tenantId, preflight.documentType)
@@ -423,11 +492,12 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
         extractionPromptVersion: pipeline.promptMetadata.extractionVersion,
         riskPromptKey: pipeline.promptMetadata.riskKey,
         riskPromptVersion: pipeline.promptMetadata.riskVersion,
+        // v3: Classification Step 0
         classificationPromptKey: pipeline.promptMetadata.classificationKey,
         classificationPromptVersion: pipeline.promptMetadata.classificationVersion,
         classificationJson:
           pipeline.classification != null
-            ? (pipeline.classification as Prisma.InputJsonValue)
+            ? (pipeline.classification as unknown as Prisma.InputJsonValue)
             : Prisma.JsonNull,
         contractClassification: pipeline.classification?.contractClassification ?? null,
         partyConstellation: pipeline.classification?.partyConstellation ?? null,
@@ -498,7 +568,15 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
           // v2: quote landet in sourceSpan (bestehendes Feld, max Text).
           // suggestedRevision ist ein neues Feld aus der v2-Migration.
           sourceSpan: f.quote ?? null,
-          suggestedRevision: f.suggestedRevision ?? null
+          suggestedRevision: f.suggestedRevision ?? null,
+          // v4: Evidence Graph — confidenceFactors + evidenceGraph als JSON-Blob.
+          evidenceGraph:
+            (f.evidenceGraph || f.confidenceFactors)
+              ? ({
+                  ...(f.evidenceGraph ?? {}),
+                  confidenceFactors: f.confidenceFactors ?? undefined
+                } as Prisma.InputJsonValue)
+              : Prisma.JsonNull
         }))
       })
     }
@@ -553,6 +631,42 @@ export async function runPersistedContractAnalysis(input: RunInput): Promise<Run
     }
   } catch {
     // Dynamics-Integration nicht konfiguriert oder Fehler — ignorieren
+  }
+
+  // E-Mail-Benachrichtigung: Analyse-Abschluss (best-effort, non-blocking)
+  try {
+    const notifyUser = await prisma.user.findUnique({
+      where: { id: input.actorId },
+      select: { email: true, name: true }
+    })
+    const notifyDoc = await prisma.document.findUnique({
+      where: { id: input.documentId },
+      select: { title: true }
+    })
+    if (notifyUser?.email && notifyDoc?.title) {
+      const high = pipeline.risk.findings.filter(f => f.severity === "hoch").length
+      const medium = pipeline.risk.findings.filter(f => f.severity === "mittel").length
+      const low = pipeline.risk.findings.filter(f => f.severity === "niedrig").length
+
+      sendAnalysisCompleteNotification({
+        recipientEmail: notifyUser.email,
+        recipientName: notifyUser.name,
+        documentId: input.documentId,
+        documentTitle: notifyDoc.title,
+        riskScore01: pipeline.risk.riskScore01,
+        findingsCount: pipeline.risk.findings.length,
+        highFindings: high,
+        mediumFindings: medium,
+        lowFindings: low,
+        primaryModel: pipeline.primaryModel,
+        durationMs,
+        contractClassification: pipeline.classification?.contractClassification ?? null
+      }).catch((e) => {
+        console.warn("[email.analysis_complete] Fehlgeschlagen:", e instanceof Error ? e.message : e)
+      })
+    }
+  } catch {
+    // E-Mail-Benachrichtigung fehlgeschlagen — ignorieren
   }
 
   return { ok: true, runId }
