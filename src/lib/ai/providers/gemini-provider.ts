@@ -3,7 +3,9 @@ import { ModelType, type AIProviderConfig } from "@/types/ai"
 import { BaseAIProvider, type AIAnalysisResponse, type AnalyzeInput } from "./types"
 
 function geminiModelId(): string {
-  return process.env.GEMINI_CHAT_MODEL?.trim() || "gemini-1.5-pro"
+  // Default: gemini-2.5-pro. gemini-1.5-pro ist deprecated.
+  // Override via Env-Variable GEMINI_CHAT_MODEL möglich (z.B. "gemini-2.5-flash" für höheren Durchsatz).
+  return process.env.GEMINI_CHAT_MODEL?.trim() || "gemini-2.5-pro"
 }
 
 export class GeminiProvider extends BaseAIProvider {
@@ -24,15 +26,19 @@ export class GeminiProvider extends BaseAIProvider {
     return this.withRetry(async () => {
       const geminiModule = await import("@google/generative-ai")
       const client = new geminiModule.GoogleGenerativeAI(this.config.apiKey)
-      // @google/generative-ai: generationConfig in ModelParams — Runtime unterstützt JSON-Modus
+      // Gemini default ohne maxOutputTokens cappt bei ~8192 → für Risk-Stage zu wenig.
+      // Wir geben explizit das Stage-Limit (vom Pipeline-Layer übergeben) durch.
+      // Bei nicht gesetztem maxTokens fallback auf 16384 als Sicherheitsnetz.
+      const maxOutputTokens = input.maxTokens ?? 16384
       const model = client.getGenerativeModel({
         model: geminiModelId(),
         generationConfig: input.jsonMode
           ? {
               temperature: 0.2,
-              responseMimeType: "application/json"
+              responseMimeType: "application/json",
+              maxOutputTokens
             }
-          : { temperature: 0.2 }
+          : { temperature: 0.2, maxOutputTokens }
       } as Parameters<typeof client.getGenerativeModel>[0])
       const prompt = input.jsonMode
         ? `${input.prompt}\n\n${input.documentText}\n\nAntworte nur mit JSON.`
