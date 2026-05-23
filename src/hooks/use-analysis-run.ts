@@ -137,6 +137,7 @@ export function useAnalysisRun() {
         currentStage: null,
         result: null,
         error: null,
+        errorCode: null,
         startedAt: null,
         completedAt: null,
         elapsed: 0,
