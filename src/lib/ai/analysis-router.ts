@@ -6,6 +6,7 @@ import {
   isModelTypeAvailable,
   sortModelsByProviderPriority
 } from "@/lib/ai/provider-availability"
+import { log } from "@/lib/security/secure-logging"
 
 export type PipelineStage = "CLASSIFICATION" | "EXTRACTION" | "RISK_AND_GUIDANCE"
 
@@ -130,13 +131,60 @@ export function getFallbackChainForStage(primary: ModelType, stage: PipelineStag
   }
 }
 
+/** Maps ModelType to provider name for governance checks */
+function modelToProvider(model: ModelType): string {
+  switch (model) {
+    case ModelType.GPT_4O_MINI:
+      return "openai"
+    case ModelType.CLAUDE_SONNET_4:
+      return "anthropic"
+    case ModelType.GEMINI_2_5_PRO:
+      return "gemini"
+    case ModelType.LLAMA_COMPAT:
+      return "llama"
+    default:
+      return "unknown"
+  }
+}
+
+const US_PROVIDER_NAMES = ["openai", "anthropic", "gemini"]
+
+/** R-02: Filter execution chain by tenant governance settings */
+function filterByTenantGovernance(chain: ModelType[], ctx: RouterContext): ModelType[] {
+  let filtered = chain
+
+  if (ctx.preferEuModels) {
+    const before = filtered.length
+    filtered = filtered.filter((m) => !US_PROVIDER_NAMES.includes(modelToProvider(m)))
+    if (filtered.length < before) {
+      log.info("router.eu_only_filter", { removed: before - filtered.length, tenantId: ctx.tenantId })
+    }
+  }
+
+  if (ctx.allowedProviders && ctx.allowedProviders.length > 0) {
+    const allowed = ctx.allowedProviders
+    const before = filtered.length
+    filtered = filtered.filter((m) => allowed.includes(modelToProvider(m)))
+    if (filtered.length < before) {
+      log.info("router.allowlist_filter", {
+        allowed,
+        removed: before - filtered.length,
+        tenantId: ctx.tenantId
+      })
+    }
+  }
+
+  return filtered
+}
+
 export function buildModelExecutionPlan(stage: PipelineStage, ctx: RouterContext): ModelType[] {
   const forced = ctx.evalPrimaryByStage?.[stage]
   const primary = forced ?? selectPrimaryModelForStage(stage, ctx)
   const fallbacks = uniqueModels(getFallbackChainForStage(primary, stage)).filter((m) => m !== primary)
   const sortedFallbacks = sortModelsByProviderPriority(fallbacks)
   const chain = [primary, ...sortedFallbacks]
-  return filterModelsByAvailability(chain)
+  const available = filterModelsByAvailability(chain)
+  return filterByTenantGovernance(available, ctx)
 }
 
 export function getSelectionReasonForStage(stage: PipelineStage, model: ModelType, ctx: RouterContext): string {

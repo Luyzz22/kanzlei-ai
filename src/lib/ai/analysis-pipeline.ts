@@ -161,6 +161,27 @@ export class PipelineStageFailureError extends Error {
   }
 }
 
+function providerKindToModelType(provider: AiProviderKind): ModelType {
+  switch (provider) {
+    case AiProviderKind.OPENAI:
+      return ModelType.GPT_4O_MINI
+    case AiProviderKind.ANTHROPIC:
+      return ModelType.CLAUDE_SONNET_4
+    case AiProviderKind.GOOGLE_GEMINI:
+      return ModelType.GEMINI_2_5_PRO
+    case AiProviderKind.LLAMA_COMPAT:
+      return ModelType.LLAMA_COMPAT
+    default:
+      return ModelType.GPT_4O_MINI
+  }
+}
+
+function totalCostFromStageLogs(stageLogs: StageAttemptLog[]): number {
+  return stageLogs
+    .filter((l) => l.wasSuccessful)
+    .reduce((sum, l) => sum + calculateCost(providerKindToModelType(l.provider), l.tokensUsed), 0)
+}
+
 function modelTypeToProviderKind(model: ModelType): AiProviderKind {
   switch (model) {
     case ModelType.GPT_4O_MINI:
@@ -656,19 +677,9 @@ export function assembleContractPipelineSuccess(args: {
     inputTextHash
   } = args
 
-  const extractionLog = stageLogs.find(
-    (l) => l.stage === AnalysisPipelineStageName.EXTRACTION && l.wasSuccessful
-  )
-  const riskLog = stageLogs.find(
-    (l) => l.stage === AnalysisPipelineStageName.RISK_AND_GUIDANCE && l.wasSuccessful
-  )
-
   const primaryModel = extractionModel
   const totalTokens = stageLogs.reduce((s, l) => s + (l.tokensUsed ?? 0), 0)
-
-  let totalCost = 0
-  if (extractionLog) totalCost += calculateCost(extractionModel, extractionLog.tokensUsed)
-  if (riskLog) totalCost += calculateCost(riskModel, riskLog.tokensUsed)
+  const totalCost = totalCostFromStageLogs(stageLogs)
 
   const routerParts = [
     classification

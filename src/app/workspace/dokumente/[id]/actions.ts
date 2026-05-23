@@ -411,6 +411,7 @@ function parseFindingReviewDecision(raw: string): FindingReviewDecision | null {
   if (raw === "AKZEPTIERT") return FindingReviewDecision.AKZEPTIERT
   if (raw === "ABGELEHNT") return FindingReviewDecision.ABGELEHNT
   if (raw === "ANGEPASST") return FindingReviewDecision.ANGEPASST
+  if (raw === "KENNTNISGENOMMEN") return FindingReviewDecision.KENNTNISGENOMMEN
   return null
 }
 
