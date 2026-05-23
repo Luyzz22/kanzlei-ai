@@ -4,39 +4,36 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 
 /**
- * Admin Status Endpoint — Audit R-04 Fix
+ * Admin Status Endpoint — Phase 1.3 Trust-Hardening
  *
- * In Production: Nur authentifizierte ADMIN/OWNER-User dürfen zugreifen.
- * Sensitive Werte (URLs, Secrets) werden NICHT mehr exponiert.
- * Gibt nur Boolean-Status für Provider-Verfügbarkeit zurück.
+ * DSGVO Art. 32 / NIS2 Art. 21 / ISO 27001 A.8
+ *
+ * Production: 404 — kein Status-Endpunkt in Produktion.
+ * Non-Production: Admin-Auth erforderlich, minimale Ausgabe.
+ *
+ * KEINE Ausgabe von: Provider-Status, Secret-Status, API-Key-Verfügbarkeit,
+ * OAuth-Konfiguration, Database-Konfiguration, ENV-Werten.
  */
 export async function GET(): Promise<NextResponse> {
-  // Production: Auth + Role Check erforderlich
+  // Production: Endpunkt existiert nicht
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") {
+    return NextResponse.json({ error: "Not Found" }, { status: 404 })
+  }
+
+  // Non-Production: Auth + ADMIN/OWNER Check
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
   }
 
-  // Nur ADMIN oder OWNER dürfen den Status sehen
   const role = (session.user as { role?: string }).role
   if (role !== "ADMIN" && role !== "OWNER") {
     return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 })
   }
 
-  // Nur Boolean-Status — KEINE URLs, Secrets, Keys oder Konfigurationswerte
   return NextResponse.json({
-    providers: {
-      openai: Boolean(process.env.OPENAI_API_KEY?.trim()),
-      anthropic: Boolean(process.env.ANTHROPIC_API_KEY?.trim()),
-      gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
-      llama: Boolean(process.env.LLAMA_API_KEY?.trim() && process.env.LLAMA_API_BASE?.trim()),
-    },
-    router: {
-      enabled: process.env.AI_ROUTER_ENABLED === "true",
-    },
-    auth: {
-      google: Boolean(process.env.AUTH_GOOGLE_ID),
-      microsoft: Boolean(process.env.AUTH_MICROSOFT_TENANT_ID),
-    }
+    ok: true,
+    environment: process.env.NODE_ENV ?? "unknown",
+    timestamp: new Date().toISOString(),
   })
 }
