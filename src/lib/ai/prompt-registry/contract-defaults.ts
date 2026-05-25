@@ -42,6 +42,42 @@ ${classification.agbKontrolleAnwendbar != null ? `- AGB-Kontrolle anwendbar: ${c
 `
 }
 
+/**
+ * B2B-AGB-Qualifier — juristische Dogmatik-Korrektur.
+ *
+ * Bei B2B-Verträgen gelten §§ 308, 309 BGB NICHT unmittelbar wie im
+ * Verbraucherverkehr. Sie sind nur Indiz-/Wertungsmaßstab im Rahmen
+ * der Generalklausel § 307 BGB (BGH ständige Rspr.).
+ *
+ * Dieser Block wird nur eingefügt wenn:
+ * - Parteikonstellation enthält "B2B" und
+ * - AGB-Kontrolle anwendbar ist oder vermutet wird
+ */
+function b2bAgbQualifierBlock(classification?: ClassificationStagePayload | null): string {
+  if (!classification) return ""
+
+  const isB2b =
+    classification.partyConstellation?.toLowerCase().includes("b2b") ?? false
+  const agbRelevant = classification.agbKontrolleAnwendbar !== false
+
+  if (!isB2b || !agbRelevant) return ""
+
+  return `
+B2B-AGB-QUALIFIKATION (WICHTIG FÜR ALLE FINDINGS):
+Bei unterstellter AGB-Einordnung ist dieser Vertrag ein B2B-Vertrag (§ 310 Abs. 1 BGB).
+- PRIMÄRNORM: § 307 BGB (unangemessene Benachteiligung).
+- §§ 308 und 309 BGB gelten NICHT unmittelbar, sondern nur als Wertungs- und Indizmaßstab.
+- NIEMALS formulieren: "verstößt gegen § 309 BGB" oder "§ 308 Nr. X ist verletzt".
+- STATTDESSEN formulieren:
+  * "AGB-rechtlich erheblich angreifbar nach § 307 BGB"
+  * "§ 309 Nr. 7 BGB dient als starkes Wertungsindiz"
+  * "unter Heranziehung des Rechtsgedankens des § 308 Nr. X BGB"
+- primaryLegalBasis MUSS § 307 BGB enthalten.
+- §§ 308/309 BGB kommen in referenceLegalBasis mit Suffix "als Wertungsindiz".
+- Ausnahme: § 309 Nr. 7 lit. a BGB (Haftung für Personenschäden) gilt auch im B2B-Verkehr als DIREKT anwendbar (BGH).
+`
+}
+
 export function buildClassificationPromptInstructions(
   version: string = CONTRACT_ANALYSIS_PROMPT_VERSION
 ): string {
@@ -136,6 +172,7 @@ export function buildRiskFindingsPromptInstructions(
   const maxFindings = maxFindingsForDocumentLength(documentCharLength)
   return `${baseDe(version, CONTRACT_RISK_PROMPT_KEY)}
 ${classificationContextBlock(classification)}
+${b2bAgbQualifierBlock(classification)}
 VORAB-EXTRAKTION:
 ${extractionSummary}
 
@@ -150,24 +187,42 @@ Antworte AUSSCHLIESSLICH mit validem JSON:
       "title": "string (max 240 Zeichen)",
       "description": "string",
       "severity": "niedrig|mittel|hoch",
-      "confidence": "number 0-1",
+      "confidence": "number 0-0.98 (NIEMALS 1.0)",
       "clauseRef": "string",
       "quote": "string (wortwörtliches Zitat, max 1200 Zeichen — gekürzt wenn nötig)",
-      "suggestedRevision": "string (optional bei niedrig; max 2000 Zeichen bei mittel/hoch)"
+      "suggestedRevision": "string (optional bei niedrig; max 2000 Zeichen bei mittel/hoch)",
+      "riskNature": "direct_mandatory_law_risk|agb_control_risk|economic_negotiation_risk|missing_protection_clause|operational_supply_chain_risk|privacy_or_confidentiality_risk|procedural_litigation_risk",
+      "findingType": "existing_clause|missing_clause",
+      "primaryLegalBasis": ["§ 307 BGB"],
+      "referenceLegalBasis": ["§ 309 Nr. 7 BGB als Wertungsindiz"]
     }
   ],
   "riskScore01": "number 0-1 (NICHT 0-100)",
-  "aggregateConfidence": "number 0-1 (optional)"
+  "aggregateConfidence": "number 0-0.98 (optional)"
 }
 
 REGELN:
 - Mindestens 3, maximal ${maxFindings} Findings (priorisiere Geschäftsrisiko).
 - severity NUR: niedrig|mittel|hoch (Deutsch, kein "high"/"medium").
+- confidence und aggregateConfidence NIEMALS 1.0 — Maximalwert 0.98.
 - riskScore01 zwischen 0 und 1 (0.75 = 75% Risiko).
-- quote: wörtlich aus dem Vertrag; bei fehlender Klausel: "Keine entsprechende Klausel im Vertrag".
+- Jedes Finding MUSS riskNature, findingType und primaryLegalBasis enthalten.
+- Bei B2B-Verträgen: § 307 BGB als Primärnorm. §§ 308/309 BGB nur als Wertungsindiz.
+- quote: wörtlich aus dem Vertrag; bei fehlender Klausel: null.
 - Halte suggestedRevision kompakt — Qualität vor Länge.
 - Ausgabe: reines JSON ohne Markdown-Fences.
-- Der Vertragstext folgt im nächsten Abschnitt.`
+
+MISSING-CLAUSE-PRÜFUNG (zusätzlich zu vorhandenen Klauseln):
+Prüfe ob folgende Schutzklauseln FEHLEN (findingType="missing_clause", riskNature="missing_protection_clause"):
+1. Lieferverzugsregelung / Ersatzbeschaffung / Vertragsstrafe bei Verzug
+2. Qualitätssicherung / Prüfprotokolle / Zertifikate (bei technischen Waren)
+3. Force Majeure / Lieferkettenstörung
+4. Produkthaftung / Rückruf (bei Industriekomponenten)
+5. Datenschutz-Rollenklärung / AVV (wenn personenbezogene Daten erwähnt)
+- Nur Missing-Clauses erzeugen die für den konkreten Vertragstyp relevant sind.
+- clauseRef="Nicht geregelt", quote=null.
+
+Der Vertragstext folgt im nächsten Abschnitt.`
 }
 
 export function buildRiskGuidancePromptInstructions(
@@ -191,7 +246,7 @@ Antworte AUSSCHLIESSLICH mit validem JSON:
   "recommendedMeasures": ["string", "..."],
   "negotiationHints": ["string", "..."],
   "explanationSummary": "string (kompakte Gesamtbegründung, max 3000 Zeichen)",
-  "aggregateConfidence": "number 0-1 (optional)"
+  "aggregateConfidence": "number 0-0.98 (optional, NIEMALS 1.0)"
 }
 
 REGELN:
@@ -208,6 +263,7 @@ export function buildRiskAndGuidancePromptInstructions(
   const maxFindings = maxFindingsForDocumentLength(documentCharLength)
   return `${baseDe(version, CONTRACT_RISK_PROMPT_KEY)}
 ${classificationContextBlock(classification)}
+${b2bAgbQualifierBlock(classification)}
 VORAB-EXTRAKTION:
 ${extractionSummary}
 
@@ -216,20 +272,48 @@ AUFGABE: Klausel- und Risikoanalyse inkl. Handlungsempfehlungen.
 Antworte AUSSCHLIESSLICH mit validem JSON:
 
 {
-  "findings": [ { "category", "title", "description", "severity": "niedrig|mittel|hoch", "confidence", "clauseRef", "quote", "suggestedRevision" } ],
+  "findings": [ {
+    "category", "title", "description",
+    "severity": "niedrig|mittel|hoch",
+    "confidence": "number 0-0.98 (NIEMALS 1.0)",
+    "clauseRef",
+    "quote": "exaktes Zitat max 1200 Zeichen",
+    "suggestedRevision": "max 2000 Zeichen",
+    "riskNature": "direct_mandatory_law_risk|agb_control_risk|economic_negotiation_risk|missing_protection_clause|operational_supply_chain_risk|privacy_or_confidentiality_risk|procedural_litigation_risk",
+    "findingType": "existing_clause|missing_clause",
+    "primaryLegalBasis": ["§ 307 BGB"],
+    "referenceLegalBasis": ["§ 309 Nr. 7 BGB als Wertungsindiz"]
+  } ],
   "riskScore01": "number 0-1",
   "recommendedMeasures": ["string"],
   "negotiationHints": ["string"],
   "explanationSummary": "string",
-  "aggregateConfidence": "number 0-1"
+  "aggregateConfidence": "number 0-0.98"
 }
 
 REGELN:
 - Mindestens 3, maximal ${maxFindings} Findings.
-- severity/riskScore01: siehe Phase-1-Regeln (Deutsch, 0-1 Skala).
-- quote max 1200 Zeichen; suggestedRevision max 2000 Zeichen.
+- severity auf Deutsch: niedrig|mittel|hoch.
+- confidence und aggregateConfidence NIEMALS 1.0 oder 100 % — Maximalwert 0.98.
+- riskScore01: 0-1 Skala.
+- quote: max 1200 Zeichen.
+- suggestedRevision: max 2000 Zeichen.
+- Jedes Finding MUSS riskNature, findingType und primaryLegalBasis enthalten.
+- Bei B2B-Verträgen: § 307 BGB als Primärnorm. §§ 308/309 BGB nur als Wertungsindiz.
 - Ausgabe: reines JSON ohne Markdown-Fences.
-- Der Vertragstext folgt im nächsten Abschnitt.`
+
+MISSING-CLAUSE-PRÜFUNG (zusätzlich zu vorhandenen Klauseln):
+Prüfe ob folgende Schutzklauseln im Vertrag FEHLEN und erzeuge dafür Findings mit findingType="missing_clause" und riskNature="missing_protection_clause":
+1. Lieferverzugsregelung / Ersatzbeschaffung / Vertragsstrafe bei Verzug (wenn Lieferant Lieferpflicht hat)
+2. Qualitätssicherung / Prüfprotokolle / Zertifikate (wenn technische Komponenten/Waren)
+3. Force Majeure / Lieferkettenstörung / Cyber / Energieausfall
+4. Produkthaftung / Rückruf / Compliance-Dokumentation (wenn Industriekomponenten)
+5. Datenschutz-Rollenklärung / AVV / TOMs (wenn personenbezogene Daten oder "Kundendaten" erwähnt)
+6. Salvatorische Klausel mit geltungserhaltender Reduktion (wenn vorhanden → als eigenes Finding bewerten)
+- Missing-Clause-Findings: clauseRef="Nicht geregelt", quote=null.
+- Nur Missing-Clauses erzeugen die für den konkreten Vertragstyp relevant sind.
+
+Der Vertragstext folgt im nächsten Abschnitt.`
 }
 
 /** @deprecated Legacy — enthält eingebetteten Vertragstext (Doppelung wenn Provider documentText nutzt). */
