@@ -129,7 +129,8 @@ export const classificationStageSchema = z.object({
   partyConstellation: z.string().max(200).optional(),
   agbKontrolleAnwendbar: z.boolean().nullable().optional(),
   b2bOrB2c: z.enum(["b2b", "b2c", "gemischt", "unklar"]).optional(),
-  classificationConfidence: z.coerce.number().min(0).max(1).optional(),
+  /** Confidence wird auf 0.98 gekappt — 100 % ist für KI-Klassifikation nicht vertretbar. */
+  classificationConfidence: z.coerce.number().min(0).max(1).transform((v) => Math.min(v, 0.98)).optional(),
   modelNotes: z.string().max(2000).optional()
 })
 
@@ -209,12 +210,48 @@ export const pipelineFindingSchema = z.object({
   title: z.string().min(1).max(240),
   description: z.string().min(1).max(8000),
   severity: severityLiteral,
-  confidence: z.coerce.number().min(0).max(1).optional(),
+  /** Confidence wird auf 0.98 gekappt — 100 % ist für KI-Analysen nicht vertretbar. */
+  confidence: z.coerce.number().min(0).max(1).transform((v) => Math.min(v, 0.98)).optional(),
   clauseRef: z.string().max(200).optional(),
   /** v2: exaktes Zitat der Originalklausel (max 2000 Zeichen) */
   quote: z.string().max(2000).nullable().optional(),
   /** v2: konkreter Formulierungsvorschlag (neue Klauselfassung) */
   suggestedRevision: z.string().max(4000).nullable().optional(),
+
+  // ── v3: Analyse-Qualität ───────────────────────────────────────────
+
+  /**
+   * v3: Rechtliche Risikokategorie — differenziert zwischen zwingendem Recht,
+   * AGB-Kontrolle, wirtschaftlichem Nachteil und fehlenden Schutzklauseln.
+   * Ermöglicht Priorisierung: direct_mandatory_law_risk > agb_control_risk > missing > economic.
+   */
+  riskNature: z.enum([
+    "direct_mandatory_law_risk",
+    "agb_control_risk",
+    "economic_negotiation_risk",
+    "missing_protection_clause",
+    "operational_supply_chain_risk",
+    "privacy_or_confidentiality_risk",
+    "procedural_litigation_risk"
+  ]).optional(),
+
+  /**
+   * v3: Finding-Typ — unterscheidet vorhandene problematische Klauseln
+   * von fehlenden Schutzklauseln.
+   */
+  findingType: z.enum(["existing_clause", "missing_clause"]).optional(),
+
+  /**
+   * v3: Primäre Rechtsgrundlage(n) für dieses Finding.
+   * Bei B2B-AGB: § 307 BGB als Primärnorm.
+   */
+  primaryLegalBasis: z.array(z.string().max(200)).max(5).optional(),
+
+  /**
+   * v3: Referenz-/Indiz-Normen (§§ 308/309 BGB als Wertungsindiz im B2B).
+   */
+  referenceLegalBasis: z.array(z.string().max(200)).max(5).optional(),
+
   /** C.4: Konfidenz-Explainability — Aufschlüsselung der Konfidenz-Faktoren */
   confidenceFactors: z
     .object({
