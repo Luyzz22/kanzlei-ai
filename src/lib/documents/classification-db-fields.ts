@@ -25,7 +25,10 @@ export function classificationFieldsForDb(
   }
 
   return {
-    contractClassification: classification.contractClassification.slice(0, CLASSIFICATION_DB_VARCHAR),
+    // contractClassification may be null/undefined on malformed legacy payloads
+    contractClassification: classification.contractClassification
+      ? classification.contractClassification.slice(0, CLASSIFICATION_DB_VARCHAR)
+      : null,
     partyConstellation: classification.partyConstellation?.slice(0, CLASSIFICATION_DB_VARCHAR) ?? null,
     agbKontrolleAnwendbar: classification.agbKontrolleAnwendbar ?? null
   }

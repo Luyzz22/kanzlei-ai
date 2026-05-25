@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "eval:contracts": "EVAL_MOCK=true tsx --tsconfig tsconfig.json scripts/run-contract-evals.ts",
     "eval:contracts:persist": "EVAL_MOCK=true EVAL_PERSIST_DB=1 tsx --tsconfig tsconfig.json scripts/run-contract-evals.ts -- --persist",
-    "test": "tsx --test src/lib/ai/__tests__/*.test.ts src/lib/documents/__tests__/*.test.ts src/lib/evals/__tests__/contract-eval-runner.test.ts src/lib/evals/__tests__/eval-model-matrix.test.ts"
+    "test": "tsx --test src/lib/ai/__tests__/*.test.ts src/lib/documents/__tests__/*.test.ts src/lib/security/__tests__/*.test.ts src/lib/evals/__tests__/contract-eval-runner.test.ts src/lib/evals/__tests__/eval-model-matrix.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

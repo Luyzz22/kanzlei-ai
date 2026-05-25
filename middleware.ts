@@ -36,7 +36,9 @@ const publicPrefixes = [
 
 const adminOnlyPrefixes = [
   "/dashboard/admin",
-  "/api/admin/provision-demo",
+  // Defense-in-depth: all /api/admin/* require ADMIN role at middleware layer
+  // Individual route handlers enforce the same check (double enforcement).
+  "/api/admin",
 ]
 
 function isPublic(pathname: string): boolean {
@@ -67,6 +69,10 @@ export default auth((req) => {
 
   // All other routes require auth
   if (!req.auth) {
+    // API routes: return 401 JSON (not a browser redirect)
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
+    }
     const loginUrl = new URL("/login", req.nextUrl)
     loginUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(loginUrl)
@@ -76,6 +82,10 @@ export default auth((req) => {
   if (isAdminOnly(pathname)) {
     const role = (req.auth.user as { role?: string } | undefined)?.role
     if (role !== "ADMIN") {
+      // API routes: return 403 JSON (not a browser redirect)
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 })
+      }
       return NextResponse.redirect(new URL("/dashboard", req.nextUrl))
     }
   }

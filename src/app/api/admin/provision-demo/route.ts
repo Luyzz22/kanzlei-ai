@@ -5,8 +5,13 @@ import { NextResponse } from "next/server"
 import { Role, TenantRole } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
+import { notFoundInProduction } from "@/lib/security/admin-route-guard"
 
 export async function POST(request: Request): Promise<NextResponse> {
+  // Production: provisioning must not be reachable via HTTP in production
+  const blocked = notFoundInProduction()
+  if (blocked) return blocked
+
   const seedSecret = process.env.SEED_SECRET
   if (!seedSecret) {
     return NextResponse.json({ error: "SEED_SECRET not configured" }, { status: 503 })
