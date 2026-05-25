@@ -28,6 +28,13 @@ import {
 } from "@/lib/ai/prompt-registry/contract-defaults"
 import { calculateCost } from "@/lib/ai/cost-tracker"
 import { createProvider } from "@/lib/ai/providers"
+// Phase 1.3: Security & Privacy Hardening
+import {
+  evaluateLlmTransferPolicy,
+  type LlmProviderName
+} from "@/lib/ai/llm-transfer-policy"
+import { getTenantAiGovernance, type TenantAiGovernance } from "@/lib/ai/tenant-ai-governance"
+import { pseudonymizeDocumentText } from "@/lib/ai/privacy-redaction"
 import { formatStageFailureMessage } from "@/lib/ai/pipeline-failure-messages"
 import {
   type ClassificationStagePayload,
@@ -199,6 +206,22 @@ function modelTypeToProviderKind(model: ModelType): AiProviderKind {
   }
 }
 
+/** Phase 1.3: Mappt Prisma AiProviderKind auf LlmProviderName für Transfer-Policy. */
+function providerKindToLlmName(kind: AiProviderKind): LlmProviderName {
+  switch (kind) {
+    case AiProviderKind.OPENAI:
+      return "openai"
+    case AiProviderKind.ANTHROPIC:
+      return "anthropic"
+    case AiProviderKind.GOOGLE_GEMINI:
+      return "gemini"
+    case AiProviderKind.LLAMA_COMPAT:
+      return "llama"
+    default:
+      return "openai"
+  }
+}
+
 function apiModelLabel(model: ModelType): string {
   switch (model) {
     case ModelType.GPT_4O_MINI:
@@ -350,6 +373,28 @@ async function runJsonStage<T>(
 
   let primaryLogged = false
 
+  // ── Phase 1.3: Governance + Privacy (einmalig vor Provider-Loop) ──────
+  let effectiveDocumentText = documentText
+  let governance: TenantAiGovernance | null = null
+  const tenantId = ctx.tenantId ?? ""
+
+  if (tenantId) {
+    try {
+      governance = await getTenantAiGovernance(tenantId)
+      // Privacy Redaction wenn Tenant requirePseudonymization aktiviert hat
+      if (governance.requirePseudonymization) {
+        const redaction = pseudonymizeDocumentText(documentText)
+        if (redaction.applied) {
+          effectiveDocumentText = redaction.redactedText
+          console.log("[Pipeline.v5.privacy]", redaction.summary)
+        }
+      }
+    } catch {
+      // Governance-Fehler: weiter ohne — konservative Defaults im Policy-Guard
+      console.warn("[Pipeline.v5.governance] Load failed, continuing without governance")
+    }
+  }
+
   for (let i = 0; i < plan.length; i += 1) {
     const model = plan[i]
     const providerKind = modelTypeToProviderKind(model)
@@ -360,13 +405,60 @@ async function runJsonStage<T>(
     const prevProvider = i > 0 ? modelTypeToProviderKind(plan[i - 1]!) : null
 
     try {
+      // ── Phase 1.3: LLM Transfer Policy Check (pro Provider) ──────────
+      const llmProviderName = providerKindToLlmName(providerKind)
+      try {
+        const policy = evaluateLlmTransferPolicy({
+          tenantId: tenantId || undefined,
+          provider: llmProviderName,
+          sensitivity: "confidential",
+          containsPersonalData: true, // konservative Annahme bei Vertragstext
+          containsMandateSecret: false,
+          allowThirdCountryLlmTransfer: governance?.allowThirdCountryLlmTransfer ?? false,
+          pseudonymized: effectiveDocumentText !== documentText,
+          enforcementMode: governance?.aiPolicyEnforcement ?? "log_only",
+          purpose: pipelineStage === "CLASSIFICATION" ? "classification"
+            : pipelineStage === "EXTRACTION" ? "extraction"
+            : "risk_guidance"
+        })
+        if (!policy.allowed) {
+          errorCode = "LLM_TRANSFER_BLOCKED"
+          stageLogs.push({
+            stage: prismaStage,
+            attemptOrder: i + 1,
+            provider: providerKind,
+            model: apiModelLabel(model),
+            selectionReason: reason,
+            wasPrimaryChoice: !primaryLogged,
+            wasSuccessful: false,
+            fallbackFromProvider: prevProvider,
+            latencyMs: Date.now() - started,
+            tokensUsed: 0,
+            errorCode,
+            structuredValid: false
+          })
+          primaryLogged = true
+          fallbackKeys.push(`${providerKind}:${apiModelLabel(model)}`)
+          continue
+        }
+        if (policy.severity !== "LOW") {
+          console.warn("[Pipeline.v5.policy]", JSON.stringify({
+            stage: prismaStage, provider: providerKind,
+            severity: policy.severity, reasons: policy.reasons.length
+          }))
+        }
+      } catch (policyErr) {
+        // Policy-Fehler: weiter ohne Block — lieber analysieren als crashen
+        console.warn("[Pipeline.v5.policy] evaluation failed:", policyErr instanceof Error ? policyErr.message : "unknown")
+      }
+
       const provider = createProvider(model)
       const stageMaxTokens = maxTokensForStage(pipelineStage)
       const effectiveMaxTokens = Math.min(stageMaxTokens, providerMaxOutputTokens(model, pipelineStage))
 
       const response = await provider.analyze({
         prompt: promptInstructions,
-        documentText,
+        documentText: effectiveDocumentText,
         jsonMode: true,
         maxTokens: effectiveMaxTokens
       })
