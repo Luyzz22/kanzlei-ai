@@ -219,13 +219,21 @@ FINDING-GRANULARITÄT (WICHTIG):
 
 MISSING-CLAUSE-PRÜFUNG (zusätzlich zu vorhandenen Klauseln):
 Prüfe ob folgende Schutzklauseln FEHLEN (findingType="missing_clause", riskNature="missing_protection_clause"):
-1. Lieferverzugsregelung / Ersatzbeschaffung / Vertragsstrafe bei Verzug
-2. Qualitätssicherung / Prüfprotokolle / Zertifikate (bei technischen Waren)
-3. Force Majeure / Lieferkettenstörung
-4. Produkthaftung / Rückruf (bei Industriekomponenten)
-5. Datenschutz-Rollenklärung / AVV (wenn personenbezogene Daten erwähnt)
-- Nur Missing-Clauses erzeugen die für den konkreten Vertragstyp relevant sind.
+1. Lieferverzugsregelung / Ersatzbeschaffung → severity=hoch bei Lieferantenverträgen
+2. Qualitätssicherung / Prüfprotokolle / Zertifikate → severity=hoch bei technischen Komponenten
+3. Force Majeure / Lieferkettenstörung → IMMER als Finding bei Rahmenverträgen mit Lieferpflicht (severity=mittel)
+4. Produkthaftung / Rückruf → severity=hoch bei Industriekomponenten
+5. Datenschutz / AVV → IMMER als Finding wenn "Kundendaten" oder "personenbezogene Daten" im Vertrag (severity=mittel)
+6. Salvatorische Klausel → wenn Ersetzungsklausel statt geltungserhaltender Reduktion (severity=niedrig)
 - clauseRef="Nicht geregelt", quote=null.
+- MINDESTENS für Kategorien 1, 3 und 5 ein Finding erzeugen wenn sie fehlen.
+
+SEVERITY-LEITLINIEN:
+- Personenschäden-Haftungsbeschränkung: IMMER hoch
+- Gewährleistungsfristverkürzung: hoch bei technischen/sicherheitsrelevanten Produkten
+- Aufrechnungsverbot: hoch
+- Force-Majeure fehlt: mittel
+- Gerichtsstandsprivileg: mittel
 
 Der Vertragstext folgt im nächsten Abschnitt.`
 }
@@ -320,14 +328,24 @@ FINDING-GRANULARITÄT (WICHTIG):
 
 MISSING-CLAUSE-PRÜFUNG (zusätzlich zu vorhandenen Klauseln):
 Prüfe ob folgende Schutzklauseln im Vertrag FEHLEN und erzeuge dafür Findings mit findingType="missing_clause" und riskNature="missing_protection_clause":
-1. Lieferverzugsregelung / Ersatzbeschaffung / Vertragsstrafe bei Verzug (wenn Lieferant Lieferpflicht hat)
-2. Qualitätssicherung / Prüfprotokolle / Zertifikate (wenn technische Komponenten/Waren)
-3. Force Majeure / Lieferkettenstörung / Cyber / Energieausfall
-4. Produkthaftung / Rückruf / Compliance-Dokumentation (wenn Industriekomponenten)
-5. Datenschutz-Rollenklärung / AVV / TOMs (wenn personenbezogene Daten oder "Kundendaten" erwähnt)
-6. Salvatorische Klausel mit geltungserhaltender Reduktion (wenn vorhanden → als eigenes Finding bewerten)
+1. Lieferverzugsregelung / Ersatzbeschaffung / Vertragsstrafe bei Verzug → severity=hoch bei Lieferantenverträgen
+2. Qualitätssicherung / Prüfprotokolle / Zertifikate → severity=hoch bei technischen/sicherheitsrelevanten Komponenten
+3. Force Majeure / Lieferkettenstörung / höhere Gewalt → bei JEDEM Rahmenvertrag mit Lieferpflicht ist das Fehlen einer Force-Majeure-Klausel ein Finding (severity=mittel)
+4. Produkthaftung / Rückruf / Compliance-Dokumentation → severity=hoch bei Industriekomponenten
+5. Datenschutz-Rollenklärung / AVV / TOMs → wenn der Vertrag "Kundendaten", "personenbezogene Daten", "Geschäftsdaten" oder ähnliches erwähnt UND keine Datenschutzregelung enthält → IMMER als Finding erzeugen (severity=mittel)
+6. Salvatorische Klausel → wenn eine Ersetzungsklausel statt geltungserhaltender Reduktion verwendet wird → Finding (severity=niedrig), weil BGH geltungserhaltende Reduktion bei AGB ablehnt
 - Missing-Clause-Findings: clauseRef="Nicht geregelt", quote=null.
-- Nur Missing-Clauses erzeugen die für den konkreten Vertragstyp relevant sind.
+- Erzeuge MINDESTENS für Kategorien 1, 3 und 5 ein Finding wenn sie im Vertrag fehlen.
+
+SEVERITY-LEITLINIEN (für konsistente Bewertung):
+- Haftungsbeschränkung bei Personenschäden: IMMER hoch
+- Rücktrittsausschluss: hoch
+- Gewährleistungsfristverkürzung auf 12 Monate: hoch bei technischen/sicherheitsrelevanten Produkten, mittel bei Standardware
+- Aufrechnungsverbot: hoch (da auch bei Mängeln greifend)
+- Geheimhaltung asymmetrisch + Vertragsstrafe > 25.000 EUR: hoch
+- Force-Majeure fehlt: mittel
+- Gerichtsstandsprivileg: mittel
+- Teillieferungen: mittel bis niedrig
 
 Der Vertragstext folgt im nächsten Abschnitt.`
 }
