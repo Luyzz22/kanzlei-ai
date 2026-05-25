@@ -24,12 +24,12 @@ const baseDe = (version: string, promptKey: string) => `Du bist ein KI-System zu
 Antworte sachlich, auf Deutsch, ohne Rechtsberatung im Sinne des RDG zu simulieren.
 Markiere Unsicherheiten klar. Prompt-Key: ${promptKey} · Version: ${version}.`
 
-/** Adaptive Finding-Obergrenze — reduziert Output-Token-Druck bei langen Verträgen. */
+/** Adaptive Finding-Obergrenze — erhöht für Missing-Clause-Detection und granulare § 6-Aufspaltung. */
 export function maxFindingsForDocumentLength(charLength: number): number {
-  if (charLength >= 80_000) return 6
-  if (charLength >= 40_000) return 8
-  if (charLength >= 20_000) return 10
-  return 12
+  if (charLength >= 80_000) return 8
+  if (charLength >= 40_000) return 10
+  if (charLength >= 20_000) return 12
+  return 16
 }
 
 function classificationContextBlock(classification?: ClassificationStagePayload | null): string {
@@ -212,6 +212,11 @@ REGELN:
 - Halte suggestedRevision kompakt — Qualität vor Länge.
 - Ausgabe: reines JSON ohne Markdown-Fences.
 
+FINDING-GRANULARITÄT (WICHTIG):
+- NICHT mehrere verschiedene Risiken in einem Finding zusammenfassen.
+- Jede eigenständige Problemklausel bekommt ein eigenes Finding.
+- Lieber 15 granulare Findings als 10 gemischte.
+
 MISSING-CLAUSE-PRÜFUNG (zusätzlich zu vorhandenen Klauseln):
 Prüfe ob folgende Schutzklauseln FEHLEN (findingType="missing_clause", riskNature="missing_protection_clause"):
 1. Lieferverzugsregelung / Ersatzbeschaffung / Vertragsstrafe bei Verzug
@@ -301,6 +306,17 @@ REGELN:
 - Jedes Finding MUSS riskNature, findingType und primaryLegalBasis enthalten.
 - Bei B2B-Verträgen: § 307 BGB als Primärnorm. §§ 308/309 BGB nur als Wertungsindiz.
 - Ausgabe: reines JSON ohne Markdown-Fences.
+
+FINDING-GRANULARITÄT (WICHTIG):
+- NICHT mehrere verschiedene Risiken in einem Finding zusammenfassen.
+- Jede eigenständige Problemklausel bekommt ein eigenes Finding:
+  * Haftungsbeschränkung (Personenschäden/grobe Fahrlässigkeit) = eigenes Finding
+  * Rücktrittsausschluss / Gewährleistungsfristverkürzung = eigenes Finding
+  * Rügefristen (24h/48h) = eigenes Finding
+  * Aufrechnungs-/Zurückbehaltungsverbot = eigenes Finding
+  * Gefahrübergang / Teillieferungsregelung = eigenes Finding
+- Das Zusammenfassen verschiedener §§ in ein Finding verfälscht die Priorisierung.
+- Lieber 15 granulare Findings als 10 gemischte.
 
 MISSING-CLAUSE-PRÜFUNG (zusätzlich zu vorhandenen Klauseln):
 Prüfe ob folgende Schutzklauseln im Vertrag FEHLEN und erzeuge dafür Findings mit findingType="missing_clause" und riskNature="missing_protection_clause":
