@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { auth } from "@/lib/auth"
+import { requireNonProductionOrAdmin } from "@/lib/security/admin-route-guard"
 
 /**
  * GET /api/admin/test-anthropic
@@ -81,18 +82,15 @@ async function testModel(model: string, apiKey: string): Promise<ModelTestResult
 }
 
 export async function GET() {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  if (session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-  }
+  // Production: diagnostic endpoint not available
+  const denied = await requireNonProductionOrAdmin()
+  if (denied) return denied
 
+  const session = await auth()
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
   if (!apiKey) {
     return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY ist nicht in Vercel Env gesetzt" },
+      { error: "ANTHROPIC_API_KEY ist nicht in Vercel Env gesetzt", configured: false },
       { status: 500 }
     )
   }
@@ -110,9 +108,11 @@ export async function GET() {
   })()
 
   return NextResponse.json({
-    apiKeyFingerprint: apiKey.slice(0, 7) + "..." + apiKey.slice(-4),
+    // Never expose key material — boolean status only
+    apiKeyConfigured: true,
     results,
     recommendation,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    requestedBy: session?.user?.id ?? "unknown"
   })
 }

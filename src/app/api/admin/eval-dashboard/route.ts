@@ -22,6 +22,12 @@ export async function GET() {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
   }
 
+  // Admin/Owner only — eval analytics are privileged data
+  const role = (session.user as { role?: string }).role
+  if (role !== "ADMIN" && role !== "OWNER") {
+    return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 })
+  }
+
   const ctx = await resolveTenantContextForUser(session.user.id)
   if (ctx.status !== "single") {
     return NextResponse.json({ error: "Kein Mandant" }, { status: 403 })

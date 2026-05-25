@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { auth } from "@/lib/auth"
+import { requireNonProductionOrAdmin } from "@/lib/security/admin-route-guard"
 import { buildRiskAndGuidancePromptBody } from "@/lib/ai/prompt-registry/contract-defaults"
 import { stripCodeFences, parseJsonUnknown, riskAndGuidanceStageSchema } from "@/lib/ai/schemas/contract-analysis"
 
@@ -25,6 +26,10 @@ const TEST_EXTRACTION_SUMMARY = JSON.stringify({
 })
 
 export async function GET() {
+  // Production: diagnostic endpoint not available
+  const denied = await requireNonProductionOrAdmin()
+  if (denied) return denied
+
   const session = await auth()
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })

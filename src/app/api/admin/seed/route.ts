@@ -5,10 +5,15 @@ import { NextResponse } from "next/server"
 import { PromptDefinitionStatus, PromptTaskStage, Role, TenantRole } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
+import { notFoundInProduction } from "@/lib/security/admin-route-guard"
 
 const SEED_PROMPT_VERSION = "2025-03-27"
 
 export async function POST(request: Request): Promise<NextResponse> {
+  // Production: seeding must not be reachable via HTTP in production
+  const blocked = notFoundInProduction()
+  if (blocked) return blocked
+
   // Auth: requires SEED_SECRET in header
   const seedSecret = process.env.SEED_SECRET
   if (!seedSecret) {
