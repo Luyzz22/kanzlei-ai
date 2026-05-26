@@ -172,6 +172,12 @@ model TenantGovernanceSettings {
   allowedProviders                        String[]
   /// R-02 Fix: EU-Only-Modus — blockiert US-Provider (OpenAI, Anthropic, Gemini)
   preferEuModels                          Boolean  @default(false)
+  /// Phase 1.3: PII-Pseudonymisierung vor LLM-Transfer
+  requirePseudonymization                 Boolean  @default(false)
+  /// Phase 1.3: Drittlandtransfer explizit freigeben
+  allowThirdCountryLlmTransfer            Boolean  @default(false)
+  /// Phase 1.3: log_only oder block
+  aiPolicyEnforcement                     String   @default("log_only") @db.VarChar(20)
   defaultDocumentRetentionDays             Int      @default(365)
   auditEvidenceRetentionDays               Int      @default(1825)
   reviewDueDays                            Int      @default(14)
@@ -521,6 +527,12 @@ model AnalysisFinding {
   suggestedRevision String? @db.Text
   /// Evidence Graph MVP: Structured reasoning chain per finding (normBasis, steps, counterArgs, limitations, confidenceFactors)
   evidenceGraph Json?
+  /// Phase 1.3: Rechtliche Risikokategorie (direct_mandatory_law_risk, agb_control_risk, etc.)
+  riskNature        String?  @db.VarChar(64)
+  /// Phase 1.3: existing_clause oder missing_clause
+  findingType       String?  @db.VarChar(32)
+  /// Phase 1.3: Primäre Rechtsgrundlagen (z.B. ["§ 307 BGB"])
+  primaryLegalBasis Json?
   createdAt     DateTime @default(now())
 
   tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
