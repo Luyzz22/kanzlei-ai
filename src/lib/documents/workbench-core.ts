@@ -116,6 +116,21 @@ function extractEvidenceGraph(raw: unknown): WorkbenchEvidenceGraph | null {
   return { normBasis, reasoningSteps, counterArguments, limitations }
 }
 
+/** Phase 1.3: Extrahiert einen String-Wert aus dem evidenceGraph JSON (Fallback für vor-Migration-Findings). */
+function extractStringFromJson(raw: unknown, key: string): string | null {
+  if (!isRecord(raw)) return null
+  const val = raw[key]
+  return typeof val === "string" ? val : null
+}
+
+/** Phase 1.3: Extrahiert ein String-Array aus dem evidenceGraph JSON. */
+function extractStringArrayFromJson(raw: unknown, key: string): string[] | null {
+  if (!isRecord(raw)) return null
+  const val = raw[key]
+  if (!Array.isArray(val)) return null
+  return val.filter((s): s is string => typeof s === "string")
+}
+
 export function serializeWorkbenchAiContractAnalysis(
   ai: WorkbenchAiContractAnalysis | null
 ): WorkbenchAiContractAnalysisProps | null {
@@ -188,6 +203,13 @@ export function serializeWorkbenchAiContractAnalysis(
       // v4: confidenceFactors + evidenceGraph aus dem evidenceGraph JSON-Blob lesen
       confidenceFactors: extractConfidenceFactors(f.evidenceGraph),
       evidenceGraph: extractEvidenceGraph(f.evidenceGraph),
+      // v5 Phase 1.3: Analyse-Qualitätsfelder (aus DB-Spalten oder evidenceGraph-Fallback)
+      riskNature: (f as Record<string, unknown>).riskNature as string | null
+        ?? extractStringFromJson(f.evidenceGraph, "riskNature"),
+      findingType: (f as Record<string, unknown>).findingType as string | null
+        ?? extractStringFromJson(f.evidenceGraph, "findingType"),
+      primaryLegalBasis: (f as Record<string, unknown>).primaryLegalBasis as string[] | null
+        ?? extractStringArrayFromJson(f.evidenceGraph, "primaryLegalBasis"),
       latestReview: f.latestReview
         ? {
             decision: f.latestReview.decision,
