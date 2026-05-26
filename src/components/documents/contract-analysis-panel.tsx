@@ -97,6 +97,30 @@ function FindingsSummaryBar({ findings, riskScore, filter, onFilter }: {
 /* ================================================================== */
 /* FINDING CARD — Accordion                                          */
 /* ================================================================== */
+// ── Phase 1.3: riskNature + findingType Badge-Components ─────────────────
+const RISK_NATURE_CONFIG: Record<string, { label: string; cls: string }> = {
+  direct_mandatory_law_risk: { label: "Zwingendes Recht", cls: "bg-red-50 text-red-700 border-red-200" },
+  agb_control_risk: { label: "AGB-Kontrolle", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  economic_negotiation_risk: { label: "Wirtschaftlich", cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  missing_protection_clause: { label: "Fehlende Klausel", cls: "bg-violet-50 text-violet-700 border-violet-200" },
+  operational_supply_chain_risk: { label: "Lieferkette", cls: "bg-orange-50 text-orange-700 border-orange-200" },
+  privacy_or_confidentiality_risk: { label: "Datenschutz", cls: "bg-blue-50 text-blue-700 border-blue-200" },
+  procedural_litigation_risk: { label: "Prozessrisiko", cls: "bg-slate-50 text-slate-700 border-slate-200" },
+}
+function RiskNatureBadge({ riskNature }: { riskNature: string }) {
+  const cfg = RISK_NATURE_CONFIG[riskNature]
+  if (!cfg) return null
+  return <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full border text-[10px] font-medium ${cfg.cls}`}>{cfg.label}</span>
+}
+function FindingTypeBadge({ findingType }: { findingType: string }) {
+  const isExisting = findingType === "existing_clause"
+  return (
+    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-[10px] font-medium ${isExisting ? "bg-slate-50 text-slate-600 border-slate-200" : "bg-purple-50 text-purple-700 border-purple-200"}`}>
+      {isExisting ? "⚠️" : "🔍"} {isExisting ? "Klausel" : "Fehlt"}
+    </span>
+  )
+}
+
 function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
   finding: WorkbenchAiContractAnalysisProps["findings"][0]; isOpen: boolean; onToggle: () => void; canReview: boolean; documentId: string
 }) {
@@ -113,6 +137,16 @@ function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
             {finding.clauseRef && <span>{finding.clauseRef}</span>}
             {finding.confidence != null && <span>· Konfidenz {(finding.confidence * 100).toFixed(0)}%</span>}
           </span>
+          {/* Phase 1.3: riskNature + findingType + primaryLegalBasis Badges */}
+          {(finding.riskNature || finding.findingType || finding.primaryLegalBasis?.length) && (
+            <span className="mt-1 flex flex-wrap items-center gap-1">
+              {finding.riskNature && <RiskNatureBadge riskNature={finding.riskNature} />}
+              {finding.findingType && <FindingTypeBadge findingType={finding.findingType} />}
+              {finding.primaryLegalBasis?.map((norm: string) => (
+                <span key={norm} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-stone-100 text-stone-600">{norm}</span>
+              ))}
+            </span>
+          )}
         </span>
         <StatusBadge label={severityLabel(finding.severity)} tone={severityTone(finding.severity)} />
         {finding.latestReview && (
