@@ -18,6 +18,7 @@ import {
   type WorkspaceDocumentStatusTone
 } from "@/lib/documents/workspace-core"
 import { serializeWorkbenchAiContractAnalysis } from "@/lib/documents/workbench-core"
+import { displayTechnicalId, canViewTechnicalReferences } from "@/lib/security/ui-hygiene"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -418,13 +419,13 @@ export default async function DokumentDetailPage({ params }: { params: { id: str
             <dl className="mt-4 space-y-3 text-[12px]">
               <div>
                 <dt className="font-medium text-gray-400">Dokument-ID</dt>
-                <dd className="mt-0.5 break-all font-mono text-gray-700">{document.id}</dd>
+                <dd className="mt-0.5 break-all font-mono text-gray-700">{displayTechnicalId(document.id, (session?.user as { role?: string })?.role)}</dd>
               </div>
               <div>
                 <dt className="font-medium text-gray-400">Mandant-ID</dt>
-                <dd className="mt-0.5 break-all font-mono text-gray-700">{tenantContext.tenantId}</dd>
+                <dd className="mt-0.5 break-all font-mono text-gray-700">{displayTechnicalId(tenantContext.tenantId, (session?.user as { role?: string })?.role)}</dd>
               </div>
-              {document.storageKey ? (
+              {document.storageKey && canViewTechnicalReferences((session?.user as { role?: string })?.role) ? (
                 <div>
                   <dt className="font-medium text-gray-400">Storage-Key</dt>
                   <dd className="mt-0.5 break-all font-mono text-gray-700">{document.storageKey}</dd>
