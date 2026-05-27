@@ -519,7 +519,15 @@ model AnalysisFinding {
   clauseRef     String?  @db.VarChar(200)
   sourceSpan    String?  @db.Text
   suggestedRevision String? @db.Text
-  /// Evidence Graph MVP: Structured reasoning chain per finding (normBasis, steps, counterArgs, limitations, confidenceFactors)
+  /// Risk-Nature-Klassifikation (v3): Typ des rechtlichen Risikos
+  riskNature    String?  @db.VarChar(80)
+  /// Finding-Typ (v3): existing_clause | missing_clause
+  findingType   String?  @db.VarChar(30)
+  /// Primäre Rechtsgrundlagen (v3): z.B. ["§ 307 BGB"] — denormalisiert für Filter/Analytics
+  primaryLegalBasis   String[]
+  /// Referenz-/Indiz-Normen (v3): z.B. ["§ 309 Nr. 7 BGB als Wertungsindiz"]
+  referenceLegalBasis String[]
+  /// Evidence Graph: Structured reasoning chain (normBasis, steps, confidenceFactors)
   evidenceGraph Json?
   createdAt     DateTime @default(now())
 

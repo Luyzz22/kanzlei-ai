@@ -38,6 +38,43 @@ function mapAdminFromEntraRoles(roles: unknown): boolean {
 // is automatically granted ADMIN role + OWNER membership on the sbs-deutschland tenant.
 // Enforced at every sign-in (not only JIT) so state stays consistent across providers.
 
+// Default session timeout matching global maxAge — used when no tenant settings exist
+const DEFAULT_SESSION_TIMEOUT_MINUTES = 24 * 60
+
+/**
+ * Loads the tenant-specific session timeout for a user.
+ * Admin users use adminSessionTimeoutMinutes; others use sessionTimeoutMinutes.
+ * Falls back to DEFAULT_SESSION_TIMEOUT_MINUTES on any error.
+ */
+async function resolveSessionTimeoutMinutes(
+  userId: string | undefined,
+  user: { role?: Role }
+): Promise<number> {
+  if (!userId) return DEFAULT_SESSION_TIMEOUT_MINUTES
+  try {
+    const member = await prisma.tenantMember.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        tenant: {
+          select: {
+            governanceSettings: {
+              select: { sessionTimeoutMinutes: true, adminSessionTimeoutMinutes: true }
+            }
+          }
+        }
+      }
+    })
+    const settings = member?.tenant?.governanceSettings
+    if (!settings) return DEFAULT_SESSION_TIMEOUT_MINUTES
+    const isAdmin = user.role === Role.ADMIN
+    return (isAdmin ? settings.adminSessionTimeoutMinutes : settings.sessionTimeoutMinutes)
+      ?? DEFAULT_SESSION_TIMEOUT_MINUTES
+  } catch {
+    return DEFAULT_SESSION_TIMEOUT_MINUTES
+  }
+}
+
 const SBS_CORPORATE_DOMAINS = ["sbsdeutschland.de", "sbsdeutschland.com"]
 const SBS_TENANT_SLUG = "sbs-deutschland"
 const SBS_TENANT_NAME = "SBS Deutschland GmbH & Co. KG"
@@ -106,7 +143,8 @@ export const authConfig: NextAuthConfig = {
   debug: process.env.NODE_ENV === "development",
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60 * 24,
+    // Hard upper bound — tenant-specific timeout is enforced via token.exp in the jwt callback
+    maxAge: DEFAULT_SESSION_TIMEOUT_MINUTES * 60,
     updateAge: 60 * 60
   },
   pages: {
@@ -220,7 +258,17 @@ export const authConfig: NextAuthConfig = {
     },
 
     jwt: async ({ token, user }) => {
-      if (user) token.role = (user as { role?: Role }).role ?? Role.ASSISTENT
+      if (user) {
+        token.role = (user as { role?: Role }).role ?? Role.ASSISTENT
+        // Load tenant-specific session timeout on first sign-in
+        const timeout = await resolveSessionTimeoutMinutes(token.sub, user as { role?: Role })
+        token.sessionTimeoutMinutes = timeout
+      }
+
+      // Enforce per-tenant timeout on every token evaluation
+      const timeoutMinutes = (token.sessionTimeoutMinutes as number | undefined) ?? DEFAULT_SESSION_TIMEOUT_MINUTES
+      token.exp = Math.floor(Date.now() / 1000) + timeoutMinutes * 60
+
       return token
     },
 

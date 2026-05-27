@@ -53,6 +53,105 @@ ${classification.agbKontrolleAnwendbar != null ? `- AGB-Kontrolle anwendbar: ${c
  * - Parteikonstellation enthält "B2B" und
  * - AGB-Kontrolle anwendbar ist oder vermutet wird
  */
+// ── Vertragstyp-spezifische Module ────────────────────────────────────────────
+
+/**
+ * NDA-Modul v1.1 — 6 Kern-Prüfpunkte + 1 Sonderpunkt für einseitige NDAs.
+ * Wird aktiviert, wenn contractClassification auf NDA / Geheimhaltung hindeutet.
+ */
+function ndaModuleBlock(classification?: ClassificationStagePayload | null): string {
+  if (!classification) return ""
+  const ct = (classification.contractClassification ?? "").toLowerCase()
+  const isNda =
+    ct.includes("nda") ||
+    ct.includes("geheimhaltung") ||
+    ct.includes("vertraulichkeit") ||
+    ct.includes("confidentiality")
+  if (!isNda) return ""
+
+  return `
+NDA-MODUL (Geheimhaltungsvereinbarung — 6+1 Prüfpunkte):
+Diese Prüfpunkte MÜSSEN als Findings abgedeckt werden, sofern relevant:
+1. Umfang des Geheimnisschutzes: Ist "vertrauliche Information" klar und abschließend definiert? Unklar = mittel/hoch.
+2. Rückausnahmen: Sind Standardausnahmen vorhanden (öffentlich bekannt, eigene Kenntnisse, Offenlegungspflicht)? Fehlen = mittel.
+3. Verwendungsbeschränkung: Nur für bestimmten Zweck erlaubt? Zu weite Nutzungserlaubnis = hoch.
+4. Laufzeit und Nachlaufpflicht: Unbefristete Geheimhaltung nach Vertragsende = wirtschaftliches Risiko (mittel/hoch je nach Branche).
+5. Vertragsstrafe / Liquidated Damages: Fehlt oder unangemessen niedrig = erhebliches Durchsetzungsrisiko (mittel).
+6. Rückgabe / Vernichtung vertraulicher Unterlagen: Kein Mechanismus = operationelles Risiko (niedrig/mittel).
++1 EINSEITIG/GEGENSEITIG: Einseitige NDA bevorzugt offenlegende Partei. Fehlende Gegenseitigkeit bei beidseitigem Austausch = mittel.
+`
+}
+
+/**
+ * IT/SaaS-Modul v1.0 — Prüfpunkte für SaaS-Verträge, MSAs, Softwarelizenz- und Cloud-Verträge.
+ * Aktiviert bei contractClassification SaaS/IT/Cloud/Software/Lizenz/MSA.
+ */
+function itSaasModuleBlock(classification?: ClassificationStagePayload | null): string {
+  if (!classification) return ""
+  const ct = (classification.contractClassification ?? "").toLowerCase()
+  const isItSaas =
+    ct.includes("saas") ||
+    ct.includes("software") ||
+    ct.includes("cloud") ||
+    ct.includes("it-") ||
+    ct.includes("it ") ||
+    ct.includes("lizenz") ||
+    ct.includes("licence") ||
+    ct.includes("msa") ||
+    ct.includes("service level") ||
+    ct.includes("dienstleistungs") ||
+    ct.includes("wartung")
+  if (!isItSaas) return ""
+
+  return `
+IT/SaaS-MODUL (Digitale Dienstleistungen — spezifische Prüfpunkte):
+1. SLA / Verfügbarkeitsgarantien: Sind Uptime-Garantien (99%+ empfohlen), Wartungsfenster und Service-Credits geregelt? Fehlen = hoch.
+2. Datenspeicherort und Subprocessors: Ist Datenhaltung in EU/EWR explizit geregelt? Drittlandtransfer ohne Safeguards = hoch (DSGVO Art. 44).
+3. AVV / DPA: Wird personenbezogene Daten verarbeitet? Fehlender Auftragsverarbeitungsvertrag = hoch (DSGVO Art. 28).
+4. Datenmigration / Exit-Clause: Kann Kunde Daten bei Vertragsende portieren? Vendor Lock-in ohne Exit = hoch.
+5. Haftungsdeckelung IT-spezifisch: Ist Haftung für Datenverlust / Cyber-Incident abgedeckt? Unklare Haftung = mittel/hoch.
+6. IP-Ownership bei Customization: Wem gehören Anpassungen/Konfigurationen? Fehlende Regelung = mittel.
+7. Sicherheitsanforderungen: Zertifizierungen (ISO 27001, SOC 2) gefordert? Fehlen bei sensiblen Daten = mittel.
+riskNature für IT/SaaS-Findings: privacy_or_confidentiality_risk für DSGVO-Themen, operational_supply_chain_risk für SLA/Exit.
+`
+}
+
+/**
+ * Risiko-Modifier MOD-1 bis MOD-5 — Anweisung für riskScore01-Kalibrierung.
+ *
+ * Definiert kontextuelle Auf-/Abwertungsregeln für den Gesamt-Risikoscore.
+ * Wird in jeden Risk-Stage Prompt eingefügt.
+ */
+function riskModifierBlock(): string {
+  return `
+RISIKO-MODIFIER (riskScore01-Kalibrierung — MUSS berücksichtigt werden):
+MOD-1 (AUFWERTUNG +0.1–0.15): Einseitige Risikoverteilung zulasten einer Partei (>60% der Haftungsrisiken trägt eine Seite).
+MOD-2 (AUFWERTUNG +0.05–0.10): Fehlende Pflichtklausel nach geltendem Recht (DSGVO, ProdHaftG, § 203 StGB-Kontext).
+MOD-3 (ABWERTUNG −0.05–0.10): Established-Practice-Vertrag mit Standardklauseln in allen wesentlichen Bereichen; kein ungewöhnliches Risiko.
+MOD-4 (AUFWERTUNG +0.10–0.20): Hinweise auf missbräuchliche Klauseln (§ 138 BGB / § 307 Abs. 2 Nr. 2 BGB Kernbereichsverletzung).
+MOD-5 (AUFWERTUNG +0.05): Gerichtsstand außerhalb DACH ohne sachliche Begründung bei deutschem Leistungsort.
+Hinweis: riskScore01 NIEMALS über 0.95 setzen. Modifier kumulieren, aber Cap beachten.
+`
+}
+
+/**
+ * Konfidenz-5-Faktoren-Formel — Anweisung zur confidenceFactors-Berechnung.
+ * Gibt dem Modell explizite Gewichtungsregeln für die 5 Faktoren.
+ */
+function confidenceFormulaBlock(): string {
+  return `
+KONFIDENZ-FORMEL (confidenceFactors pro Finding — 5 gleichgewichtete Faktoren):
+Berechne jeden Faktor als 0.0–1.0:
+- normClarity: Wie eindeutig ist die zugrunde liegende Rechtsnorm? (BGH-bestätigt=0.9+; umstritten=0.4–0.6; unklar=<0.4)
+- clauseClarity: Wie eindeutig ist die Klausel im Vertrag formuliert? (klar und vollständig=0.85+; lückenhaft/unklar=<0.5)
+- contractContext: Passt das Finding zum Vertragstyp und Parteikonstellation? (sehr passend=0.9+; Branchenausreißer=0.4–0.6)
+- industryFit: Übereinstimmung mit üblicher Branchenpraxis? (Standard=0.85+; ungewöhnlich=0.4–0.6)
+- precedent: Liegt BGH/OLG-Rechtsprechung als Stütze vor? (höchstrichterlich bestätigt=0.9+; keine RSpr.=0.3–0.5)
+Konfidenz-Formel: confidence = (normClarity + clauseClarity + contractContext + industryFit + precedent) / 5
+Confidence NIEMALS 1.0 — Maximalwert 0.98. Mindestens ein limitingFactor bei confidence < 0.7.
+`
+}
+
 function b2bAgbQualifierBlock(classification?: ClassificationStagePayload | null): string {
   if (!classification) return ""
 
@@ -173,6 +272,10 @@ export function buildRiskFindingsPromptInstructions(
   return `${baseDe(version, CONTRACT_RISK_PROMPT_KEY)}
 ${classificationContextBlock(classification)}
 ${b2bAgbQualifierBlock(classification)}
+${ndaModuleBlock(classification)}
+${itSaasModuleBlock(classification)}
+${riskModifierBlock()}
+${confidenceFormulaBlock()}
 VORAB-EXTRAKTION:
 ${extractionSummary}
 
@@ -264,6 +367,10 @@ export function buildRiskAndGuidancePromptInstructions(
   return `${baseDe(version, CONTRACT_RISK_PROMPT_KEY)}
 ${classificationContextBlock(classification)}
 ${b2bAgbQualifierBlock(classification)}
+${ndaModuleBlock(classification)}
+${itSaasModuleBlock(classification)}
+${riskModifierBlock()}
+${confidenceFormulaBlock()}
 VORAB-EXTRAKTION:
 ${extractionSummary}
 
