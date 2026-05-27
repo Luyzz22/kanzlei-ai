@@ -11,6 +11,7 @@ import {
 } from "@/lib/documents/intake-core"
 import { processDocumentExtraction } from "@/lib/documents/processing-core"
 import { deleteStoredDocumentFile, storeDocumentFile } from "@/lib/storage/document-storage"
+import { log } from "@/lib/security/secure-logging"
 
 const erlaubteMimeTypes = [
   "application/pdf",
@@ -123,11 +124,8 @@ export async function POST(request: Request) {
         title,
         message: "Dokument erfasst und Verarbeitung gestartet."
       })
-    } catch (attachError) {
-      console.error("[bulk_upload.attach_failed]", {
-        documentId: document.id,
-        error: attachError instanceof Error ? attachError.message : String(attachError)
-      })
+    } catch {
+      log.error("bulk_upload.attach_failed", { documentId: document.id, code: "ATTACH_FAILED" })
       await deleteStoredDocumentFile(storedFile.storageKey)
       await markDocumentStorageFailure({
         tenantId: tenantContext.tenantId,
@@ -142,8 +140,8 @@ export async function POST(request: Request) {
         message: "Dokument angelegt, aber Dateiablage fehlgeschlagen."
       })
     }
-  } catch (error) {
-    console.error("[bulk_upload.error]", error instanceof Error ? error.message : error)
+  } catch {
+    log.error("bulk_upload.failed", { code: "UPLOAD_ERROR" })
     return NextResponse.json({ error: "Upload fehlgeschlagen." }, { status: 500 })
   }
 }

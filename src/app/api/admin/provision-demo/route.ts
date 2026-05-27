@@ -6,6 +6,7 @@ import { Role, TenantRole } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
 import { notFoundInProduction } from "@/lib/security/admin-route-guard"
+import { log } from "@/lib/security/secure-logging"
 
 export async function POST(request: Request): Promise<NextResponse> {
   // Production: provisioning must not be reachable via HTTP in production
@@ -63,8 +64,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         restrictions: ["Kein Admin-Zugang", "Eigener Mandant (isoliert)"]
       }
     })
-  } catch (error) {
-    console.error("[PROVISION-DEMO] Error:", error)
-    return NextResponse.json({ error: "Provisioning failed", details: error instanceof Error ? error.message : "unknown" }, { status: 500 })
+  } catch {
+    log.error("provision_demo.failed", { code: "PROVISION_ERROR" })
+    return NextResponse.json({ error: "Provisioning failed" }, { status: 500 })
   }
 }

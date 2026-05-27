@@ -6,6 +6,7 @@ import { PromptDefinitionStatus, PromptTaskStage, Role, TenantRole } from "@pris
 
 import { prisma } from "@/lib/prisma"
 import { notFoundInProduction } from "@/lib/security/admin-route-guard"
+import { log } from "@/lib/security/secure-logging"
 
 const SEED_PROMPT_VERSION = "2025-03-27"
 
@@ -158,8 +159,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         })
       }
       promptStatus = "seeded"
-    } catch (promptError) {
-      console.warn("[SEED] Prompt governance tables not available yet:", promptError)
+    } catch {
+      log.warn("seed.prompt_tables_not_ready", { code: "TABLES_NOT_READY" })
       promptStatus = "tables_not_ready"
     }
 
@@ -169,11 +170,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name },
       promptGovernance: promptStatus
     })
-  } catch (error) {
-    console.error("[SEED] Error:", error)
-    return NextResponse.json(
-      { error: "Seed failed", details: error instanceof Error ? error.message : "unknown" },
-      { status: 500 }
-    )
+  } catch {
+    log.error("seed.failed", { code: "SEED_ERROR" })
+    return NextResponse.json({ error: "Seed failed" }, { status: 500 })
   }
 }
