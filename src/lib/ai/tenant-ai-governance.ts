@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma"
  *
  * Konservative Defaults:
  * - allowThirdCountryLlmTransfer = false (kein Drittlandtransfer ohne explizite Freigabe)
- * - aiPolicyEnforcement = log_only (risikoarmer Start, aber block aktivierbar)
+ * - aiPolicyEnforcement = block (Standard seit Security Audit 27.05.2026 — bekannte Regelverletzungen werden blockiert, nicht nur geloggt)
  * - requirePseudonymization = false (aktivierbar, aber nicht default)
  *
  * Ref: DSGVO Art. 5/25/32/44 ff., § 203 StGB, EU AI Act Art. 12/14
@@ -55,7 +55,7 @@ export async function getTenantAiGovernance(
       ),
       aiPolicyEnforcement: envPolicyMode(
         "AI_POLICY_ENFORCEMENT",
-        "log_only"
+        "block"
       ),
     }
   } catch {
@@ -81,7 +81,7 @@ function getEnvFallbackGovernance(): TenantAiGovernance {
       "AI_ALLOW_THIRD_COUNTRY_LLM_TRANSFER",
       false
     ),
-    aiPolicyEnforcement: envPolicyMode("AI_POLICY_ENFORCEMENT", "log_only"),
+    aiPolicyEnforcement: envPolicyMode("AI_POLICY_ENFORCEMENT", "block"),
   }
 }
 
