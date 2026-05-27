@@ -2,6 +2,9 @@
 
 import { auth } from "@/lib/auth"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
+import { validateUploadedFile } from "@/lib/security/file-validation"
+import { UPLOAD_LIMIT, checkRateLimit } from "@/lib/security/rate-limit"
+import { log } from "@/lib/security/secure-logging"
 import {
   attachStoredFileToDocument,
   createDocumentIntake,
@@ -86,6 +89,15 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
     }
   }
 
+  // Upload rate limit: 20 per hour per user
+  const rl = checkRateLimit(`upload:${session.user.id}`, UPLOAD_LIMIT)
+  if (!rl.allowed) {
+    return {
+      status: "error",
+      message: "Upload-Limit erreicht. Bitte in einer Stunde erneut versuchen."
+    }
+  }
+
   const tenantContext = await resolveTenantContextForUser(session.user.id)
 
   if (tenantContext.status === "none") {
@@ -126,24 +138,13 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
   const rawFileInput = formData.get("file")
   const uploadFileResolution = normalizeOptionalUploadFile(rawFileInput)
 
-  // Diagnostic logging: trace what the browser actually sends as the file input.
-  // This helps debug cases where users report the file pathway being triggered
-  // even when they did not attach a file.
-  if (rawFileInput instanceof File) {
-    console.info("[intake.file_input_received]", {
-      name: rawFileInput.name,
-      size: rawFileInput.size,
-      type: rawFileInput.type,
-      lastModified: rawFileInput.lastModified,
-      resolutionKind: uploadFileResolution.kind
-    })
-  } else {
-    console.info("[intake.file_input_received]", {
-      isFile: false,
-      rawType: typeof rawFileInput,
-      resolutionKind: uploadFileResolution.kind
-    })
-  }
+  // Diagnostic logging — no filename, no PII
+  log.debug("intake.file_input_received", {
+    hasFile: rawFileInput instanceof File,
+    size: rawFileInput instanceof File ? rawFileInput.size : undefined,
+    mimeType: rawFileInput instanceof File ? rawFileInput.type : undefined,
+    resolutionKind: uploadFileResolution.kind
+  })
 
   const file = uploadFileResolution.kind === "file" ? uploadFileResolution.file : null
 
@@ -152,7 +153,7 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
       status: "error",
       message: "Die Datei ist zu groß.",
       fieldErrors: {
-        file: "Bitte laden Sie Dateien bis maximal 25 MB hoch."
+        file: "Bitte laden Sie Dateien bis maximal 4 MB hoch."
       }
     }
   }
@@ -165,6 +166,18 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
       message: "Der Dateityp wird derzeit nicht unterstützt.",
       fieldErrors: {
         file: "Bitte laden Sie PDF-, DOC-, DOCX- oder TXT-Dateien hoch."
+      }
+    }
+  }
+
+  // Magic-byte validation — second layer after MIME allowlist (OWASP A05)
+  if (file && resolvedMimeType) {
+    const validation = await validateUploadedFile(file, MAX_FILE_SIZE_BYTES)
+    if (!validation.valid) {
+      return {
+        status: "error",
+        message: "Die Datei konnte nicht validiert werden.",
+        fieldErrors: { file: validation.error }
       }
     }
   }
@@ -234,17 +247,10 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
         message:
           "Das Dokument und die Datei wurden tenant-gebunden gespeichert. Die initiale Dokumentverarbeitung wurde gestartet."
       }
-    } catch (attachError) {
-      console.error("[intake.attach_failed]", {
-        tenantId: tenantContext.tenantId,
+    } catch {
+      log.error("intake.attach_failed", {
         documentId: document.id,
-        userId: session.user.id,
-        storageKey: storedFile.storageKey,
-        error: attachError instanceof Error ? {
-          name: attachError.name,
-          message: attachError.message,
-          stack: attachError.stack
-        } : String(attachError)
+        code: "ATTACH_FAILED"
       })
       await deleteStoredDocumentFile(storedFile.storageKey)
       await markDocumentStorageFailure({
@@ -259,24 +265,10 @@ export async function createIntakeAction(_: IntakeFormState, formData: FormData)
           "Das Dokument wurde angelegt, aber die tenant-gebundene Dateiablage konnte nicht abgeschlossen werden. Bitte laden Sie die Datei erneut hoch."
       }
     }
-  } catch (intakeError) {
-    // EXPLICIT LOGGING — these errors were previously silently swallowed.
-    // Server logs (Vercel Runtime Logs) will now show the root cause.
-    console.error("[intake.create_failed]", {
-      tenantId: tenantContext.tenantId,
-      userId: session.user.id,
-      title: parsed.data.title,
+  } catch {
+    log.error("intake.create_failed", {
       hasFile: Boolean(file),
-      fileMimeType: resolvedMimeType,
-      fileSize: file?.size,
-      error: intakeError instanceof Error ? {
-        name: intakeError.name,
-        message: intakeError.message,
-        stack: intakeError.stack,
-        // Prisma errors have a `code` property we want to see (P2002, P2003, etc.)
-        code: (intakeError as { code?: string }).code,
-        meta: (intakeError as { meta?: unknown }).meta
-      } : String(intakeError)
+      code: "INTAKE_FAILED"
     })
     return {
       status: "error",
