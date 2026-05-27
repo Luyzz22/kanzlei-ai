@@ -4,6 +4,7 @@ import { waitUntil } from "@vercel/functions"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
+import { ANALYSIS_LIMIT, checkRateLimit, retryAfterSeconds } from "@/lib/security/rate-limit"
 
 export const runtime = "nodejs"
 export const maxDuration = 10
@@ -33,6 +34,15 @@ export async function POST(req: NextRequest) {
   const tenantId = tenantCtx.status === "single" ? tenantCtx.tenantId : null
   if (!tenantId) {
     return NextResponse.json({ error: "no_tenant" }, { status: 403 })
+  }
+
+  // LLM cost protection: 10 analysis starts per hour per tenant
+  const rl = checkRateLimit(`analysis:${tenantId}`, ANALYSIS_LIMIT)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Analyse-Limit erreicht. Bitte in einer Stunde erneut versuchen." },
+      { status: 429, headers: { "Retry-After": retryAfterSeconds(rl.retryAfterMs) } }
+    )
   }
 
   const body = await req.json().catch(() => ({}))

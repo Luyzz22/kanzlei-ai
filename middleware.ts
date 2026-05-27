@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { auth } from "@/lib/auth"
+import { API_LIMIT, checkRateLimit, retryAfterSeconds } from "@/lib/security/rate-limit"
 
 const publicPrefixes = [
   "/login",
@@ -60,6 +61,24 @@ export default auth((req) => {
   // Skip static assets
   if (pathname.startsWith("/_next") || pathname === "/favicon.ico" || pathname.endsWith(".svg") || pathname.endsWith(".ico")) {
     return NextResponse.next()
+  }
+
+  // Global API rate limit — applies to all non-public /api/* routes
+  if (pathname.startsWith("/api/") && !isPublic(pathname)) {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      req.headers.get("x-real-ip") ??
+      "unknown"
+    const rl = checkRateLimit(`api:${ip}`, API_LIMIT)
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded" },
+        {
+          status: 429,
+          headers: { "Retry-After": retryAfterSeconds(rl.retryAfterMs) }
+        }
+      )
+    }
   }
 
   // Public routes — no auth needed

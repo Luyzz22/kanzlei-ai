@@ -9,6 +9,7 @@ import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
 import { z } from "zod"
 
 import { prisma } from "@/lib/prisma"
+import { AUTH_LIMIT, checkRateLimit } from "@/lib/security/rate-limit"
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -182,6 +183,10 @@ export const authConfig: NextAuthConfig = {
       authorize: async (rawCredentials) => {
         const parsed = credentialsSchema.safeParse(rawCredentials)
         if (!parsed.success) return null
+
+        // Brute-force protection: max 5 attempts per email per 15 min
+        const rl = checkRateLimit(`auth:${parsed.data.email.toLowerCase()}`, AUTH_LIMIT)
+        if (!rl.allowed) return null
 
         const user = await prisma.user.findUnique({
           where: { email: parsed.data.email }
