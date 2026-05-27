@@ -63,8 +63,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         restrictions: ["Kein Admin-Zugang", "Eigener Mandant (isoliert)"]
       }
     })
-  } catch (error) {
-    console.error("[PROVISION-DEMO] Error:", error)
-    return NextResponse.json({ error: "Provisioning failed", details: error instanceof Error ? error.message : "unknown" }, { status: 500 })
+  } catch {
+    log.error("provision_demo.failed", { code: "PROVISION_ERROR" })
+    return NextResponse.json({ error: "Provisioning failed" }, { status: 500 })
   }
 }

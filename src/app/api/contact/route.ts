@@ -84,8 +84,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     return NextResponse.json({ status: "sent", message: "E-Mails erfolgreich versendet" })
-  } catch (error) {
-    console.error("[CONTACT] Error:", error)
-    return NextResponse.json({ error: "Anfrage fehlgeschlagen", details: error instanceof Error ? error.message : "unknown" }, { status: 500 })
+  } catch {
+    return NextResponse.json({ error: "Anfrage fehlgeschlagen" }, { status: 500 })
   }
 }

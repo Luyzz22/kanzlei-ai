@@ -7,7 +7,12 @@
  *
  * Aufruf: fire-and-forget nach Pipeline-Completion in analysis-run-core.ts.
  * Fehler werden geloggt, brechen aber nie den Hauptprozess ab.
+ *
+ * DSGVO Art. 5(1f): Dokumenttitel und Empfänger-E-Mail erscheinen
+ * NICHT in Server-Logs. E-Mail-Betreff ist generisch (kein Dokumenttitel).
  */
+
+import { log } from "@/lib/security/secure-logging"
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails"
 const SENDER = "KanzleiAI <ki@sbsdeutschland.de>"
@@ -81,7 +86,7 @@ function buildHtml(input: AnalysisNotificationInput): string {
         Dokument
       </p>
       <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#1a1a1a;">
-        ${input.documentTitle}
+        <a href="${docUrl}" style="color:${SBS_BLUE};text-decoration:none;">Zum analysierten Dokument →</a>
       </p>
       ${input.contractClassification ? `<p style="margin:0;font-size:12px;color:#666;">Vertragstyp: <strong>${input.contractClassification}</strong></p>` : ""}
     </div>
@@ -183,13 +188,12 @@ export async function sendAnalysisCompleteNotification(
 ): Promise<void> {
   const resendKey = process.env.RESEND_API_KEY
   if (!resendKey) {
-    console.warn("[email.analysis_complete] RESEND_API_KEY nicht konfiguriert — E-Mail übersprungen")
+    log.warn("email.analysis_complete.skipped", { code: "NO_RESEND_KEY" })
     return
   }
 
-  const subject = input.riskScore01 != null
-    ? `Analyse abgeschlossen: ${input.documentTitle} — Risiko ${Math.round(input.riskScore01 * 100)}%`
-    : `Analyse abgeschlossen: ${input.documentTitle}`
+  // Generic subject — no documentTitle to avoid PII in email provider logs (DSGVO Art. 5(1f))
+  const subject = "Analyse abgeschlossen — Ergebnis verfügbar"
 
   try {
     const res = await fetch(RESEND_ENDPOINT, {
@@ -207,12 +211,11 @@ export async function sendAnalysisCompleteNotification(
     })
 
     if (!res.ok) {
-      const body = await res.text()
-      console.error("[email.analysis_complete] Resend-Fehler:", res.status, body)
+      log.error("email.analysis_complete.failed", { status: res.status, code: "RESEND_ERROR" })
     } else {
-      console.log("[email.analysis_complete] E-Mail gesendet an", input.recipientEmail)
+      log.info("email.analysis_complete.sent", { documentId: input.documentId })
     }
-  } catch (err) {
-    console.error("[email.analysis_complete] Netzwerkfehler:", err instanceof Error ? err.message : err)
+  } catch {
+    log.error("email.analysis_complete.failed", { code: "NETWORK_ERROR" })
   }
 }

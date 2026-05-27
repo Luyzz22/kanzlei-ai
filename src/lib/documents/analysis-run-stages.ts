@@ -729,6 +729,12 @@ export async function runPersistedRiskStage(input: StageInput): Promise<StageOut
           clauseRef: f.clauseRef?.slice(0, 200) ?? null,
           sourceSpan: f.quote ?? null,
           suggestedRevision: f.suggestedRevision ?? null,
+          // v3: dedicated columns for analytics/filtering (moved out of evidenceGraph blob)
+          riskNature: f.riskNature?.slice(0, 80) ?? null,
+          findingType: f.findingType?.slice(0, 30) ?? null,
+          primaryLegalBasis: f.primaryLegalBasis ?? [],
+          referenceLegalBasis: f.referenceLegalBasis ?? [],
+          // evidenceGraph: structured reasoning chain only (confidenceFactors + normBasis)
           evidenceGraph:
             f.evidenceGraph || f.confidenceFactors || f.riskNature || f.findingType || f.primaryLegalBasis
               ? ({

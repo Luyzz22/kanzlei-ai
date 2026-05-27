@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { log } from "@/lib/security/secure-logging"
 
 export async function POST(): Promise<NextResponse> {
   const session = await auth()
@@ -22,8 +23,8 @@ export async function POST(): Promise<NextResponse> {
     })
     const portal = await portalRes.json()
     return NextResponse.json({ url: portal.url })
-  } catch (e) {
-    console.error("[STRIPE PORTAL]", e)
+  } catch {
+    log.error("stripe.portal.failed", { code: "PORTAL_ERROR" })
     return NextResponse.json({ error: "Portal-Fehler" }, { status: 500 })
   }
 }

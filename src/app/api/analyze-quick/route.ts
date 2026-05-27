@@ -33,9 +33,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         const { extractText } = await import("unpdf")
         const result = await extractText(uint8)
         documentText = Array.isArray(result.text) ? result.text.join("\n") : String(result.text)
-      } catch (e) {
+      } catch {
         return NextResponse.json(
-          { error: "PDF konnte nicht gelesen werden. Bitte versuchen Sie es erneut oder geben Sie den Text direkt ein.", details: e instanceof Error ? e.message : "PDF parse failed" },
+          { error: "PDF konnte nicht gelesen werden. Bitte versuchen Sie es erneut oder geben Sie den Text direkt ein." },
           { status: 422 }
         )
       }
@@ -109,10 +109,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       textLength: documentText.length,
       textPreview: documentText.slice(0, 500)
     })
-  } catch (error) {
-    console.error("[QUICK-ANALYZE] Error:", error)
+  } catch {
     return NextResponse.json(
-      { error: "Analyse fehlgeschlagen. Bitte erneut versuchen.", details: error instanceof Error ? error.message : "unknown" },
+      { error: "Analyse fehlgeschlagen. Bitte erneut versuchen." },
       { status: 503 }
     )
   }

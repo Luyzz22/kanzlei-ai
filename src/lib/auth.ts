@@ -9,6 +9,7 @@ import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
 import { z } from "zod"
 
 import { prisma } from "@/lib/prisma"
+import { AUTH_LIMIT, checkRateLimit } from "@/lib/security/rate-limit"
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -49,13 +50,18 @@ function mapAdminFromEntraRoles(roles: unknown): boolean {
 // Ref: Security-Audit 27.05.2026, Befund SOFORT-1
 //      DSGVO Art. 32, ISO 27001 A.8, NIS2 Art. 21
 
+// --- SBS corporate domain auto-elevation --- REMOVED (Security Audit 27.05.2026)
+// OWASP A01: Autorisierung darf nicht an E-Mail-Domains hängen.
+// Admin-Rechte nur über: Entra-Rollen, manuelles DB-Assignment, SCIM.
+
 export const authConfig: NextAuthConfig = {
   adapter,
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60 * 24,
+    // Hard upper bound — tenant-specific timeout is enforced via token.exp in the jwt callback
+    maxAge: DEFAULT_SESSION_TIMEOUT_MINUTES * 60,
     updateAge: 60 * 60
   },
   pages: {
@@ -93,6 +99,10 @@ export const authConfig: NextAuthConfig = {
       authorize: async (rawCredentials) => {
         const parsed = credentialsSchema.safeParse(rawCredentials)
         if (!parsed.success) return null
+
+        // Brute-force protection: max 5 attempts per email per 15 min
+        const rl = checkRateLimit(`auth:${parsed.data.email.toLowerCase()}`, AUTH_LIMIT)
+        if (!rl.allowed) return null
 
         const user = await prisma.user.findUnique({
           where: { email: parsed.data.email }
@@ -160,7 +170,17 @@ export const authConfig: NextAuthConfig = {
     },
 
     jwt: async ({ token, user }) => {
-      if (user) token.role = (user as { role?: Role }).role ?? Role.ASSISTENT
+      if (user) {
+        token.role = (user as { role?: Role }).role ?? Role.ASSISTENT
+        // Load tenant-specific session timeout on first sign-in
+        const timeout = await resolveSessionTimeoutMinutes(token.sub, user as { role?: Role })
+        token.sessionTimeoutMinutes = timeout
+      }
+
+      // Enforce per-tenant timeout on every token evaluation
+      const timeoutMinutes = (token.sessionTimeoutMinutes as number | undefined) ?? DEFAULT_SESSION_TIMEOUT_MINUTES
+      token.exp = Math.floor(Date.now() / 1000) + timeoutMinutes * 60
+
       return token
     },
 

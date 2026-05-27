@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { log } from "@/lib/security/secure-logging"
 
 const PRICES: Record<string, string> = {
   starter: process.env.STRIPE_PRICE_STARTER || "",
@@ -35,10 +36,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       }).toString()
     })
     const checkout = await res.json()
-    if (!res.ok) { console.error("[STRIPE]", checkout); return NextResponse.json({ error: "Checkout fehlgeschlagen" }, { status: 500 }) }
+    if (!res.ok) {
+      log.error("stripe.checkout.failed", { status: res.status, code: "CHECKOUT_ERROR" })
+      return NextResponse.json({ error: "Checkout fehlgeschlagen" }, { status: 500 })
+    }
     return NextResponse.json({ url: checkout.url })
-  } catch (e) {
-    console.error("[STRIPE]", e)
+  } catch {
+    log.error("stripe.checkout.failed", { code: "NETWORK_ERROR" })
     return NextResponse.json({ error: "Stripe-Fehler" }, { status: 500 })
   }
 }

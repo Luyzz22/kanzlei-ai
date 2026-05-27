@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 /** Version der Prompts / Erwartungsstruktur — bei Schema-Änderungen erhöhen. */
-export const CONTRACT_ANALYSIS_PROMPT_VERSION = "2026-04-24"
+export const CONTRACT_ANALYSIS_PROMPT_VERSION = "2026-05-27"
 
 /**
  * UNIFIED ANALYSIS SCHEMA v2 (2026-04-24)
