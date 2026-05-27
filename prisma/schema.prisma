@@ -535,12 +535,6 @@ model AnalysisFinding {
   referenceLegalBasis String[]
   /// Evidence Graph: Structured reasoning chain (normBasis, steps, confidenceFactors)
   evidenceGraph Json?
-  /// Phase 1.3: Rechtliche Risikokategorie (direct_mandatory_law_risk, agb_control_risk, etc.)
-  riskNature        String?  @db.VarChar(64)
-  /// Phase 1.3: existing_clause oder missing_clause
-  findingType       String?  @db.VarChar(32)
-  /// Phase 1.3: Primäre Rechtsgrundlagen (z.B. ["§ 307 BGB"])
-  primaryLegalBasis Json?
   createdAt     DateTime @default(now())
 
   tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
