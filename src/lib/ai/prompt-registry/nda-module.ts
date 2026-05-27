@@ -52,7 +52,16 @@ Prüfe Geheimhaltungsfrist gegen Branchenstandard:
 - Kerngeschäftsgeheimnisse: unbefristet empfohlen
 - Allgemein: mindestens 2-3 Jahre
 → ≤18 Monate für Technologie-/Software-Geheimnisse: severity=hoch
-→ ≤12 Monate post-contractual für Archivkopien: severity=mittel`
+→ ≤12 Monate post-contractual für Archivkopien: severity=mittel
+
+N-7 — DATENSCHUTZ / AVV BEI INFORMATIONSAUSTAUSCH:
+Prüfe ob der Vertrag Datenschutzregelungen enthält wenn:
+- Softwareentwicklung, Cloud, Fintech, Finanzbranche erwähnt wird
+- "Geschäftsdaten", "Kundendaten", "Nutzerdaten" im Text vorkommen
+- Mitarbeiter-/Personal-Informationen ausgetauscht werden könnten
+→ Fehlende DSGVO-Regelung (Art. 26 gemeinsame Verantwortlichkeit oder Art. 28 AVV):
+   findingType="missing_clause", riskNature="privacy_or_confidentiality_risk", severity=hoch
+→ Bei Cloud/Fintech/Software IMMER als Finding erzeugen, da personenbezogene Daten typischerweise mitverarbeitet werden.`
 }
 
 /**
