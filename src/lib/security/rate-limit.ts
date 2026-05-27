@@ -27,6 +27,9 @@ export const ANALYSIS_LIMIT: RateLimitConfig = { limit: 10, windowMs: 60 * 60 * 
 /** Upload: 20 per hour per user — upload spam protection */
 export const UPLOAD_LIMIT: RateLimitConfig = { limit: 20, windowMs: 60 * 60 * 1000 }
 
+/** Copilot: 30 questions per hour per user — LLM cost protection */
+export const COPILOT_LIMIT: RateLimitConfig = { limit: 30, windowMs: 60 * 60 * 1000 }
+
 /** Global API: 100 per minute per IP — general DDoS protection */
 export const API_LIMIT: RateLimitConfig = { limit: 100, windowMs: 60 * 1000 }
 
