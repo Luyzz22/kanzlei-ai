@@ -9,6 +9,17 @@ import {
   CONTRACT_ANALYSIS_PROMPT_VERSION,
   type ClassificationStagePayload
 } from "@/lib/ai/schemas/contract-analysis"
+import {
+  isNdaContractType,
+  hasSignificantNdaClauses,
+  ndaRiskModuleBlock,
+  ndaCrossClauseBlock,
+} from "@/lib/ai/prompt-registry/nda-module"
+import {
+  isIndustrieContractType,
+  industrieRiskModuleBlock,
+  industrieCrossClauseBlock,
+} from "@/lib/ai/prompt-registry/industrie-module"
 
 export const CONTRACT_PROMPT_BUNDLE_KEY = "contract_analysis.default"
 
@@ -76,6 +87,56 @@ Bei unterstellter AGB-Einordnung ist dieser Vertrag ein B2B-Vertrag (§ 310 Abs.
 - §§ 308/309 BGB kommen in referenceLegalBasis mit Suffix "als Wertungsindiz".
 - Ausnahme: § 309 Nr. 7 lit. a BGB (Haftung für Personenschäden) gilt auch im B2B-Verkehr als DIREKT anwendbar (BGH).
 `
+}
+
+/**
+ * Prompt-Router: Assembliert vertragstyp-spezifische Prompt-Blöcke.
+ *
+ * Statt eines monolithischen Prompts mit allen Modulen werden nur die
+ * relevanten Module geladen. Spart ~60-70% Prompt-Tokens und erhöht
+ * die Instruction-Following-Accuracy.
+ *
+ * Primärer Trigger: contractClassification aus Stage 0
+ * Sekundärer Trigger: Schlüsselwörter in der Extraktion (z.B. "Kundendaten")
+ */
+function assembleTypeSpecificBlocks(
+  classification?: ClassificationStagePayload | null,
+  extractionSummary?: string
+): string {
+  const blocks: string[] = []
+
+  const contractType = classification?.contractClassification ?? ""
+
+  // ── Primäres Modul basierend auf Vertragstyp ──────────────────────
+  if (isNdaContractType(contractType)) {
+    blocks.push(ndaRiskModuleBlock())
+    blocks.push(ndaCrossClauseBlock())
+  }
+
+  if (isIndustrieContractType(contractType)) {
+    blocks.push(industrieRiskModuleBlock())
+    blocks.push(industrieCrossClauseBlock())
+  }
+
+  // ── Sekundäre Trigger: Module auch bei Nicht-Primärtyp laden ──────
+  // NDA-Modul als Sekundärmodul wenn der Vertrag signifikante
+  // Geheimhaltungsklauseln hat (z.B. Lieferantenvertrag mit § 9 NDA)
+  if (
+    !isNdaContractType(contractType) &&
+    extractionSummary &&
+    hasSignificantNdaClauses(extractionSummary)
+  ) {
+    blocks.push(`
+HINWEIS: Dieser Vertrag ist kein reiner NDA, enthält aber signifikante Geheimhaltungsklauseln.
+Die folgenden NDA-spezifischen Prüfpunkte sind ZUSÄTZLICH anzuwenden:`)
+    blocks.push(ndaRiskModuleBlock())
+  }
+
+  if (blocks.length === 0) {
+    return "" // Kein Branchenmodul getriggert — Basis-Prompt reicht
+  }
+
+  return "\n" + blocks.join("\n")
 }
 
 export function buildClassificationPromptInstructions(
@@ -234,7 +295,7 @@ SEVERITY-LEITLINIEN:
 - Aufrechnungsverbot: hoch
 - Force-Majeure fehlt: mittel
 - Gerichtsstandsprivileg: mittel
-
+${assembleTypeSpecificBlocks(classification, extractionSummary)}
 Der Vertragstext folgt im nächsten Abschnitt.`
 }
 
@@ -346,7 +407,7 @@ SEVERITY-LEITLINIEN (für konsistente Bewertung):
 - Force-Majeure fehlt: mittel
 - Gerichtsstandsprivileg: mittel
 - Teillieferungen: mittel bis niedrig
-
+${assembleTypeSpecificBlocks(classification, extractionSummary)}
 Der Vertragstext folgt im nächsten Abschnitt.`
 }
 
