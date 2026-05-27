@@ -2,6 +2,8 @@ import { createHash } from "node:crypto"
 
 import { z } from "zod"
 
+import { log } from "@/lib/security/secure-logging"
+
 import {
   anthropicEffectiveMaxOutputTokens,
   contractAnalysisClaudeOnly,
@@ -36,7 +38,6 @@ import {
   classificationStageSchema,
   extractionStageSchema,
   formatZodIssuesForErrorCode,
-  formatZodIssuesVerbose,
   parseJsonUnknown,
   preprocessRiskStageJson,
   riskAndGuidanceStageSchema,
@@ -423,12 +424,12 @@ async function runJsonStage<T>(
       const validated = schema.safeParse(parsedJson)
       if (!validated.success) {
         errorCode = formatZodIssuesForErrorCode(validated.error)
-        console.error("[Pipeline.v5.schema_invalid_details]", {
+        log.warn("pipeline.schema_invalid", {
           stage: pipelineStage,
           provider: providerKind,
           model: apiModelLabel(model),
           tokensUsed,
-          issues: formatZodIssuesVerbose(validated.error)
+          issueCount: validated.error.issues.length
         })
         stageLogs.push({
           stage: prismaStage,
@@ -468,12 +469,11 @@ async function runJsonStage<T>(
       return { data: validated.data, model, tokens: tokensUsed }
     } catch (err) {
       errorCode = providerErrorCode(err)
-      console.warn("[Pipeline.v5.provider_error]", {
+      log.warn("pipeline.provider_error", {
         stage: pipelineStage,
         provider: providerKind,
         model: apiModelLabel(model),
-        errorCode,
-        message: err instanceof Error ? err.message : String(err)
+        errorCode
       })
       stageLogs.push({
         stage: prismaStage,
@@ -529,14 +529,11 @@ export async function runClassificationStage(
       fallbackKeys
     )
     classificationData = result.data
-  } catch (err) {
+  } catch (classErr) {
     if (contractAnalysisClaudeOnly()) {
-      throw err
+      throw classErr
     }
-    console.warn(
-      "[Pipeline.v5] Classification fehlgeschlagen — Pipeline fährt ohne Klassifikationskontext fort:",
-      err instanceof Error ? err.message : err
-    )
+    log.warn("pipeline.classification_skipped", { code: "CLASSIFICATION_FAILED" })
   }
 
   return { classification: classificationData, classificationResolved, stageLogs, fallbackKeys }
