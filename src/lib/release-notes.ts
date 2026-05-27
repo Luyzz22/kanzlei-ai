@@ -15,6 +15,30 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "v5.0",
+    date: "2026-05-27",
+    title: "Modulares Prompt-Routing, NDA-Modul & Security-Hardening",
+    highlights: [
+      "Vertragstyp-spezifisches Prompt-Routing — NDA- und Industrie-Module werden automatisch geladen",
+      "NDA-Analyse mit 7 Pflichtprüfpunkten (Contaminated Source, GeschGehG, Vertragsstrafe, Laufzeit, Schutzrechte)",
+      "Cross-Clause-Erkennung: Zeitfallen, Mängelrechte-Aushöhlung, IP-Verlust-Kombinationen",
+      "Security-Hardening: LLM-Transfer-Policy, Privacy-Redaction, ID-Masking, RLS-Fix",
+    ],
+    category: "feature",
+  },
+  {
+    version: "v4.5",
+    date: "2026-05-25",
+    title: "Analyse-Qualität v3 & riskNature-Badges",
+    highlights: [
+      "B2B-AGB-Qualifier: § 307 BGB als Primärnorm, §§ 308/309 nur als Indiz (BGH-konform)",
+      "riskNature-Badges und findingType-Tags in der Finding-Ansicht",
+      "Missing-Clause-Detection: Lieferverzug, QS, Force Majeure als eigenständige Findings",
+      "Confidence-Cap bei 98% — keine 100%-Konfidenz mehr bei KI-Analysen",
+    ],
+    category: "compliance",
+  },
+  {
     version: "v4.2",
     date: "2026-05-20",
     title: "Async-Analyse-Pipeline & Stabilität",
