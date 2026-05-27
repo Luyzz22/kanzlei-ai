@@ -128,6 +128,12 @@ export type WorkbenchAiContractAnalysisProps = {
     confidenceFactors: WorkbenchConfidenceFactors | null
     /** v4 — Evidence Graph MVP: klickbare Begründungskette */
     evidenceGraph: WorkbenchEvidenceGraph | null
+    /** v5 Phase 1.3 — Rechtliche Risikokategorie */
+    riskNature: string | null
+    /** v5 Phase 1.3 — existing_clause oder missing_clause */
+    findingType: string | null
+    /** v5 Phase 1.3 — Primäre Rechtsgrundlagen (z.B. ["§ 307 BGB"]) */
+    primaryLegalBasis: string[] | null
     latestReview: {
       decision: string
       comment: string | null

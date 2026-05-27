@@ -34,47 +34,21 @@ function mapAdminFromEntraRoles(roles: unknown): boolean {
   return list.some((r) => adminRoles.includes(r))
 }
 
-// --- SBS corporate domain auto-elevation ---
-// Rule: Every user whose email ends with @sbsdeutschland.de or @sbsdeutschland.com
-// is automatically granted ADMIN role + OWNER membership on the sbs-deutschland tenant.
-// Enforced at every sign-in (not only JIT) so state stays consistent across providers.
-
-// Default session timeout matching global maxAge — used when no tenant settings exist
-const DEFAULT_SESSION_TIMEOUT_MINUTES = 24 * 60
-
-/**
- * Loads the tenant-specific session timeout for a user.
- * Admin users use adminSessionTimeoutMinutes; others use sessionTimeoutMinutes.
- * Falls back to DEFAULT_SESSION_TIMEOUT_MINUTES on any error.
- */
-async function resolveSessionTimeoutMinutes(
-  userId: string | undefined,
-  user: { role?: Role }
-): Promise<number> {
-  if (!userId) return DEFAULT_SESSION_TIMEOUT_MINUTES
-  try {
-    const member = await prisma.tenantMember.findFirst({
-      where: { userId },
-      orderBy: { createdAt: "asc" },
-      select: {
-        tenant: {
-          select: {
-            governanceSettings: {
-              select: { sessionTimeoutMinutes: true, adminSessionTimeoutMinutes: true }
-            }
-          }
-        }
-      }
-    })
-    const settings = member?.tenant?.governanceSettings
-    if (!settings) return DEFAULT_SESSION_TIMEOUT_MINUTES
-    const isAdmin = user.role === Role.ADMIN
-    return (isAdmin ? settings.adminSessionTimeoutMinutes : settings.sessionTimeoutMinutes)
-      ?? DEFAULT_SESSION_TIMEOUT_MINUTES
-  } catch {
-    return DEFAULT_SESSION_TIMEOUT_MINUTES
-  }
-}
+// --- SBS corporate domain auto-elevation --- REMOVED (Security Audit 27.05.2026)
+//
+// VORHER: Jede E-Mail mit @sbsdeutschland.de/com wurde automatisch ADMIN + OWNER.
+// PROBLEM: OWASP A01 Broken Access Control — Autorisierung darf nicht an
+//          unverifizierten E-Mail-Domains hängen. Credentials-Login erlaubt
+//          beliebige E-Mail-Registrierung → jeder könnte sich mit einer
+//          @sbsdeutschland.de-Adresse registrieren.
+//
+// JETZT: Admin-Rechte NUR über:
+//   1. Microsoft Entra Rollengruppen (AUTH_MICROSOFT_ADMIN_ROLES)
+//   2. Manuelles DB-Assignment (Admin-Console / Seed-Script)
+//   3. SCIM-Provisioning (geplant)
+//
+// Ref: Security-Audit 27.05.2026, Befund SOFORT-1
+//      DSGVO Art. 32, ISO 27001 A.8, NIS2 Art. 21
 
 // --- SBS corporate domain auto-elevation --- REMOVED (Security Audit 27.05.2026)
 // OWASP A01: Autorisierung darf nicht an E-Mail-Domains hängen.
@@ -152,7 +126,8 @@ export const authConfig: NextAuthConfig = {
     // Enterprise gate: Tenant-Scoping + JIT Provisioning for Entra users
     // Plus: SBS corporate domain auto-elevation for ALL providers
     signIn: async ({ user, account, profile }) => {
-      // --- SBS domain auto-elevation REMOVED (Security Audit 27.05.2026) ---
+      // --- SBS corporate domain auto-elevation REMOVED (Security Audit 27.05.2026) ---
+      // Admin-Rechte werden NUR über Entra-Rollen oder manuelles DB-Assignment vergeben.
 
       // --- Entra-specific tenant gate + JIT provisioning ---
       if (account?.provider !== "microsoft-entra-id") return true

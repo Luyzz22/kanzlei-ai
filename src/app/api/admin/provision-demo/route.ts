@@ -6,7 +6,6 @@ import { Role, TenantRole } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
 import { notFoundInProduction } from "@/lib/security/admin-route-guard"
-import { log } from "@/lib/security/secure-logging"
 
 export async function POST(request: Request): Promise<NextResponse> {
   // Production: provisioning must not be reachable via HTTP in production

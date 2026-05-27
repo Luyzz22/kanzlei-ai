@@ -5,10 +5,54 @@ export const metadata: Metadata = { title: "Release Notes", description: "Alle �
 
 const releases = [
   {
+    version: "5.0.0",
+    date: "27. Mai 2026",
+    title: "Modulares Prompt-Routing, NDA-Modul & Security-Hardening",
+    current: true,
+    changes: [
+      { type: "NEU", text: "Modulares Prompt-Routing — vertragstyp-spezifische Analyse-Module werden automatisch basierend auf der Klassifikation geladen. NDA-Modul mit 7 Pflichtprüfpunkten (Contaminated Source, GeschGehG TOMs, Vertragsstrafe, Laufzeit, Schutzrechte, Gegenseitigkeit, Datenschutz) und Cross-Clause-Mustererkennung (Zeitfallen, Weitergabe-Haftungslücke, IP-Verlust)" },
+      { type: "NEU", text: "Industrie-Modul mit 5 Prüfpunkten (CE-Konformität, Produkthaftpflicht, LkSG, Qualitätssicherung, Rügefristen) und Cross-Clause-Mustern (Preis-Annahme-Falle, Mängelrechte-Aushöhlung, konstruiertes Ausstiegsszenario)" },
+      { type: "NEU", text: "riskNature-Badges in der Finding-Ansicht — AGB-Kontrolle, Zwingendes Recht, Wirtschaftlich, Fehlende Klausel, Datenschutz, Lieferkette, Prozessrisiko als farbcodierte Tags" },
+      { type: "NEU", text: "findingType-Badges — ⚠️ Klausel (bestehende Problemklausel) und 🔍 Fehlt (fehlende Schutzklausel) auf einen Blick erkennbar" },
+      { type: "NEU", text: "primaryLegalBasis-Tags — Rechtsgrundlage (§ 307 BGB, GeschGehG § 2 Nr. 1 lit. b etc.) direkt am Finding sichtbar" },
+      { type: "CHANGE", text: "LLM-Transfer-Policy in Pipeline integriert — Drittlandtransfer-Prüfung und optionale PII-Pseudonymisierung vor jedem LLM-Call" },
+      { type: "CHANGE", text: "ID-Masking im Document-Detail — technische IDs (Dokument-ID, Mandant-ID, Storage-Key) werden für Standard-User maskiert, nur ADMIN/OWNER sehen volle Werte" },
+      { type: "FIX", text: "Domain-basierte Auto-Eskalation in auth.ts entfernt (OWASP A01 Broken Access Control)" },
+      { type: "FIX", text: "RLS-Kontextvariable korrigiert (app.tenant_id → app.current_tenant_id)" },
+      { type: "FIX", text: "aiPolicyEnforcement Default von log_only auf block umgestellt" },
+    ]
+  },
+  {
+    version: "4.5.0",
+    date: "25. Mai 2026",
+    title: "Analyse-Qualität v3 — B2B-AGB-Qualifier, Missing-Clause, Confidence-Cap",
+    current: false,
+    changes: [
+      { type: "NEU", text: "B2B-AGB-Qualifier — § 307 BGB als Primärnorm bei B2B-Verträgen, §§ 308/309 BGB nur als Wertungsindiz (BGH-konform). Jedes Finding formuliert die Dogmatik korrekt" },
+      { type: "NEU", text: "Missing-Clause-Detection — fehlende Schutzklauseln (Lieferverzug, QS, Force Majeure, Datenschutz) werden als eigenständige Findings mit findingType='missing_clause' erkannt" },
+      { type: "NEU", text: "Stage-Chunked Pipeline v5.0 — 3 separate Lambda-Aufrufe (Classification → Extraction → Risk) mit DB-State-Persistenz. Eliminiert 504-Timeouts bei langen Verträgen" },
+      { type: "CHANGE", text: "Confidence-Cap bei 98% — KI-Analysen dürfen keine 100%-Konfidenz mehr ausgeben" },
+      { type: "CHANGE", text: "FINDING-GRANULARITÄT — § 6 wird in bis zu 4 eigenständige Findings gesplittet (Personenschäden, Rücktrittsausschluss, Gewährleistungsfrist, Folgeschäden)" },
+      { type: "CHANGE", text: "maxFindings von 12 auf 16 erhöht für granularere Analyse" },
+    ]
+  },
+  {
+    version: "4.2.0",
+    date: "21. Mai 2026",
+    title: "Async-Analyse-Pipeline & Runtime-Stabilität",
+    current: false,
+    changes: [
+      { type: "NEU", text: "Vertragsanalyse läuft vollständig asynchron — POST /api/workspace/analysis/start mit Polling statt synchronem Lambda-Call" },
+      { type: "NEU", text: "PipelineVisualizer zeigt Live-Fortschritt je Stage (Klassifikation → Extraktion → Risikobewertung)" },
+      { type: "CHANGE", text: "Legacy-Route /api/workspace/run-analysis gibt 410 Gone zurück" },
+      { type: "FIX", text: "Anthropic SDK stream statt create für hohe max_tokens (SDK-Pflicht ab v0.78)" },
+    ]
+  },
+  {
     version: "4.1.0",
     date: "17. Mai 2026",
     title: "Playbook Miner, Radar v2, AI Act Art. 50 Compliance",
-    current: true,
+    current: false,
     changes: [
       { type: "NEU", text: "Playbook Miner Alpha — automatische Klausel-Policies aus Review-Historie. Erkennt 5 Patterns (Auto-Accept, Immer prüfen, Bevorzugte Formulierung, Review empfohlen, Inkonsistent) mit Konfidenz-Score, bevorzugten Standardformulierungen und Reviewer-Zuordnung" },
       { type: "NEU", text: "Regulatory Radar v2 — Remediation-Maßnahmen pro Regulierung mit Status-Tracking (Offen → In Arbeit → Erledigt), Fortschrittsbalken, Fristberechnung und kopierbaren Nachtragsklausel-Vorlagen für EU AI Act, NIS2 und LkSG" },

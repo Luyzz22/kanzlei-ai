@@ -6,7 +6,6 @@ import { PromptDefinitionStatus, PromptTaskStage, Role, TenantRole } from "@pris
 
 import { prisma } from "@/lib/prisma"
 import { notFoundInProduction } from "@/lib/security/admin-route-guard"
-import { log } from "@/lib/security/secure-logging"
 
 const SEED_PROMPT_VERSION = "2025-03-27"
 

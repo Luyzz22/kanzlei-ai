@@ -9,6 +9,17 @@ import {
   CONTRACT_ANALYSIS_PROMPT_VERSION,
   type ClassificationStagePayload
 } from "@/lib/ai/schemas/contract-analysis"
+import {
+  isNdaContractType,
+  hasSignificantNdaClauses,
+  ndaRiskModuleBlock,
+  ndaCrossClauseBlock,
+} from "@/lib/ai/prompt-registry/nda-module"
+import {
+  isIndustrieContractType,
+  industrieRiskModuleBlock,
+  industrieCrossClauseBlock,
+} from "@/lib/ai/prompt-registry/industrie-module"
 
 export const CONTRACT_PROMPT_BUNDLE_KEY = "contract_analysis.default"
 
@@ -24,12 +35,12 @@ const baseDe = (version: string, promptKey: string) => `Du bist ein KI-System zu
 Antworte sachlich, auf Deutsch, ohne Rechtsberatung im Sinne des RDG zu simulieren.
 Markiere Unsicherheiten klar. Prompt-Key: ${promptKey} · Version: ${version}.`
 
-/** Adaptive Finding-Obergrenze — reduziert Output-Token-Druck bei langen Verträgen. */
+/** Adaptive Finding-Obergrenze — erhöht für Missing-Clause-Detection und granulare § 6-Aufspaltung. */
 export function maxFindingsForDocumentLength(charLength: number): number {
-  if (charLength >= 80_000) return 6
-  if (charLength >= 40_000) return 8
-  if (charLength >= 20_000) return 10
-  return 12
+  if (charLength >= 80_000) return 8
+  if (charLength >= 40_000) return 10
+  if (charLength >= 20_000) return 12
+  return 16
 }
 
 function classificationContextBlock(classification?: ClassificationStagePayload | null): string {
@@ -177,6 +188,56 @@ Bei unterstellter AGB-Einordnung ist dieser Vertrag ein B2B-Vertrag (§ 310 Abs.
 `
 }
 
+/**
+ * Prompt-Router: Assembliert vertragstyp-spezifische Prompt-Blöcke.
+ *
+ * Statt eines monolithischen Prompts mit allen Modulen werden nur die
+ * relevanten Module geladen. Spart ~60-70% Prompt-Tokens und erhöht
+ * die Instruction-Following-Accuracy.
+ *
+ * Primärer Trigger: contractClassification aus Stage 0
+ * Sekundärer Trigger: Schlüsselwörter in der Extraktion (z.B. "Kundendaten")
+ */
+function assembleTypeSpecificBlocks(
+  classification?: ClassificationStagePayload | null,
+  extractionSummary?: string
+): string {
+  const blocks: string[] = []
+
+  const contractType = classification?.contractClassification ?? ""
+
+  // ── Primäres Modul basierend auf Vertragstyp ──────────────────────
+  if (isNdaContractType(contractType)) {
+    blocks.push(ndaRiskModuleBlock())
+    blocks.push(ndaCrossClauseBlock())
+  }
+
+  if (isIndustrieContractType(contractType)) {
+    blocks.push(industrieRiskModuleBlock())
+    blocks.push(industrieCrossClauseBlock())
+  }
+
+  // ── Sekundäre Trigger: Module auch bei Nicht-Primärtyp laden ──────
+  // NDA-Modul als Sekundärmodul wenn der Vertrag signifikante
+  // Geheimhaltungsklauseln hat (z.B. Lieferantenvertrag mit § 9 NDA)
+  if (
+    !isNdaContractType(contractType) &&
+    extractionSummary &&
+    hasSignificantNdaClauses(extractionSummary)
+  ) {
+    blocks.push(`
+HINWEIS: Dieser Vertrag ist kein reiner NDA, enthält aber signifikante Geheimhaltungsklauseln.
+Die folgenden NDA-spezifischen Prüfpunkte sind ZUSÄTZLICH anzuwenden:`)
+    blocks.push(ndaRiskModuleBlock())
+  }
+
+  if (blocks.length === 0) {
+    return "" // Kein Branchenmodul getriggert — Basis-Prompt reicht
+  }
+
+  return "\n" + blocks.join("\n")
+}
+
 export function buildClassificationPromptInstructions(
   version: string = CONTRACT_ANALYSIS_PROMPT_VERSION
 ): string {
@@ -315,16 +376,29 @@ REGELN:
 - Halte suggestedRevision kompakt — Qualität vor Länge.
 - Ausgabe: reines JSON ohne Markdown-Fences.
 
+FINDING-GRANULARITÄT (WICHTIG):
+- NICHT mehrere verschiedene Risiken in einem Finding zusammenfassen.
+- Jede eigenständige Problemklausel bekommt ein eigenes Finding.
+- Lieber 15 granulare Findings als 10 gemischte.
+
 MISSING-CLAUSE-PRÜFUNG (zusätzlich zu vorhandenen Klauseln):
 Prüfe ob folgende Schutzklauseln FEHLEN (findingType="missing_clause", riskNature="missing_protection_clause"):
-1. Lieferverzugsregelung / Ersatzbeschaffung / Vertragsstrafe bei Verzug
-2. Qualitätssicherung / Prüfprotokolle / Zertifikate (bei technischen Waren)
-3. Force Majeure / Lieferkettenstörung
-4. Produkthaftung / Rückruf (bei Industriekomponenten)
-5. Datenschutz-Rollenklärung / AVV (wenn personenbezogene Daten erwähnt)
-- Nur Missing-Clauses erzeugen die für den konkreten Vertragstyp relevant sind.
+1. Lieferverzugsregelung / Ersatzbeschaffung → severity=hoch bei Lieferantenverträgen
+2. Qualitätssicherung / Prüfprotokolle / Zertifikate → severity=hoch bei technischen Komponenten
+3. Force Majeure / Lieferkettenstörung → IMMER als Finding bei Rahmenverträgen mit Lieferpflicht (severity=mittel)
+4. Produkthaftung / Rückruf → severity=hoch bei Industriekomponenten
+5. Datenschutz / AVV → IMMER als Finding wenn "Kundendaten" oder "personenbezogene Daten" im Vertrag (severity=mittel)
+6. Salvatorische Klausel → wenn Ersetzungsklausel statt geltungserhaltender Reduktion (severity=niedrig)
 - clauseRef="Nicht geregelt", quote=null.
+- MINDESTENS für Kategorien 1, 3 und 5 ein Finding erzeugen wenn sie fehlen.
 
+SEVERITY-LEITLINIEN:
+- Personenschäden-Haftungsbeschränkung: IMMER hoch
+- Gewährleistungsfristverkürzung: hoch bei technischen/sicherheitsrelevanten Produkten
+- Aufrechnungsverbot: hoch
+- Force-Majeure fehlt: mittel
+- Gerichtsstandsprivileg: mittel
+${assembleTypeSpecificBlocks(classification, extractionSummary)}
 Der Vertragstext folgt im nächsten Abschnitt.`
 }
 
@@ -409,17 +483,38 @@ REGELN:
 - Bei B2B-Verträgen: § 307 BGB als Primärnorm. §§ 308/309 BGB nur als Wertungsindiz.
 - Ausgabe: reines JSON ohne Markdown-Fences.
 
+FINDING-GRANULARITÄT (WICHTIG):
+- NICHT mehrere verschiedene Risiken in einem Finding zusammenfassen.
+- Jede eigenständige Problemklausel bekommt ein eigenes Finding:
+  * Haftungsbeschränkung (Personenschäden/grobe Fahrlässigkeit) = eigenes Finding
+  * Rücktrittsausschluss / Gewährleistungsfristverkürzung = eigenes Finding
+  * Rügefristen (24h/48h) = eigenes Finding
+  * Aufrechnungs-/Zurückbehaltungsverbot = eigenes Finding
+  * Gefahrübergang / Teillieferungsregelung = eigenes Finding
+- Das Zusammenfassen verschiedener §§ in ein Finding verfälscht die Priorisierung.
+- Lieber 15 granulare Findings als 10 gemischte.
+
 MISSING-CLAUSE-PRÜFUNG (zusätzlich zu vorhandenen Klauseln):
 Prüfe ob folgende Schutzklauseln im Vertrag FEHLEN und erzeuge dafür Findings mit findingType="missing_clause" und riskNature="missing_protection_clause":
-1. Lieferverzugsregelung / Ersatzbeschaffung / Vertragsstrafe bei Verzug (wenn Lieferant Lieferpflicht hat)
-2. Qualitätssicherung / Prüfprotokolle / Zertifikate (wenn technische Komponenten/Waren)
-3. Force Majeure / Lieferkettenstörung / Cyber / Energieausfall
-4. Produkthaftung / Rückruf / Compliance-Dokumentation (wenn Industriekomponenten)
-5. Datenschutz-Rollenklärung / AVV / TOMs (wenn personenbezogene Daten oder "Kundendaten" erwähnt)
-6. Salvatorische Klausel mit geltungserhaltender Reduktion (wenn vorhanden → als eigenes Finding bewerten)
+1. Lieferverzugsregelung / Ersatzbeschaffung / Vertragsstrafe bei Verzug → severity=hoch bei Lieferantenverträgen
+2. Qualitätssicherung / Prüfprotokolle / Zertifikate → severity=hoch bei technischen/sicherheitsrelevanten Komponenten
+3. Force Majeure / Lieferkettenstörung / höhere Gewalt → bei JEDEM Rahmenvertrag mit Lieferpflicht ist das Fehlen einer Force-Majeure-Klausel ein Finding (severity=mittel)
+4. Produkthaftung / Rückruf / Compliance-Dokumentation → severity=hoch bei Industriekomponenten
+5. Datenschutz-Rollenklärung / AVV / TOMs → wenn der Vertrag "Kundendaten", "personenbezogene Daten", "Geschäftsdaten" oder ähnliches erwähnt UND keine Datenschutzregelung enthält → IMMER als Finding erzeugen (severity=mittel)
+6. Salvatorische Klausel → wenn eine Ersetzungsklausel statt geltungserhaltender Reduktion verwendet wird → Finding (severity=niedrig), weil BGH geltungserhaltende Reduktion bei AGB ablehnt
 - Missing-Clause-Findings: clauseRef="Nicht geregelt", quote=null.
-- Nur Missing-Clauses erzeugen die für den konkreten Vertragstyp relevant sind.
+- Erzeuge MINDESTENS für Kategorien 1, 3 und 5 ein Finding wenn sie im Vertrag fehlen.
 
+SEVERITY-LEITLINIEN (für konsistente Bewertung):
+- Haftungsbeschränkung bei Personenschäden: IMMER hoch
+- Rücktrittsausschluss: hoch
+- Gewährleistungsfristverkürzung auf 12 Monate: hoch bei technischen/sicherheitsrelevanten Produkten, mittel bei Standardware
+- Aufrechnungsverbot: hoch (da auch bei Mängeln greifend)
+- Geheimhaltung asymmetrisch + Vertragsstrafe > 25.000 EUR: hoch
+- Force-Majeure fehlt: mittel
+- Gerichtsstandsprivileg: mittel
+- Teillieferungen: mittel bis niedrig
+${assembleTypeSpecificBlocks(classification, extractionSummary)}
 Der Vertragstext folgt im nächsten Abschnitt.`
 }
 

@@ -35,13 +35,15 @@ export async function withTenant<T>(tenantId: string, fn: (tx: typeof prisma) =>
   }
 
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw(Prisma.sql`select set_config('app.tenant_id', ${tenantId}, true)`)
+    // Set RLS context — MUSS mit db/rls.sql current_tenant_id() übereinstimmen.
+    // Security Audit 27.05.2026, Befund SOFORT-2:
+    // VORHER: 'app.tenant_id' → RLS-Policies griffen NICHT (current_setting las 'app.current_tenant_id')
+    // JETZT:  'app.current_tenant_id' → konsistent mit db/rls.sql
+    await tx.$executeRaw(Prisma.sql`select set_config('app.current_tenant_id', ${tenantId}, true)`)
 
     // Self-Test: lese die Variable zurück und verifiziere den Wert.
-    // Bei aktivem RLS ist das die einzige Stelle, an der wir vor der
-    // ersten Query bemerken würden, wenn der Setting-Mechanismus bricht.
     const verify = await tx.$queryRaw<Array<{ tenant_id: string | null }>>(
-      Prisma.sql`select current_setting('app.tenant_id', true) as tenant_id`
+      Prisma.sql`select current_setting('app.current_tenant_id', true) as tenant_id`
     )
     const set = verify[0]?.tenant_id
     if (set !== tenantId) {

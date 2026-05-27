@@ -736,10 +736,16 @@ export async function runPersistedRiskStage(input: StageInput): Promise<StageOut
           referenceLegalBasis: f.referenceLegalBasis ?? [],
           // evidenceGraph: structured reasoning chain only (confidenceFactors + normBasis)
           evidenceGraph:
-            f.evidenceGraph || f.confidenceFactors
+            f.evidenceGraph || f.confidenceFactors || f.riskNature || f.findingType || f.primaryLegalBasis
               ? ({
                   ...(f.evidenceGraph ?? {}),
-                  confidenceFactors: f.confidenceFactors ?? undefined
+                  confidenceFactors: f.confidenceFactors ?? undefined,
+                  // Phase 1.3 v3: Analyse-Qualitätsfelder in evidenceGraph persistieren
+                  // (eigene DB-Spalten als Prisma-Migration geplant — bis dahin hier)
+                  riskNature: f.riskNature ?? undefined,
+                  findingType: f.findingType ?? undefined,
+                  primaryLegalBasis: f.primaryLegalBasis ?? undefined,
+                  referenceLegalBasis: f.referenceLegalBasis ?? undefined
                 } as Prisma.InputJsonValue)
               : Prisma.JsonNull
         }))
