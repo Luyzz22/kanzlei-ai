@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { COPILOT_LIMIT, checkRateLimit, retryAfterSeconds } from "@/lib/security/rate-limit"
 import { log } from "@/lib/security/secure-logging"
+import { trackTokenUsage } from "@/lib/token-tracking"
 
 const SYSTEM_PROMPT = `Du bist der KanzleiAI Contract Copilot — ein Enterprise-KI-Assistent für juristische Vertragsanalyse, spezialisiert auf deutsches Recht und den DACH-Raum.
 
@@ -142,6 +143,14 @@ export async function POST(request: Request) {
               historyTurnsOriginal: messages.filter((m) => m.role !== "system").length,
               historyTurnsTrimmed: trimmedMessages.filter((m) => m.role !== "system").length
             })
+            void trackTokenUsage({
+              tenantId,
+              userId: session.user.id,
+              source: "copilot",
+              provider: "anthropic",
+              inputTokens: finalMessage.usage?.input_tokens ?? 0,
+              outputTokens: finalMessage.usage?.output_tokens ?? 0
+            })
 
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ done: true, model: "claude-sonnet-4", tokens })}\n\n`)
@@ -207,6 +216,14 @@ export async function POST(request: Request) {
             }
 
             log.info("copilot.tokens_used", { provider: "openai", totalTokens })
+            void trackTokenUsage({
+              tenantId,
+              userId: session.user.id,
+              source: "copilot",
+              provider: "openai",
+              inputTokens: Math.floor(totalTokens * 0.6),
+              outputTokens: Math.floor(totalTokens * 0.4)
+            })
 
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, model: "gpt-4o", tokens: totalTokens })}\n\n`))
             controller.close()

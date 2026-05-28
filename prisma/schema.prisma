@@ -42,6 +42,7 @@ model User {
   analysisFindingReviews AnalysisFindingReview[]
   auditEvents       AuditEvent[]
   updatedGovernanceSettings TenantGovernanceSettings[] @relation("TenantGovernanceSettingsUpdatedBy")
+  tokenUsages       TenantTokenUsage[]
 }
 
 model Account {
@@ -134,6 +135,7 @@ model Tenant {
   governanceSettings TenantGovernanceSettings?
   dynamicsIntegration DynamicsIntegration?
   playbookRules      PlaybookRule[]
+  tokenUsages        TenantTokenUsage[]
 }
 
 model TenantMember {
@@ -803,4 +805,23 @@ model DynamicsPurchaseInvoice {
   @@unique([tenantId, bcId])
   @@index([tenantId, vendorId])
   @@index([tenantId, invoiceDate])
+}
+
+model TenantTokenUsage {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source       String   @db.VarChar(30)
+  provider     String   @db.VarChar(30)
+  inputTokens  Int
+  outputTokens Int
+  costCentsUsd Int      @default(0)
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, source])
+  @@index([tenantId, userId, createdAt])
 }

@@ -54,6 +54,7 @@ import { getDocumentTextForAnalysis } from "@/lib/documents/document-analysis-te
 import { getWorkspaceDocumentById } from "@/lib/documents/workspace-core"
 import { sendAnalysisCompleteNotification } from "@/lib/email/analysis-notification"
 import { prisma } from "@/lib/prisma"
+import { trackTokenUsage } from "@/lib/token-tracking"
 import { withTenant } from "@/lib/tenant-context.server"
 import { ModelType } from "@/types/ai"
 
@@ -788,6 +789,18 @@ export async function runPersistedRiskStage(input: StageInput): Promise<StageOut
         totalDurationMs
       } satisfies Prisma.InputJsonValue
     })
+  })
+
+  // ── Token usage tracking (fire-and-forget) ────────────────────────
+  void trackTokenUsage({
+    tenantId: input.tenantId,
+    userId: input.actorId,
+    source: "analysis",
+    provider: pipeline.primaryProvider ?? "unknown",
+    inputTokens: Math.floor(pipeline.totalTokens * 0.6),
+    outputTokens: Math.floor(pipeline.totalTokens * 0.4),
+    costCentsUsd: Math.round(pipeline.totalCost * 100),
+    metadata: { runId, model: pipeline.primaryModel, durationMs: totalDurationMs }
   })
 
   // ── Post-Processing (best-effort, non-blocking) ────────────────────

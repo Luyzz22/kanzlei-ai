@@ -28,6 +28,7 @@ const adminNav = [
   { label: "Onboarding", href: "/workspace/onboarding", emoji: "👋" },
   { label: "Eval Dashboard", href: "/workspace/eval-dashboard", emoji: "🎯", badge: "NEU" },
   { label: "Verwaltung", href: "/dashboard/admin", emoji: "⚙️" },
+  { label: "Token-Verbrauch", href: "/dashboard/token-usage", emoji: "📊" },
   { label: "Audit-Protokoll", href: "/dashboard/audit", emoji: "📋" },
   { label: "Billing", href: "/dashboard/billing", emoji: "💳" },
   { label: "Mein Profil", href: "/dashboard/profil", emoji: "👤" },
