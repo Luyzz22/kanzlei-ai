@@ -159,7 +159,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
       promptStatus = "seeded"
     } catch {
-      log.warn("seed.prompt_tables_not_ready", { code: "TABLES_NOT_READY" })
+      console.warn("seed.prompt_tables_not_ready", { code: "TABLES_NOT_READY" })
       promptStatus = "tables_not_ready"
     }
 
@@ -170,7 +170,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       promptGovernance: promptStatus
     })
   } catch {
-    log.error("seed.failed", { code: "SEED_ERROR" })
+    console.error("seed.failed", { code: "SEED_ERROR" })
     return NextResponse.json({ error: "Seed failed" }, { status: 500 })
   }
 }

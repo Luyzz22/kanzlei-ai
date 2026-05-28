@@ -97,6 +97,7 @@ const stageShortLabel: Record<PipelineStageKey, string> = {
 async function loadHistoryForTenant(tenantId: string): Promise<HistoryEntry[]> {
   return withTenant(tenantId, async (tx) => {
     const runs = await tx.analysisRun.findMany({
+      where: { tenantId },
       orderBy: [{ startedAt: "desc" }],
       take: 100,
       select: {

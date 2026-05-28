@@ -46,12 +46,13 @@ export async function loadAuditKpis(tenantId: string): Promise<AuditKpis> {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
     const [totalEvents, eventsToday, eventsLast7d, analysesCompleted, allHashes] = await Promise.all([
-      tx.auditEvent.count(),
-      tx.auditEvent.count({ where: { createdAt: { gte: startOfDay } } }),
-      tx.auditEvent.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
-      tx.auditEvent.count({ where: { action: "analysis.completed" } }),
+      tx.auditEvent.count({ where: { tenantId } }),
+      tx.auditEvent.count({ where: { tenantId, createdAt: { gte: startOfDay } } }),
+      tx.auditEvent.count({ where: { tenantId, createdAt: { gte: sevenDaysAgo } } }),
+      tx.auditEvent.count({ where: { tenantId, action: "analysis.completed" } }),
       // Pull only what we need to count high-risk events without scanning metadata
       tx.auditEvent.findMany({
+        where: { tenantId },
         select: { action: true, eventHash: true, prevHash: true },
         orderBy: { createdAt: "asc" }
       })
@@ -106,7 +107,7 @@ export async function listAuditEvents(input: ListAuditEventsInput): Promise<List
 
   return withTenant(input.tenantId, async (tx) => {
     // Build where-clause using Prisma's official type
-    const where: Prisma.AuditEventWhereInput = {}
+    const where: Prisma.AuditEventWhereInput = { tenantId: input.tenantId }
 
     if (input.query && input.query.trim()) {
       const q = input.query.trim()
@@ -179,6 +180,7 @@ export async function listAuditEvents(input: ListAuditEventsInput): Promise<List
 export async function exportAuditEventsAsCsv(tenantId: string): Promise<string> {
   const all = await withTenant(tenantId, async (tx) => {
     return tx.auditEvent.findMany({
+      where: { tenantId },
       orderBy: { createdAt: "asc" },
       include: {
         actor: { select: { email: true, name: true } }

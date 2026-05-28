@@ -129,6 +129,7 @@ export async function listReviewAssignableMembers(tenantId: string, actorId: str
     }
 
     const members = await tx.tenantMember.findMany({
+      where: { tenantId },
       orderBy: [{ createdAt: "asc" }],
       select: {
         userId: true,

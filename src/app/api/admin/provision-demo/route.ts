@@ -64,7 +64,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
     })
   } catch {
-    log.error("provision_demo.failed", { code: "PROVISION_ERROR" })
+    console.error("provision_demo.failed", { code: "PROVISION_ERROR" })
     return NextResponse.json({ error: "Provisioning failed" }, { status: 500 })
   }
 }
