@@ -29,6 +29,7 @@ export async function listReviewQueueDocuments(tenantId: string): Promise<Review
   return withTenant(tenantId, async (tx) => {
     const documents = await tx.document.findMany({
       where: {
+        tenantId,
         status: {
           in: [DocumentIntakeStatus.EINGEGANGEN, DocumentIntakeStatus.IN_PRUEFUNG]
         }

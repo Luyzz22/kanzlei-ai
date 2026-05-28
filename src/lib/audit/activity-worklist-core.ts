@@ -335,7 +335,7 @@ export async function listTenantActivities(input: ListTenantActivitiesInput): Pr
 
   const events = await withTenant(input.tenantId, async (tx) => {
     return tx.auditEvent.findMany({
-      where,
+      where: { ...where, tenantId: input.tenantId },
       orderBy: [{ createdAt: "desc" }],
       take: 250,
       select: {
@@ -375,13 +375,15 @@ export async function getTenantActivityCounts(tenantId: string): Promise<TenantA
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
     return Promise.all([
-      tx.auditEvent.count(),
+      tx.auditEvent.count({ where: { tenantId } }),
       tx.auditEvent.count({
         where: {
+          tenantId,
           createdAt: { gte: sevenDaysAgo }
         }
       }),
       tx.auditEvent.findMany({
+        where: { tenantId },
         orderBy: [{ createdAt: "desc" }],
         take: 400,
         select: {

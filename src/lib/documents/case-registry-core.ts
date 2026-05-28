@@ -157,6 +157,7 @@ export function mapDocumentToCaseRegistryEntry(document: {
 export async function listCaseRegistryEntries(tenantId: string): Promise<CaseRegistryEntry[]> {
   return withTenant(tenantId, async (tx) => {
     const documents = await tx.document.findMany({
+      where: { tenantId },
       orderBy: [{ createdAt: "desc" }],
       select: {
         id: true,
