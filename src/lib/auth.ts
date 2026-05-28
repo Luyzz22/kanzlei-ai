@@ -54,6 +54,43 @@ function mapAdminFromEntraRoles(roles: unknown): boolean {
 // OWASP A01: Autorisierung darf nicht an E-Mail-Domains hängen.
 // Admin-Rechte nur über: Entra-Rollen, manuelles DB-Assignment, SCIM.
 
+// Default session timeout matching global maxAge — used when no tenant settings exist
+const DEFAULT_SESSION_TIMEOUT_MINUTES = 24 * 60
+
+/**
+ * Loads the tenant-specific session timeout for a user.
+ * Admin users use adminSessionTimeoutMinutes; others use sessionTimeoutMinutes.
+ * Falls back to DEFAULT_SESSION_TIMEOUT_MINUTES on any error.
+ */
+async function resolveSessionTimeoutMinutes(
+  userId: string | undefined,
+  user: { role?: Role }
+): Promise<number> {
+  if (!userId) return DEFAULT_SESSION_TIMEOUT_MINUTES
+  try {
+    const member = await prisma.tenantMember.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        tenant: {
+          select: {
+            governanceSettings: {
+              select: { sessionTimeoutMinutes: true, adminSessionTimeoutMinutes: true }
+            }
+          }
+        }
+      }
+    })
+    const settings = member?.tenant?.governanceSettings
+    if (!settings) return DEFAULT_SESSION_TIMEOUT_MINUTES
+    const isAdmin = user.role === Role.ADMIN
+    return (isAdmin ? settings.adminSessionTimeoutMinutes : settings.sessionTimeoutMinutes)
+      ?? DEFAULT_SESSION_TIMEOUT_MINUTES
+  } catch {
+    return DEFAULT_SESSION_TIMEOUT_MINUTES
+  }
+}
+
 export const authConfig: NextAuthConfig = {
   adapter,
   secret: process.env.NEXTAUTH_SECRET,
