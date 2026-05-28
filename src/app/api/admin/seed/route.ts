@@ -1,3 +1,4 @@
+import { log } from "@/lib/security/secure-logging"
 export const dynamic = "force-dynamic"
 
 import { hash } from "bcryptjs"
