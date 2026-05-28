@@ -22,18 +22,25 @@ export async function GET() {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
   }
 
-  // Admin/Owner only — eval analytics are privileged data
-  const role = (session.user as { role?: string }).role
-  if (role !== "ADMIN" && role !== "OWNER") {
-    return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 })
-  }
-
   const ctx = await resolveTenantContextForUser(session.user.id)
   if (ctx.status !== "single") {
     return NextResponse.json({ error: "Kein Mandant" }, { status: 403 })
   }
-
   const tenantId = ctx.tenantId
+
+  // Eval analytics accessible to: platform ADMIN/OWNER, or tenant-level ADMIN
+  const platformRole = (session.user as { role?: string }).role
+  const isPlatformAdmin = platformRole === "ADMIN" || platformRole === "OWNER"
+  if (!isPlatformAdmin) {
+    const membership = await prisma.tenantMember.findFirst({
+      where: { tenantId, userId: session.user.id },
+      select: { role: true }
+    })
+    if (membership?.role !== "ADMIN") {
+      return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 })
+    }
+  }
+
   const now = new Date()
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
