@@ -1,3 +1,4 @@
+import { log } from "@/lib/security/secure-logging"
 export const dynamic = "force-dynamic"
 
 import { hash } from "bcryptjs"
@@ -64,7 +65,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
     })
   } catch {
-    console.error("provision_demo.failed", { code: "PROVISION_ERROR" })
+    log.error("provision_demo.failed", { code: "PROVISION_ERROR" })
     return NextResponse.json({ error: "Provisioning failed" }, { status: 500 })
   }
 }

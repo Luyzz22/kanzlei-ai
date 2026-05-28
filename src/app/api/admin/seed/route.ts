@@ -1,3 +1,4 @@
+import { log } from "@/lib/security/secure-logging"
 export const dynamic = "force-dynamic"
 
 import { hash } from "bcryptjs"
@@ -159,7 +160,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
       promptStatus = "seeded"
     } catch {
-      console.warn("seed.prompt_tables_not_ready", { code: "TABLES_NOT_READY" })
+      log.warn("seed.prompt_tables_not_ready", { code: "TABLES_NOT_READY" })
       promptStatus = "tables_not_ready"
     }
 
@@ -170,7 +171,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       promptGovernance: promptStatus
     })
   } catch {
-    console.error("seed.failed", { code: "SEED_ERROR" })
+    log.error("seed.failed", { code: "SEED_ERROR" })
     return NextResponse.json({ error: "Seed failed" }, { status: 500 })
   }
 }
