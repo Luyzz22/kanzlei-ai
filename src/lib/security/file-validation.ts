@@ -71,6 +71,15 @@ export function validateMagicBytes(
         (declared === "application/msword" && sig.mimeType === "application/msword") ||
         (declared === "application/msword" && sig.label === "DOCX/ZIP") // newer Word may use ZIP
 
+      // Binary signature found but declared as text/plain — reject (bypass attempt)
+      if (declared === "text/plain") {
+        return {
+          ok: false,
+          detected: sig.mimeType,
+          reason: `Binärdatei (${sig.label}) als Textdatei deklariert`
+        }
+      }
+
       if (declared === "application/pdf" && sig.mimeType !== "application/pdf") {
         return {
           ok: false,
@@ -79,7 +88,7 @@ export function validateMagicBytes(
         }
       }
 
-      if (!isOfficeFamilyMatch && declared !== "text/plain") {
+      if (!isOfficeFamilyMatch) {
         return {
           ok: false,
           detected: sig.mimeType,

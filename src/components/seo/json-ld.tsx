@@ -20,6 +20,8 @@ export function OrganizationJsonLd() {
       "contactType": "sales"
     }
   }
+  // nosemgrep: typescript.react.security.audit.react-dangerously-set-innerhtml.react-dangerously-set-innerhtml
+  // Safe: JSON.stringify of a static typed object — no user input, no external data.
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
 }
 
@@ -39,5 +41,7 @@ export function SoftwareJsonLd() {
     },
     "featureList": ["KI-Vertragsanalyse", "Contract Copilot", "PDF Export", "DATEV Export", "Row-Level Security", "Mandantentrennung"]
   }
+  // nosemgrep: typescript.react.security.audit.react-dangerously-set-innerhtml.react-dangerously-set-innerhtml
+  // Safe: JSON.stringify of a static typed object — no user input, no external data.
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
 }

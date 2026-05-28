@@ -186,3 +186,33 @@ CREATE POLICY tenant_isolation_modify ON "TenantMember"
   FOR ALL
   USING ("tenantId" = current_setting('app.current_tenant_id', true))
   WITH CHECK ("tenantId" = current_setting('app.current_tenant_id', true));
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 14. DynamicsIntegration (Migration 20260425000000 nutzte app.tenant_id)
+-- ─────────────────────────────────────────────────────────────────────
+ALTER TABLE "DynamicsIntegration" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "DynamicsIntegration" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_select ON "DynamicsIntegration";
+DROP POLICY IF EXISTS tenant_isolation_modify ON "DynamicsIntegration";
+CREATE POLICY tenant_isolation_select ON "DynamicsIntegration"
+  FOR SELECT
+  USING ("tenantId" = current_setting('app.current_tenant_id', true));
+CREATE POLICY tenant_isolation_modify ON "DynamicsIntegration"
+  FOR ALL
+  USING ("tenantId" = current_setting('app.current_tenant_id', true))
+  WITH CHECK ("tenantId" = current_setting('app.current_tenant_id', true));
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 15. DynamicsVendor (fehlende RLS — tenantId-Spalte vorhanden)
+-- ─────────────────────────────────────────────────────────────────────
+ALTER TABLE "DynamicsVendor" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "DynamicsVendor" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_select ON "DynamicsVendor";
+DROP POLICY IF EXISTS tenant_isolation_modify ON "DynamicsVendor";
+CREATE POLICY tenant_isolation_select ON "DynamicsVendor"
+  FOR SELECT
+  USING ("tenantId" = current_setting('app.current_tenant_id', true));
+CREATE POLICY tenant_isolation_modify ON "DynamicsVendor"
+  FOR ALL
+  USING ("tenantId" = current_setting('app.current_tenant_id', true))
+  WITH CHECK ("tenantId" = current_setting('app.current_tenant_id', true));

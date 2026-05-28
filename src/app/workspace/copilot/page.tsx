@@ -39,10 +39,14 @@ type CopilotContract = {
   }>
 }
 
+function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+}
+
 function renderMarkdown(text: string): string {
   return text
-    // Code blocks (```...```)
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="my-3 overflow-x-auto rounded-lg bg-gray-900 p-3 text-[12px] leading-relaxed text-gray-300"><code>$2</code></pre>')
+    // Code blocks (```...```) — content is HTML-escaped to prevent XSS from AI output
+    .replace(/```(\w*)\n([\s\S]*?)```/g, (_m, _lang, code) => `<pre class="my-3 overflow-x-auto rounded-lg bg-gray-900 p-3 text-[12px] leading-relaxed text-gray-300"><code>${escHtml(code)}</code></pre>`)
     // Inline code (`...`)
     .replace(/`([^`]+)`/g, '<code class="rounded bg-gray-100 px-1.5 py-0.5 text-[12px] font-mono text-gray-800">$1</code>')
     // Headers

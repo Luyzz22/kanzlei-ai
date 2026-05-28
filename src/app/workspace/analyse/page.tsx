@@ -15,18 +15,9 @@ const CONTRACT_TYPES_DE = [
   "Kaufvertrag",
   "Lizenzvertrag",
   "Rahmenvertrag",
+  "Master Service Agreement",
   "AGB-Abgleich",
   "Lieferanten-Rahmenvertrag",
-]
-
-const CONTRACT_TYPES_EN = [
-  "Supplier Agreement (EN)",
-  "NDA (English)",
-  "Service Agreement (EN)",
-  "Master Service Agreement (EN)",
-  "Purchase Agreement (EN)",
-  "License Agreement (EN)",
-  "SaaS Agreement (EN)",
 ]
 
 export default function AnalysePage() {
@@ -208,12 +199,7 @@ export default function AnalysePage() {
             className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-900 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200"
           >
             <option value="">Automatisch erkennen</option>
-            <optgroup label="Deutsch">
-              {CONTRACT_TYPES_DE.map((t) => <option key={t} value={t}>{t}</option>)}
-            </optgroup>
-            <optgroup label="English">
-              {CONTRACT_TYPES_EN.map((t) => <option key={t} value={t}>{t}</option>)}
-            </optgroup>
+            {CONTRACT_TYPES_DE.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
 
