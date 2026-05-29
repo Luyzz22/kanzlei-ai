@@ -83,6 +83,24 @@ function DashboardContent() {
         </div>
       )}
 
+      {!loading && stats && stats.totalAnalyses === 0 && (
+        <div className="rounded-2xl border border-dashed border-[#C8985A]/40 bg-[#C8985A]/5 p-8 text-center">
+          <span className="text-[48px]">📋</span>
+          <h2 className="mt-4 text-[18px] font-semibold text-gray-900">Willkommen bei KanzleiAI</h2>
+          <p className="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-gray-500">
+            Noch keine Vertragsanalysen vorhanden. Laden Sie Ihren ersten Vertrag hoch — die KI analysiert Risiken, Klauseln und Handlungsempfehlungen in Sekunden.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <a href="/workspace/upload" className="inline-flex items-center gap-2 rounded-full bg-[#003856] px-6 py-2.5 text-[13px] font-semibold text-white hover:bg-[#002a42]">
+              📤 Ersten Vertrag hochladen
+            </a>
+            <a href="/workspace/analyse" className="inline-flex items-center gap-2 rounded-full border border-[#003856] px-6 py-2.5 text-[13px] font-semibold text-[#003856] hover:bg-[#003856]/5">
+              ⚡ Schnellanalyse starten
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Release Notes — dynamische 3-Eintrag-Liste (ersetzt vormals hardcoded "v3.1"-Banner) */}
       <ReleaseNotesWidget count={3} />
 

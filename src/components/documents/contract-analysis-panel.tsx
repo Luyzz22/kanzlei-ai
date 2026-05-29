@@ -68,7 +68,7 @@ function ChevronIcon({ open }: { open: boolean }) {
   return (<svg className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>)
 }
 
-type ContractAnalysisPanelProps = { documentId: string; canStartAnalysis: boolean; canReviewFindings: boolean; analysis: WorkbenchAiContractAnalysisProps | null }
+type ContractAnalysisPanelProps = { documentId: string; canStartAnalysis: boolean; canReviewFindings: boolean; analysis: WorkbenchAiContractAnalysisProps | null; inProgressRunId?: string }
 
 /* ================================================================== */
 /* SUMMARY BAR                                                       */
@@ -238,7 +238,7 @@ function FindingCard({ finding, isOpen, onToggle, canReview, documentId }: {
 /* ================================================================== */
 /* MAIN PANEL                                                        */
 /* ================================================================== */
-export function ContractAnalysisPanel({ documentId, canStartAnalysis, canReviewFindings, analysis }: ContractAnalysisPanelProps) {
+export function ContractAnalysisPanel({ documentId, canStartAnalysis, canReviewFindings, analysis, inProgressRunId }: ContractAnalysisPanelProps) {
   const router = useRouter()
   const [finalizeState, finalizeAction] = useFormState(finalizeAnalysisReviewAction, initialState)
   const [batchState, batchAcceptAction] = useFormState(batchAcceptFindingsAction, initialState)
@@ -266,6 +266,7 @@ export function ContractAnalysisPanel({ documentId, canStartAnalysis, canReviewF
       {canStartAnalysis ? (
         <AnalysisPanel
           documentId={documentId}
+          resumeRunId={inProgressRunId}
           onResult={() => router.refresh()}
         />
       ) : (<p className="text-sm text-slate-600">Start erst nach erfolgreicher Textextraktion möglich.</p>)}

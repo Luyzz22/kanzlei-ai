@@ -15,7 +15,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAnalysisRun } from "@/hooks/use-analysis-run";
 import { PipelineVisualizer } from "@/components/analysis/pipeline-visualizer";
 import {
@@ -36,6 +36,8 @@ interface AnalysisPanelProps {
   onResult?: (result: Record<string, unknown>) => void;
   /** Callback für "Ergebnis anzeigen" → navigiert zur Ergebnis-Seite */
   onViewResult?: (runId: string) => void;
+  /** Bereits laufende Run-ID — startet Polling sofort ohne /start-Aufruf */
+  resumeRunId?: string;
 }
 
 export function AnalysisPanel({
@@ -43,9 +45,18 @@ export function AnalysisPanel({
   fileName,
   onResult,
   onViewResult,
+  resumeRunId,
 }: AnalysisPanelProps) {
   const analysis = useAnalysisRun();
   const [hasTriggered, setHasTriggered] = useState(false);
+
+  // Auto-resume polling if a run is already in progress
+  useEffect(() => {
+    if (resumeRunId && analysis.status === "IDLE") {
+      analysis.resume(resumeRunId, "RUNNING")
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeRunId])
 
   async function handleStart() {
     setHasTriggered(true);

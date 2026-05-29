@@ -181,6 +181,24 @@ export function useAnalysisRun() {
     [poll]
   );
 
+  const resume = useCallback(
+    (runId: string, initialStatus: "QUEUED" | "RUNNING" = "RUNNING") => {
+      setState((s) => ({
+        ...s,
+        runId,
+        status: initialStatus,
+        progress: 0,
+        currentStage: null,
+        result: null,
+        error: null,
+        errorCode: null,
+        elapsed: 0,
+      }))
+      poll(runId)
+    },
+    [poll]
+  )
+
   const reset = useCallback(() => {
     stopPolling();
     setState({
@@ -199,5 +217,5 @@ export function useAnalysisRun() {
 
   useEffect(() => () => stopPolling(), [stopPolling]);
 
-  return { ...state, start, reset };
+  return { ...state, start, resume, reset };
 }

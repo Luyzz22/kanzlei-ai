@@ -55,10 +55,18 @@ export async function POST(req: NextRequest) {
   // Tenant-Isolation: Dokument muss zum Tenant gehören
   const doc = await prisma.document.findFirst({
     where: { id: documentId, tenantId, deletedAt: null },
-    select: { id: true }
+    select: { id: true, processingStatus: true, extractedTextPreview: true }
   })
   if (!doc) {
     return NextResponse.json({ error: "document_not_found" }, { status: 404 })
+  }
+
+  // Guard: Textextraktion muss abgeschlossen sein
+  if (doc.processingStatus !== "VERARBEITET" || !doc.extractedTextPreview?.trim()) {
+    return NextResponse.json(
+      { error: "Dokument wurde noch nicht vollständig verarbeitet. Bitte warten Sie bis die Textextraktion abgeschlossen ist." },
+      { status: 422 }
+    )
   }
 
   // Idempotenz: nur FRISCH laufende Runs zurückgeben.

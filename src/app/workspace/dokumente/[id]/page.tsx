@@ -18,6 +18,7 @@ import {
   type WorkspaceDocumentStatusTone
 } from "@/lib/documents/workspace-core"
 import { serializeWorkbenchAiContractAnalysis } from "@/lib/documents/workbench-core"
+import { prisma } from "@/lib/prisma"
 import { displayTechnicalId, canViewTechnicalReferences } from "@/lib/security/ui-hygiene"
 
 export const dynamic = "force-dynamic"
@@ -118,6 +119,16 @@ export default async function DokumentDetailPage({ params }: { params: { id: str
   }
 
   const serializedAnalysis = serializeWorkbenchAiContractAnalysis(aiContractAnalysis)
+
+  // Letzter nicht-abgeschlossener Lauf (für Polling-Resume und Fehleranzeige)
+  let inProgressRun: { id: string; status: string; errorCode: string | null; error: string | null } | null = null
+  if (!serializedAnalysis) {
+    inProgressRun = await prisma.analysisRun.findFirst({
+      where: { documentId: document.id, tenantId: tenantContext.tenantId, status: { in: ["QUEUED", "RUNNING", "FAILED"] } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, status: true, errorCode: true, error: true }
+    })
+  }
 
   // KI-Vertragsanalyse darf nur starten, wenn Textextraktion erfolgreich war
   // und ein nicht-leerer Textauszug vorliegt. runPersistedContractAnalysis
@@ -346,11 +357,31 @@ export default async function DokumentDetailPage({ params }: { params: { id: str
               </div>
 
               <div className="mt-5">
+                {inProgressRun?.status === "FAILED" && (
+                  <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[18px]">⚠️</span>
+                      <div>
+                        <p className="text-[13px] font-semibold text-rose-800">Analyse fehlgeschlagen</p>
+                        <p className="mt-0.5 text-[12px] text-rose-600">
+                          {inProgressRun.errorCode === "PIPELINE_STAGE_FAILED" || inProgressRun.errorCode === "PIPELINE_FAILED"
+                            ? "Die KI-Pipeline konnte den Vertrag nicht verarbeiten. Bitte starten Sie die Analyse erneut."
+                            : inProgressRun.errorCode === "NO_TEXT"
+                            ? "Kein extrahierbarer Text gefunden. Bitte prüfen Sie das Dokument."
+                            : inProgressRun.errorCode === "NO_PROVIDER"
+                            ? "Kein KI-Provider konfiguriert. Bitte wenden Sie sich an Ihren Administrator."
+                            : "Bitte starten Sie die Analyse erneut."}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <ContractAnalysisPanel
                   documentId={document.id}
                   canStartAnalysis={canStartAnalysis}
                   canReviewFindings={canReviewFindings}
                   analysis={serializedAnalysis}
+                  inProgressRunId={inProgressRun?.status !== "FAILED" ? inProgressRun?.id : undefined}
                 />
               </div>
 
