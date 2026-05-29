@@ -1,0 +1,32 @@
+{
+  "id": "arbeitsvertrag-standard",
+  "name": "Arbeitsvertrag Standardfall — Befristung + Wettbewerbsverbot",
+  "contractType": "Arbeitsvertrag",
+  "version": "2026-05-29",
+  "expectations": {
+    "minFindings": 8,
+    "maxFindings": 14,
+    "minHighFindings": 3,
+    "riskScoreRange": [0.55, 0.80],
+    "requiredFindings": [
+      { "keyword": "Befristung", "severity": "mittel", "module": "A-1" },
+      { "keyword": "Sachgrund", "severity": "mittel", "module": "A-1" },
+      { "keyword": "Kündigungsfrist", "severity": "mittel", "module": "A-2" },
+      { "keyword": "Wettbewerbsverbot", "severity": "hoch", "module": "A-3" },
+      { "keyword": "Karenzentschädigung", "severity": "hoch", "module": "A-3" },
+      { "keyword": "Überstunden", "severity": "hoch", "module": "A-4" },
+      { "keyword": "Vertragsstrafe", "severity": "hoch", "module": "A-5" },
+      { "keyword": "Datenschutz", "severity": "mittel", "module": "A-7" }
+    ],
+    "requiredRiskNatures": [
+      "direct_mandatory_law_risk",
+      "agb_control_risk",
+      "economic_negotiation_risk",
+      "privacy_or_confidentiality_risk"
+    ],
+    "classificationExpected": {
+      "contractClassification": "Arbeitsvertrag",
+      "agbKontrolleAnwendbar": false
+    }
+  }
+}

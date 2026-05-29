@@ -1,0 +1,31 @@
+{
+  "id": "mietvertrag-gewerbe",
+  "name": "Gewerbemietvertrag — Schönheitsreparaturen + Schriftform",
+  "contractType": "Gewerbemietvertrag",
+  "version": "2026-05-29",
+  "expectations": {
+    "minFindings": 7,
+    "maxFindings": 13,
+    "minHighFindings": 3,
+    "riskScoreRange": [0.50, 0.78],
+    "requiredFindings": [
+      { "keyword": "Mieterhöhung", "severity": "mittel", "module": "M-1" },
+      { "keyword": "Schönheitsreparaturen", "severity": "hoch", "module": "M-2" },
+      { "keyword": "Betriebskosten", "severity": "mittel", "module": "M-3" },
+      { "keyword": "Kaution", "severity": "mittel", "module": "M-4" },
+      { "keyword": "Kündigungsausschluss", "severity": "hoch", "module": "M-5" },
+      { "keyword": "Schriftform", "severity": "hoch", "module": "M-5" },
+      { "keyword": "Kleinreparatur", "severity": "mittel", "module": "M-6" }
+    ],
+    "requiredRiskNatures": [
+      "direct_mandatory_law_risk",
+      "agb_control_risk",
+      "economic_negotiation_risk",
+      "procedural_litigation_risk"
+    ],
+    "classificationExpected": {
+      "contractClassification": "Gewerbemietvertrag",
+      "agbKontrolleAnwendbar": true
+    }
+  }
+}

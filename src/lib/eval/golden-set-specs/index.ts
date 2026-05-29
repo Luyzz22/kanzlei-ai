@@ -1,5 +1,7 @@
 import ndaJson from "./nda-nexus-trentmann.json"
 import lieferantJson from "./lieferantenvertrag-mueller-schneider.json"
+import arbeitsvertragJson from "./arbeitsvertrag-standard.json"
+import mietvertragJson from "./mietvertrag-gewerbe.json"
 
 export type RequiredFinding = {
   keyword: string
@@ -29,7 +31,9 @@ export type GoldenSetSpec = {
 
 export const GOLDEN_SET_SPECS: GoldenSetSpec[] = [
   ndaJson as GoldenSetSpec,
-  lieferantJson as GoldenSetSpec
+  lieferantJson as GoldenSetSpec,
+  arbeitsvertragJson as GoldenSetSpec,
+  mietvertragJson as GoldenSetSpec,
 ]
 
 export function getGoldenSetSpec(id: string): GoldenSetSpec | undefined {

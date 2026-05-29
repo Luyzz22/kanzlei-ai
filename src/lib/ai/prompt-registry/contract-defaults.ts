@@ -20,6 +20,21 @@ import {
   industrieRiskModuleBlock,
   industrieCrossClauseBlock,
 } from "@/lib/ai/prompt-registry/industrie-module"
+import {
+  isArbeitsvertragType,
+  arbeitsvertragRiskModuleBlock,
+  arbeitsvertragCrossClauseBlock,
+} from "@/lib/ai/prompt-registry/arbeitsvertrag-module"
+import {
+  isMietvertragType,
+  mietvertragRiskModuleBlock,
+  mietvertragCrossClauseBlock,
+} from "@/lib/ai/prompt-registry/mietvertrag-module"
+import {
+  isGesellschaftsvertragType,
+  gesellschaftsvertragRiskModuleBlock,
+  gesellschaftsvertragCrossClauseBlock,
+} from "@/lib/ai/prompt-registry/gesellschaftsvertrag-module"
 
 export const CONTRACT_PROMPT_BUNDLE_KEY = "contract_analysis.default"
 
@@ -215,6 +230,21 @@ function assembleTypeSpecificBlocks(
   if (isIndustrieContractType(contractType)) {
     blocks.push(industrieRiskModuleBlock())
     blocks.push(industrieCrossClauseBlock())
+  }
+
+  if (isArbeitsvertragType(contractType)) {
+    blocks.push(arbeitsvertragRiskModuleBlock())
+    blocks.push(arbeitsvertragCrossClauseBlock())
+  }
+
+  if (isMietvertragType(contractType)) {
+    blocks.push(mietvertragRiskModuleBlock())
+    blocks.push(mietvertragCrossClauseBlock())
+  }
+
+  if (isGesellschaftsvertragType(contractType)) {
+    blocks.push(gesellschaftsvertragRiskModuleBlock())
+    blocks.push(gesellschaftsvertragCrossClauseBlock())
   }
 
   // ── Sekundäre Trigger: Module auch bei Nicht-Primärtyp laden ──────
