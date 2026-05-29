@@ -1,0 +1,35 @@
+{
+  "id": "nda-nexus-trentmann",
+  "name": "NDA Nexus Digital ↔ Trentmann & Vogel",
+  "contractType": "NDA",
+  "documentHash": "95fbaef84beca674",
+  "version": "2026-05-28",
+  "expectations": {
+    "minFindings": 13,
+    "maxFindings": 18,
+    "minHighFindings": 5,
+    "riskScoreRange": [0.65, 0.85],
+    "requiredFindings": [
+      { "keyword": "Contaminated Source", "severity": "mittel", "module": "N-1" },
+      { "keyword": "Vertragsstrafe", "severity": "hoch", "module": "N-5" },
+      { "keyword": "Haftungsdeckel", "severity": "hoch", "module": "N-5" },
+      { "keyword": "leichte Fahrlässigkeit", "severity": "hoch", "module": "N-5" },
+      { "keyword": "18 Monate", "severity": "hoch", "module": "N-6" },
+      { "keyword": "Schutzrechtsanmeldungsverbot", "severity": "mittel", "module": "N-4" },
+      { "keyword": "Schutzmaßnahmen", "severity": "mittel", "module": "N-3" },
+      { "keyword": "Zeitfallen", "severity": "hoch", "module": "Muster-4" },
+      { "keyword": "Gerichtsstand", "severity": "mittel" },
+      { "keyword": "Gegenseitigkeit", "severity": "hoch", "module": "N-2" }
+    ],
+    "requiredRiskNatures": [
+      "privacy_or_confidentiality_risk",
+      "economic_negotiation_risk",
+      "agb_control_risk",
+      "procedural_litigation_risk"
+    ],
+    "classificationExpected": {
+      "contractClassification": "NDA",
+      "agbKontrolleAnwendbar": false
+    }
+  }
+}

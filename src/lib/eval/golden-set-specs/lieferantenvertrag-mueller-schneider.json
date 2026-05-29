@@ -1,0 +1,32 @@
+{
+  "id": "lieferantenvertrag-mueller-schneider",
+  "name": "Rahmenliefervertrag Müller & Brandt ↔ Schneider",
+  "contractType": "Lieferantenvertrag",
+  "version": "2026-05-28",
+  "expectations": {
+    "minFindings": 14,
+    "maxFindings": 20,
+    "minHighFindings": 9,
+    "riskScoreRange": [0.70, 0.90],
+    "requiredFindings": [
+      { "keyword": "Personenschäden", "severity": "hoch" },
+      { "keyword": "Gewährleistungsfrist", "severity": "hoch" },
+      { "keyword": "Aufrechnungsverbot", "severity": "hoch" },
+      { "keyword": "Rügefrist", "severity": "hoch" },
+      { "keyword": "Preisänderung", "severity": "hoch" },
+      { "keyword": "Force Majeure", "severity": "mittel" },
+      { "keyword": "Datenschutz", "severity": "mittel" },
+      { "keyword": "Gerichtsstand", "severity": "mittel" }
+    ],
+    "requiredRiskNatures": [
+      "direct_mandatory_law_risk",
+      "agb_control_risk",
+      "economic_negotiation_risk",
+      "missing_protection_clause"
+    ],
+    "classificationExpected": {
+      "contractClassification": "Lieferantenvertrag",
+      "agbKontrolleAnwendbar": true
+    }
+  }
+}

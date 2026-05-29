@@ -6,6 +6,48 @@ import { useEffect, useState, useCallback } from "react"
 /* TYPES                                                            */
 /* ================================================================ */
 
+type GoldenSetListItem = {
+  id: string
+  name: string
+  contractType: string
+  version: string
+  requiredCount: number
+}
+
+type RunListItem = {
+  id: string
+  completedAt: string | null
+  classification: string | null
+  model: string | null
+  riskScore: number | null
+  documentTitle: string
+}
+
+type RequiredFindingResult = {
+  keyword: string
+  found: boolean
+  actualTitle?: string
+  expectedSeverity: string
+  actualSeverity?: string
+  severityMatch: boolean
+  module?: string
+}
+
+type EvalResult = {
+  goldenSetId: string
+  goldenSetName: string
+  passed: boolean
+  score: number
+  details: {
+    findingCount: { expected: string; actual: number; pass: boolean }
+    highFindings: { expected: number; actual: number; pass: boolean }
+    riskScore: { expected: string; actual: number | null; pass: boolean }
+    requiredFindings: RequiredFindingResult[]
+    requiredRiskNatures: Array<{ nature: string; found: boolean }>
+    classification: { pass: boolean; expected: string; actual: string }
+  }
+}
+
 type EvalData = {
   totalRuns: number
   completedRuns: number
@@ -411,10 +453,207 @@ export default function EvalDashboardPage() {
         </div>
       )}
 
+      {/* Golden Set Evaluierung */}
+      <GoldenSetEvaluierung />
+
       {/* Footer */}
       <p className="text-center text-[10px] text-slate-300">
         KanzleiAI Continuous Eval · Phase 2A · Prompt v2026-05-16
       </p>
     </div>
+  )
+}
+
+/* ================================================================ */
+/* GOLDEN SET EVALUIERUNG                                           */
+/* ================================================================ */
+
+function GoldenSetEvaluierung() {
+  const [goldenSets, setGoldenSets] = useState<GoldenSetListItem[]>([])
+  const [recentRuns, setRecentRuns] = useState<RunListItem[]>([])
+  const [selectedGs, setSelectedGs] = useState("")
+  const [selectedRun, setSelectedRun] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [running, setRunning] = useState(false)
+  const [result, setResult] = useState<EvalResult | null>(null)
+  const [runError, setRunError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch("/api/admin/eval/run")
+      .then((r) => r.json())
+      .then((d) => {
+        setGoldenSets(d.goldenSets ?? [])
+        setRecentRuns(d.recentRuns ?? [])
+        if (d.goldenSets?.length) setSelectedGs(d.goldenSets[0].id)
+        if (d.recentRuns?.length) setSelectedRun(d.recentRuns[0].id)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const runEval = useCallback(async () => {
+    if (!selectedGs || !selectedRun) return
+    setRunning(true)
+    setResult(null)
+    setRunError(null)
+    try {
+      const res = await fetch("/api/admin/eval/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analysisRunId: selectedRun, goldenSetId: selectedGs })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
+      setResult(data as EvalResult)
+    } catch (e) {
+      setRunError(e instanceof Error ? e.message : "Unbekannter Fehler")
+    } finally {
+      setRunning(false)
+    }
+  }, [selectedGs, selectedRun])
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+        <span className="text-base">🎯</span>
+        <h2 className="text-[13px] font-bold uppercase tracking-wider text-[#003856]">Golden Set Evaluierung</h2>
+        <span className="ml-auto rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-700">BETA</span>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-400">
+        Vergleiche eine reale Analyse gegen einen kuratierten Referenz-Goldstandard (Pass ≥ 70 Punkte).
+      </p>
+
+      {loading ? (
+        <p className="mt-4 text-[12px] text-slate-400">Lädt…</p>
+      ) : (
+        <>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Golden Set</label>
+              <select
+                value={selectedGs}
+                onChange={(e) => setSelectedGs(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#003856]/20"
+              >
+                {goldenSets.map((gs) => (
+                  <option key={gs.id} value={gs.id}>
+                    {gs.name} ({gs.requiredCount} Erwartungen)
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Analyse-Lauf</label>
+              <select
+                value={selectedRun}
+                onChange={(e) => setSelectedRun(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#003856]/20"
+              >
+                {recentRuns.length === 0 && <option value="">Keine Läufe verfügbar</option>}
+                {recentRuns.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.documentTitle} · {r.classification ?? "?"} · {r.completedAt ? new Date(r.completedAt).toLocaleDateString("de-DE") : "—"}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={runEval}
+                disabled={running || !selectedGs || !selectedRun}
+                className="rounded-lg bg-[#003856] px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-[#003856]/90 disabled:opacity-50"
+              >
+                {running ? "Läuft…" : "Evaluierung starten"}
+              </button>
+            </div>
+          </div>
+
+          {runError && (
+            <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
+              <p className="text-[12px] font-medium text-rose-700">Fehler: {runError}</p>
+            </div>
+          )}
+
+          {result && <EvalResultPanel result={result} />}
+        </>
+      )}
+    </div>
+  )
+}
+
+function EvalResultPanel({ result }: { result: EvalResult }) {
+  const { passed, score, details } = result
+  const scoreColor = score >= 80 ? "text-emerald-700" : score >= 70 ? "text-amber-700" : "text-rose-700"
+  const scoreBg = score >= 80 ? "bg-emerald-50 border-emerald-200" : score >= 70 ? "bg-amber-50 border-amber-200" : "bg-rose-50 border-rose-200"
+
+  return (
+    <div className="mt-5 space-y-4">
+      {/* Score card */}
+      <div className={`flex items-center gap-5 rounded-xl border p-4 ${scoreBg}`}>
+        <div className="text-center">
+          <p className={`text-[42px] font-bold leading-none tabular-nums ${scoreColor}`}>{score}</p>
+          <p className="text-[10px] font-semibold uppercase text-slate-400">/ 100</p>
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${passed ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"}`}>
+              {passed ? "✓ PASS" : "✗ FAIL"}
+            </span>
+            <span className="text-[13px] font-semibold text-slate-700">{result.goldenSetName}</span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-slate-600">
+            <CheckBadge label="Findings" pass={details.findingCount.pass} text={`${details.findingCount.actual} (erw. ${details.findingCount.expected})`} />
+            <CheckBadge label="HOCH" pass={details.highFindings.pass} text={`${details.highFindings.actual} (min ${details.highFindings.expected})`} />
+            <CheckBadge label="Risiko-Score" pass={details.riskScore.pass} text={`${details.riskScore.actual?.toFixed(2) ?? "—"} (erw. ${details.riskScore.expected})`} />
+            <CheckBadge label="Klassifikation" pass={details.classification.pass} text={details.classification.actual} />
+          </div>
+        </div>
+      </div>
+
+      {/* Required findings table */}
+      <div>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Pflicht-Findings</p>
+        <div className="overflow-hidden rounded-lg border border-slate-200">
+          <div className="hidden grid-cols-[20px_1fr_80px_80px_80px] gap-x-3 bg-slate-50 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 sm:grid">
+            <span />
+            <span>Keyword</span><span>Erw. Sev.</span><span>Ist Sev.</span><span>Modul</span>
+          </div>
+          {details.requiredFindings.map((rf) => (
+            <div key={rf.keyword} className="grid border-t border-slate-100 px-4 py-2.5 sm:grid-cols-[20px_1fr_80px_80px_80px] sm:items-center">
+              <span className="text-[13px]">{rf.found ? "✅" : "❌"}</span>
+              <div>
+                <span className="text-[12px] font-medium text-slate-700">{rf.keyword}</span>
+                {rf.actualTitle && <p className="truncate text-[10px] text-slate-400">{rf.actualTitle}</p>}
+              </div>
+              <span className="text-[11px] capitalize text-slate-600">{rf.expectedSeverity}</span>
+              <span className={`text-[11px] capitalize ${rf.found && !rf.severityMatch ? "font-semibold text-amber-600" : "text-slate-600"}`}>
+                {rf.actualSeverity ? rf.actualSeverity.toLowerCase() : "—"}
+              </span>
+              <span className="text-[11px] text-slate-400">{rf.module ?? "—"}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Risk natures */}
+      <div>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Risiko-Natures</p>
+        <div className="flex flex-wrap gap-2">
+          {details.requiredRiskNatures.map((rn) => (
+            <span key={rn.nature} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${rn.found ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+              {rn.found ? "✓" : "✗"} {rn.nature}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CheckBadge({ label, pass, text }: { label: string; pass: boolean; text: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 ${pass ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+      {pass ? "✓" : "✗"} <b>{label}:</b> {text}
+    </span>
   )
 }
