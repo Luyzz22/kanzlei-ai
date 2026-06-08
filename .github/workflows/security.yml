@@ -71,14 +71,13 @@ jobs:
 
       - name: Run Semgrep
         run: |
-          semgrep ci \
+          semgrep scan \
             --config=p/default \
             --config=p/owasp-top-ten \
             --config=p/typescript \
             --config=p/react \
             --config=p/nextjs \
-            --sarif \
-            --output=semgrep.sarif \
+            --sarif-output=semgrep.sarif \
             --error
         env:
           # Optional: authenticate for Pro rules (set SEMGREP_APP_TOKEN as secret)
