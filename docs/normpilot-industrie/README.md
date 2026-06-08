@@ -94,6 +94,14 @@ Nicht bauen im MVP:
 - `pr4-pilot-hardening-notes.md` — Pilot-Hardening, Audit-Metadata-Allowlist, Smoke Checks und Demo-Readiness.
 - `pilot-runbook-14-days.md` — 14-Tage-Pilotablauf mit Rollen, Datenfreigabe, Erfolgskriterien und Abbruchkriterien.
 - `demo-readiness-checklist.md` — Demo-Setup, Demo-Daten, Smoke vor Demo und No-go-Pruefungen.
+- `release-v0.1-notes.md` — Release Notes fuer PR 1-4 und v0.1 Release-Grenzen.
+- `vercel-strato-domain-setup.md` — Vercel Domain Setup und STRATO DNS-Plan fuer `normpilot-industrie.de`.
+- `release-v0.1-quality-gates.md` — Environment-, Deployment- und Quality-Gates fuer den Pilot-Livegang.
+- `release-v0.1-legal-checklist.md` — Datenschutz-, Impressum-, AVV-, Cookie- und KI-Transparenz-Check.
+- `pilot-go-no-go-checklist.md` — Go/No-Go-Gate fuer Pilot und Production Smoke.
+- `audit-evidence-sprint-offer.md` — 14-Tage-Pilotangebot mit Scope, Preisrahmen und Abbruchkriterien.
+- `landingpage-messaging-v0.1.md` — GTM-Messaging fuer Hero, ICP, Pain Points, Proof of Value und CTA.
+- `demo-flow-v0.1.md` — 10-Minuten-Demoablauf und Demo-No-Go-Pruefungen.
 
 ## Done-Kriterien für den ersten Codex-PR
 

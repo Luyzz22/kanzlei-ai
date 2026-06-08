@@ -81,6 +81,10 @@ async function collectFiles(relativeDir, matcher = () => true) {
   return files
 }
 
+function isSourceFile(file) {
+  return (file.endsWith(".ts") || file.endsWith(".tsx")) && !file.includes("__tests__")
+}
+
 function fail(message) {
   failures.push(message)
   console.error(`not ok - ${message}`)
@@ -121,7 +125,7 @@ async function assertTenantIsolation() {
 }
 
 async function assertAuditMetadataAllowlist() {
-  const files = await collectFiles("src/lib/normpilot", (file) => file.endsWith(".ts"))
+  const files = await collectFiles("src/lib/normpilot", isSourceFile)
   let auditWriterCount = 0
   for (const file of files) {
     const source = await read(file)
@@ -161,8 +165,8 @@ async function assertExportAndUiNotices() {
 
 async function assertNoProviderCalls() {
   const files = [
-    ...await collectFiles("src/lib/normpilot", (file) => file.endsWith(".ts")),
-    ...await collectFiles("src/app/dashboard/normpilot", (file) => file.endsWith(".ts") || file.endsWith(".tsx"))
+    ...await collectFiles("src/lib/normpilot", isSourceFile),
+    ...await collectFiles("src/app/dashboard/normpilot", isSourceFile)
   ]
   for (const file of files) {
     const source = await read(file)
