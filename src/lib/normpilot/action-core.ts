@@ -6,6 +6,7 @@ import { z } from "zod"
 import { writeAuditEventTx } from "@/lib/audit-write"
 import { withTenant } from "@/lib/tenant-context.server"
 import { resolveNormPilotActor } from "@/lib/normpilot/access"
+import { buildNormPilotAuditMetadata } from "@/lib/normpilot/audit-metadata"
 import { NORMPILOT_AUDIT_ACTIONS } from "@/lib/normpilot/constants"
 import { normPilotCorrectiveActionSchema } from "@/lib/normpilot/schemas"
 import type { NormPilotCoreResult } from "@/lib/normpilot/requirement-core"
@@ -115,13 +116,13 @@ export async function upsertNormPilotCorrectiveAction(input: {
       action: NORMPILOT_AUDIT_ACTIONS.correctiveActionDrafted,
       resourceType: "normpilot_corrective_action",
       resourceId: row.id,
-      metadata: {
+      metadata: buildNormPilotAuditMetadata({
         gapFindingId: parsed.data.gapFindingId ?? null,
         requirementItemId: parsed.data.requirementItemId ?? null,
         requirementSetId,
         status: rowData.status,
         reviewState: rowData.reviewState
-      }
+      })
     })
 
     return { ok: true, data: { id: row.id, requirementSetId } }

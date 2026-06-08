@@ -72,5 +72,8 @@ jobs:
           EVAL_MODEL_MATRIX: gpt-4o-mini,claude-sonnet-4,gemini-2.5-pro
         run: pnpm eval:contracts
 
+      - name: NormPilot smoke checks
+        run: pnpm smoke:normpilot
+
       - name: Build
         run: pnpm build

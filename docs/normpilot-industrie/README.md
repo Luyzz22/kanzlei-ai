@@ -91,6 +91,9 @@ Nicht bauen im MVP:
 - `security-privacy-notes.md` — EU AI Act, DSGVO, GoBD, RLS und Normlizenz-Leitplanken.
 - `pr2-pipeline-governance-notes.md` — Mock-Pipeline, Prompt-Governance, Policy Layer und AuditEvent-Katalog.
 - `pr3-server-review-export-notes.md` — Server Actions, Review-State, Mock-Sprint-Persistenz und Evidence-Pack-Export.
+- `pr4-pilot-hardening-notes.md` — Pilot-Hardening, Audit-Metadata-Allowlist, Smoke Checks und Demo-Readiness.
+- `pilot-runbook-14-days.md` — 14-Tage-Pilotablauf mit Rollen, Datenfreigabe, Erfolgskriterien und Abbruchkriterien.
+- `demo-readiness-checklist.md` — Demo-Setup, Demo-Daten, Smoke vor Demo und No-go-Pruefungen.
 
 ## Done-Kriterien für den ersten Codex-PR
 

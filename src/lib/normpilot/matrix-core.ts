@@ -6,6 +6,7 @@ import { z } from "zod"
 import { writeAuditEventTx } from "@/lib/audit-write"
 import { withTenant } from "@/lib/tenant-context.server"
 import { resolveNormPilotActor } from "@/lib/normpilot/access"
+import { buildNormPilotAuditMetadata } from "@/lib/normpilot/audit-metadata"
 import { NORMPILOT_AUDIT_ACTIONS } from "@/lib/normpilot/constants"
 import { normPilotEvidenceMappingSchema } from "@/lib/normpilot/schemas"
 import type { NormPilotCoreResult } from "@/lib/normpilot/requirement-core"
@@ -105,13 +106,13 @@ export async function upsertNormPilotEvidenceMapping(input: {
       action: NORMPILOT_AUDIT_ACTIONS.evidenceMapped,
       resourceType: "normpilot_evidence_mapping",
       resourceId: row.id,
-      metadata: {
+      metadata: buildNormPilotAuditMetadata({
         requirementItemId: requirement.id,
         evidenceSourceId: parsed.data.evidenceSourceId ?? null,
         status: data.status,
         reviewState: data.reviewState,
         promptVersion: parsed.data.promptVersion ?? null
-      }
+      })
     })
 
     return { ok: true, data: { id: row.id, requirementSetId: requirement.requirementSetId } }

@@ -7,6 +7,7 @@ import { Prisma, type NormPilotEvidencePackExportFormat } from "@prisma/client"
 import { writeAuditEventTx } from "@/lib/audit-write"
 import { withTenant } from "@/lib/tenant-context.server"
 import { resolveNormPilotActor } from "@/lib/normpilot/access"
+import { buildNormPilotAuditMetadata } from "@/lib/normpilot/audit-metadata"
 import { NORMPILOT_AUDIT_ACTIONS } from "@/lib/normpilot/constants"
 import {
   buildNormPilotEvidencePackExport,
@@ -277,10 +278,10 @@ export async function generateNormPilotEvidencePackExport(input: {
       action: NORMPILOT_AUDIT_ACTIONS.evidencePackRequested,
       resourceType: "normpilot_evidence_pack_export",
       resourceId: requested.id,
-      metadata: {
+      metadata: buildNormPilotAuditMetadata({
         requirementSetId: input.requirementSetId,
         format: input.format ?? "MARKDOWN"
-      }
+      })
     })
 
     const manifest = await buildNormPilotEvidencePackManifest(input.tenantId, input.requirementSetId)
@@ -295,10 +296,10 @@ export async function generateNormPilotEvidencePackExport(input: {
         action: NORMPILOT_AUDIT_ACTIONS.evidencePackFailed,
         resourceType: "normpilot_evidence_pack_export",
         resourceId: requested.id,
-        metadata: {
+        metadata: buildNormPilotAuditMetadata({
           requirementSetId: input.requirementSetId,
           errorCode: "REQUIREMENT_SET_NOT_FOUND"
-        }
+        })
       })
       return { ok: false, code: "NOT_FOUND" }
     }
@@ -336,7 +337,7 @@ export async function generateNormPilotEvidencePackExport(input: {
       action: NORMPILOT_AUDIT_ACTIONS.evidencePackGenerated,
       resourceType: "normpilot_evidence_pack_export",
       resourceId: updated.id,
-      metadata: {
+      metadata: buildNormPilotAuditMetadata({
         requirementSetId: input.requirementSetId,
         format: input.format ?? "MARKDOWN",
         contentHash,
@@ -345,7 +346,7 @@ export async function generateNormPilotEvidencePackExport(input: {
         gapCount: manifest.gaps.length,
         correctiveActionCount: manifest.correctiveActions.length,
         promptVersions: manifest.promptMetadata?.promptVersions ?? []
-      }
+      })
     })
 
     return { ok: true, data: { id: updated.id, markdown, csv, manifest } }
