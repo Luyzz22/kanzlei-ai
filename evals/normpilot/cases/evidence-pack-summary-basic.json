@@ -1,0 +1,38 @@
+{
+  "id": "normpilot-evidence-pack-summary-basic",
+  "displayName": "Evidence Pack Summary mit Compliance-Hinweisen",
+  "requirementSet": {
+    "title": "Evidence Pack Summary Checkliste",
+    "frameworkLabel": "Kundeneigene Audit-Checkliste",
+    "scopeLabel": "Wareneingang",
+    "versionLabel": "synthetic-2026-06",
+    "sourceKind": "customer_checklist"
+  },
+  "requirements": [
+    {
+      "code": "QMS-030",
+      "title": "Pruefbericht auffindbar",
+      "customerText": "Ein Pruefbericht mit Losbezug soll auffindbar sein.",
+      "normReferenceCode": "ISO9001:8.6",
+      "criticality": "MEDIUM"
+    }
+  ],
+  "evidenceSources": [
+    {
+      "sourceType": "pdf",
+      "title": "Synthetischer Pruefbericht PB-2026-030",
+      "locator": {
+        "page": 2,
+        "sectionKey": "inspection-summary"
+      }
+    }
+  ],
+  "expected": {
+    "minRequirements": 1,
+    "minEvidenceMappings": 1,
+    "requiredStatuses": ["COVERED"],
+    "mustIncludeAiNotice": true,
+    "mustIncludeNormLicenseNotice": true,
+    "maxAnchorLength": 280
+  }
+}

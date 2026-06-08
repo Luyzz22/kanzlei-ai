@@ -1,6 +1,7 @@
 # NormPilot Synthetic Evals
 
-Diese Golden Cases sind synthetisch und dienen nur der Domain-Foundation fuer PR 1.
+Diese Golden Cases sind synthetisch und dienen der Domain-Foundation aus PR 1
+sowie der mockbaren Pipeline-/Prompt-Governance aus PR 2.
 
 Leitplanken:
 
@@ -10,4 +11,12 @@ Leitplanken:
 - Anforderungen sind kundeneigene Checklisten- oder Kurzreferenz-Beispiele.
 - Evidence-Mappings speichern kurze Anchors, Locator-Informationen und Hashes, keine langen Volltextkopien.
 
-Die Cases koennen spaeter von einer Mock-Pipeline oder Eval-Runnern unter `src/lib/evals` geladen werden. PR 1 legt bewusst noch keine produktive LLM-Pipeline an.
+PR 2 nutzt die Cases ueber `scripts/run-normpilot-evals.ts`.
+
+```bash
+pnpm eval:normpilot
+```
+
+Der Eval-Runner nutzt ausschliesslich den deterministischen Mock-Modus. Er
+schreibt keine Datenbankeintraege, ruft keine Provider auf und persistiert keine
+personenbezogenen Daten.

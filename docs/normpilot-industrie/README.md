@@ -85,6 +85,12 @@ Nicht bauen im MVP:
 9. Security/Privacy Tests: tenant isolation, no PII logging, prompt-injection handling.
 10. Build Gates: pnpm lint, pnpm typecheck, pnpm test, pnpm build.
 
+## PR-Dokumentation
+
+- `pr1-architecture-notes.md` — Domain Foundation, Datenmodell, RLS und Exportstruktur.
+- `security-privacy-notes.md` — EU AI Act, DSGVO, GoBD, RLS und Normlizenz-Leitplanken.
+- `pr2-pipeline-governance-notes.md` — Mock-Pipeline, Prompt-Governance, Policy Layer und AuditEvent-Katalog.
+
 ## Done-Kriterien für den ersten Codex-PR
 
 - Neue NormPilot-Dokumentation unter `docs/normpilot-industrie/`.

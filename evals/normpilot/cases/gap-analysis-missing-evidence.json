@@ -1,0 +1,26 @@
+{
+  "id": "normpilot-gap-analysis-missing-evidence",
+  "displayName": "Gap Analysis bei fehlender Evidence",
+  "requirementSet": {
+    "title": "Synthetische Audit-Gap-Checkliste",
+    "frameworkLabel": "Kundeneigene QMS-Kurzreferenz",
+    "sourceKind": "customer_checklist"
+  },
+  "requirements": [
+    {
+      "code": "QMS-010",
+      "title": "Schulungsnachweis fuer Prueftaetigkeiten",
+      "customerText": "Fuer pruefende Rollen soll ein aktueller Schulungsnachweis vorliegen.",
+      "normReferenceCode": "ISO9001:7.2",
+      "criticality": "HIGH"
+    }
+  ],
+  "evidenceSources": [],
+  "expected": {
+    "minEvidenceMappings": 1,
+    "requiredStatuses": ["MISSING"],
+    "minGaps": 1,
+    "requiredGapSeverities": ["HIGH"],
+    "requiredReviewState": "UNGEPRUEFT"
+  }
+}

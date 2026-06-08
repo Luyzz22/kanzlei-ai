@@ -10,10 +10,10 @@ import type {
   normPilotRequirementSetSchema
 } from "./schemas"
 
-export type NormPilotRequirementSetInput = z.infer<typeof normPilotRequirementSetSchema>
-export type NormPilotRequirementItemInput = z.infer<typeof normPilotRequirementItemSchema>
-export type NormPilotEvidenceSourceInput = z.infer<typeof normPilotEvidenceSourceSchema>
-export type NormPilotEvidenceMappingInput = z.infer<typeof normPilotEvidenceMappingSchema>
-export type NormPilotGapFindingInput = z.infer<typeof normPilotGapFindingSchema>
-export type NormPilotCorrectiveActionInput = z.infer<typeof normPilotCorrectiveActionSchema>
-export type NormPilotEvidencePackExportRecordInput = z.infer<typeof normPilotEvidencePackExportRecordSchema>
+export type NormPilotRequirementSetInput = z.input<typeof normPilotRequirementSetSchema>
+export type NormPilotRequirementItemInput = z.input<typeof normPilotRequirementItemSchema>
+export type NormPilotEvidenceSourceInput = z.input<typeof normPilotEvidenceSourceSchema>
+export type NormPilotEvidenceMappingInput = z.input<typeof normPilotEvidenceMappingSchema>
+export type NormPilotGapFindingInput = z.input<typeof normPilotGapFindingSchema>
+export type NormPilotCorrectiveActionInput = z.input<typeof normPilotCorrectiveActionSchema>
+export type NormPilotEvidencePackExportRecordInput = z.input<typeof normPilotEvidencePackExportRecordSchema>
