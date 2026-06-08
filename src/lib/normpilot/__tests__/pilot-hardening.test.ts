@@ -203,16 +203,21 @@ test("NormPilot code and fixtures avoid provider calls, norm fulltexts and long 
     /\bnew\s+OpenAI\s*\(/,
     /\bopenai\./,
     /\banthropic\.messages\b/,
-    /\bGoogleGenerativeAI\s*\(/,
-    /https:\/\/api\.openai\.com/,
-    /https:\/\/api\.anthropic\.com/,
-    /https:\/\/generativelanguage\.googleapis\.com/
+    /\bGoogleGenerativeAI\s*\(/
+  ]
+  const providerUrlFragments = [
+    "https://api.openai.com",
+    "https://api.anthropic.com",
+    "https://generativelanguage.googleapis.com"
   ]
 
   for (const file of sourceFiles) {
     const source = await read(file)
     for (const pattern of providerPatterns) {
       assert.equal(pattern.test(source), false, `${file} must not contain provider-call pattern ${pattern}`)
+    }
+    for (const fragment of providerUrlFragments) {
+      assert.equal(source.includes(fragment), false, `${file} must not contain provider URL fragment ${fragment}`)
     }
   }
 
