@@ -90,6 +90,7 @@ Nicht bauen im MVP:
 - `pr1-architecture-notes.md` — Domain Foundation, Datenmodell, RLS und Exportstruktur.
 - `security-privacy-notes.md` — EU AI Act, DSGVO, GoBD, RLS und Normlizenz-Leitplanken.
 - `pr2-pipeline-governance-notes.md` — Mock-Pipeline, Prompt-Governance, Policy Layer und AuditEvent-Katalog.
+- `pr3-server-review-export-notes.md` — Server Actions, Review-State, Mock-Sprint-Persistenz und Evidence-Pack-Export.
 
 ## Done-Kriterien für den ersten Codex-PR
 
