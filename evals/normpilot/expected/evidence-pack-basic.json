@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-06-08T00:00:00.000Z",
+  "aiNotice": "KI-generiert (NormPilot, limited_risk, EU AI Act). Vor Massnahmenumsetzung durch Fachverantwortlichen pruefen.",
+  "compliance": {
+    "euAiActRiskClass": "limited_risk",
+    "gdprDataMinimization": true,
+    "gobdAuditTrailRequired": true,
+    "normLicenseNotice": "Keine proprietaeren Norm-Volltexte enthalten. Bei unklarer Normgrundlage: Diesen Abschnitt bitte direkt in der Norm pruefen."
+  },
+  "requirementSet": {
+    "id": "req-set-synthetic-001",
+    "title": "Audit Evidence Sprint Checkliste",
+    "frameworkLabel": "Kundeneigene ISO-9001-nahe Checkliste",
+    "scopeLabel": "Wareneingangspruefung und Schulungsnachweise",
+    "versionLabel": "synthetic-2026-06",
+    "reviewState": "IN_PRUEFUNG"
+  },
+  "requirements": [
+    {
+      "id": "req-item-synthetic-001",
+      "code": "QMS-001",
+      "title": "Pruefberichte muessen auffindbar sein",
+      "normReferenceCode": "ISO9001:8.6",
+      "reviewState": "UNGEPRUEFT"
+    }
+  ],
+  "evidenceMatrix": [
+    {
+      "requirementCode": "QMS-001",
+      "evidenceSourceTitle": "Synthetischer Pruefbericht PB-2026-001",
+      "status": "COVERED",
+      "confidence": 0.82,
+      "locator": {
+        "page": 2,
+        "sectionKey": "inspection-summary"
+      },
+      "anchorText": "PB-2026-001, Seite 2",
+      "reviewState": "IN_PRUEFUNG"
+    }
+  ],
+  "gaps": [],
+  "correctiveActions": [],
+  "promptMetadata": {
+    "promptKeys": ["normpilot.evidence_mapping.default"],
+    "promptVersions": ["synthetic-2026-06"],
+    "providerLabels": ["mock"],
+    "modelLabels": ["synthetic"]
+  }
+}

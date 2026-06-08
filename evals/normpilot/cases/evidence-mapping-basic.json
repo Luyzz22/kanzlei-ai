@@ -1,0 +1,19 @@
+{
+  "id": "normpilot-evidence-mapping-basic",
+  "displayName": "Basisfall Evidence Status Mapping",
+  "input": {
+    "requirementCode": "QMS-001",
+    "evidenceSourceTitle": "Synthetischer Pruefbericht PB-2026-001",
+    "anchorText": "PB-2026-001, Seite 2",
+    "locator": {
+      "page": 2,
+      "sectionKey": "inspection-summary"
+    },
+    "confidence": 0.82
+  },
+  "expected": {
+    "status": "COVERED",
+    "reviewState": "UNGEPRUEFT",
+    "maxAnchorLength": 280
+  }
+}
