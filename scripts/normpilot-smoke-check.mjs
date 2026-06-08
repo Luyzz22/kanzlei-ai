@@ -35,10 +35,13 @@ const providerCallPatterns = [
   /\bnew\s+OpenAI\s*\(/,
   /\bopenai\./,
   /\banthropic\.messages\b/,
-  /\bGoogleGenerativeAI\s*\(/,
-  /https:\/\/api\.openai\.com/,
-  /https:\/\/api\.anthropic\.com/,
-  /https:\/\/generativelanguage\.googleapis\.com/
+  /\bGoogleGenerativeAI\s*\(/
+]
+
+const providerUrlFragments = [
+  "https://api.openai.com",
+  "https://api.anthropic.com",
+  "https://generativelanguage.googleapis.com"
 ]
 
 const normFullTextPatterns = [
@@ -165,6 +168,9 @@ async function assertNoProviderCalls() {
     const source = await read(file)
     for (const pattern of providerCallPatterns) {
       if (pattern.test(source)) fail(`${file} contains provider-call pattern ${pattern}`)
+    }
+    for (const fragment of providerUrlFragments) {
+      if (source.includes(fragment)) fail(`${file} contains provider URL fragment ${fragment}`)
     }
   }
   pass("NormPilot code remains free of productive provider calls")
