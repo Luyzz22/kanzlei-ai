@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client"
 
 import { writeAuditEventTx } from "@/lib/audit-write"
 import { resolveNormPilotActor } from "@/lib/normpilot/access"
+import { buildNormPilotAuditMetadata } from "@/lib/normpilot/audit-metadata"
 import { NORMPILOT_AUDIT_ACTIONS } from "@/lib/normpilot/constants"
 import { runNormPilotPipeline } from "@/lib/normpilot/pipeline"
 import type {
@@ -213,13 +214,13 @@ export async function runAndPersistNormPilotMockSprint(input: {
         action: NORMPILOT_AUDIT_ACTIONS.evidenceMapped,
         resourceType: "normpilot_evidence_mapping",
         resourceId: row.id,
-        metadata: {
+        metadata: buildNormPilotAuditMetadata({
           requirementItemId: row.requirementItemId,
           evidenceSourceId: mapping.evidenceSourceId ?? null,
           status: mapping.status,
           reviewState: "UNGEPRUEFT",
           promptVersion: mapping.promptVersion ?? null
-        }
+        })
       })
     }
 
@@ -252,13 +253,13 @@ export async function runAndPersistNormPilotMockSprint(input: {
         action: NORMPILOT_AUDIT_ACTIONS.gapGenerated,
         resourceType: "normpilot_gap_finding",
         resourceId: row.id,
-        metadata: {
+        metadata: buildNormPilotAuditMetadata({
           requirementSetId: requirementSet.id,
           requirementItemId: row.requirementItemId,
           severity: row.severity,
           reviewState: "UNGEPRUEFT",
           promptVersion: gap.promptVersion ?? null
-        }
+        })
       })
     }
 
@@ -285,13 +286,13 @@ export async function runAndPersistNormPilotMockSprint(input: {
         action: NORMPILOT_AUDIT_ACTIONS.correctiveActionDrafted,
         resourceType: "normpilot_corrective_action",
         resourceId: row.id,
-        metadata: {
+        metadata: buildNormPilotAuditMetadata({
           requirementSetId: requirementSet.id,
           requirementItemId: row.requirementItemId,
           gapFindingId: row.gapFindingId,
           status: "DRAFT",
           reviewState: "UNGEPRUEFT"
-        }
+        })
       })
     }
 

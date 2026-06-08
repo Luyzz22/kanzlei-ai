@@ -8,6 +8,7 @@ import { z } from "zod"
 import { writeAuditEventTx } from "@/lib/audit-write"
 import { withTenant } from "@/lib/tenant-context.server"
 import { resolveNormPilotActor, type NormPilotAccessDecision } from "@/lib/normpilot/access"
+import { buildNormPilotAuditMetadata } from "@/lib/normpilot/audit-metadata"
 import { NORMPILOT_DEFAULT_REQUIREMENT_SOURCE_KIND } from "@/lib/normpilot/constants"
 import {
   normPilotGapSeveritySchema,
@@ -164,10 +165,9 @@ export async function createNormPilotRequirementSet(input: {
       action: "normpilot.requirement_set.created",
       resourceType: "normpilot_requirement_set",
       resourceId: row.id,
-      metadata: {
-        reviewState: parsed.data.reviewState ?? "UNGEPRUEFT",
-        sourceKind: parsed.data.sourceKind ?? NORMPILOT_DEFAULT_REQUIREMENT_SOURCE_KIND
-      }
+      metadata: buildNormPilotAuditMetadata({
+        reviewState: parsed.data.reviewState ?? "UNGEPRUEFT"
+      })
     })
 
     return { ok: true, data: row }
@@ -219,10 +219,10 @@ export async function updateNormPilotRequirementSet(input: {
       action: "normpilot.requirement_set.updated",
       resourceType: "normpilot_requirement_set",
       resourceId: updated.id,
-      metadata: {
+      metadata: buildNormPilotAuditMetadata({
         previousReviewState: existing.reviewState,
         nextReviewState: updated.reviewState
-      }
+      })
     })
 
     return { ok: true, data: { id: updated.id } }
@@ -283,10 +283,10 @@ export async function importNormPilotRequirementSetJson(input: {
       action: "normpilot.requirement_set.imported",
       resourceType: "normpilot_requirement_set",
       resourceId: requirementSet.id,
-      metadata: {
+      metadata: buildNormPilotAuditMetadata({
         itemCount: parsed.data.items.length,
-        sourceKind: parsed.data.requirementSet.sourceKind ?? NORMPILOT_DEFAULT_REQUIREMENT_SOURCE_KIND
-      }
+        reviewState: parsed.data.requirementSet.reviewState ?? "UNGEPRUEFT"
+      })
     })
 
     return { ok: true, data: { requirementSetId: requirementSet.id, itemCount: parsed.data.items.length } }

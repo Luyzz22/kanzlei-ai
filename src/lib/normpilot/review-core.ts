@@ -8,6 +8,7 @@ import {
   canTransitionNormPilotReviewState,
   resolveNormPilotActor
 } from "@/lib/normpilot/access"
+import { buildNormPilotAuditMetadata } from "@/lib/normpilot/audit-metadata"
 import { NORMPILOT_AUDIT_ACTIONS } from "@/lib/normpilot/constants"
 import type { NormPilotCoreResult } from "@/lib/normpilot/requirement-core"
 
@@ -79,11 +80,10 @@ export async function transitionNormPilotReviewState(input: {
         action: config.auditAction,
         resourceType: config.resourceType,
         resourceId: updated.id,
-        metadata: {
+        metadata: buildNormPilotAuditMetadata({
           previousState: existing.reviewState,
-          nextState: updated.reviewState,
-          resourceKind: input.resourceType
-        }
+          nextState: updated.reviewState
+        })
       })
       return { ok: true, data: { id: updated.id, previousState: existing.reviewState, nextState: updated.reviewState } }
     }
@@ -105,12 +105,11 @@ export async function transitionNormPilotReviewState(input: {
         action: config.auditAction,
         resourceType: config.resourceType,
         resourceId: updated.id,
-        metadata: {
+        metadata: buildNormPilotAuditMetadata({
           previousState: existing.reviewState,
           nextState: updated.reviewState,
-          status: existing.status,
-          resourceKind: input.resourceType
-        }
+          status: existing.status
+        })
       })
       return { ok: true, data: { id: updated.id, previousState: existing.reviewState, nextState: updated.reviewState } }
     }
@@ -132,12 +131,11 @@ export async function transitionNormPilotReviewState(input: {
         action: config.auditAction,
         resourceType: config.resourceType,
         resourceId: updated.id,
-        metadata: {
+        metadata: buildNormPilotAuditMetadata({
           previousState: existing.reviewState,
           nextState: updated.reviewState,
-          severity: existing.severity,
-          resourceKind: input.resourceType
-        }
+          severity: existing.severity
+        })
       })
       return { ok: true, data: { id: updated.id, previousState: existing.reviewState, nextState: updated.reviewState } }
     }
@@ -158,12 +156,11 @@ export async function transitionNormPilotReviewState(input: {
       action: config.auditAction,
       resourceType: config.resourceType,
       resourceId: updated.id,
-      metadata: {
+      metadata: buildNormPilotAuditMetadata({
         previousState: existing.reviewState,
         nextState: updated.reviewState,
-        status: existing.status,
-        resourceKind: input.resourceType
-      }
+        status: existing.status
+      })
     })
     return { ok: true, data: { id: updated.id, previousState: existing.reviewState, nextState: updated.reviewState } }
   })
