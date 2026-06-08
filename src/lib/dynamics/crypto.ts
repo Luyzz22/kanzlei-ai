@@ -57,7 +57,9 @@ export function encryptSecret(plaintext: string): string {
 
   const key = getMasterKey()
   const iv = randomBytes(IV_LENGTH)
-  const cipher = createCipheriv("aes-256-gcm", key, iv)
+  const cipher = createCipheriv("aes-256-gcm", key, iv, {
+    authTagLength: AUTH_TAG_LENGTH
+  })
 
   const ct = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()])
   const authTag = cipher.getAuthTag()
@@ -94,7 +96,9 @@ export function decryptSecret(envelope: string): string {
   if (iv.length !== IV_LENGTH) throw new Error("decryptSecret: invalid IV length")
   if (authTag.length !== AUTH_TAG_LENGTH) throw new Error("decryptSecret: invalid tag length")
 
-  const decipher = createDecipheriv("aes-256-gcm", key, iv)
+  const decipher = createDecipheriv("aes-256-gcm", key, iv, {
+    authTagLength: AUTH_TAG_LENGTH
+  })
   decipher.setAuthTag(authTag)
 
   const pt = Buffer.concat([decipher.update(ct), decipher.final()])

@@ -74,11 +74,12 @@ export async function POST(req: NextRequest) {
         currentStage: "classification"
       }
     })
-    console.log(`[analysis.run.v5] runId=${runId} QUEUED → RUNNING, starting classification`)
+    console.log("[analysis.run.v5] queued run started", { runId, stage: "classification" })
   } else {
-    console.log(
-      `[analysis.run.v5] runId=${runId} continuing in stage=${run.currentStage ?? "classification"}`
-    )
+    console.log("[analysis.run.v5] continuing run", {
+      runId,
+      stage: run.currentStage ?? "classification"
+    })
   }
 
   // Stage ausführen
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
     )
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown_stage_runtime_error"
-    console.error(`[analysis.run.v5] runId=${runId} UNCAUGHT exception:`, message)
+    console.error("[analysis.run.v5] uncaught exception", { runId, message })
 
     await prisma.analysisRun
       .update({
@@ -133,9 +134,11 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, "") ?? req.nextUrl.origin
     const workerUrl = `${baseUrl}/api/workspace/analysis/run`
 
-    console.log(
-      `[analysis.run.v5] runId=${runId} stage done, dispatching next stage=${outcome.nextStage} via ${workerUrl}`
-    )
+    console.log("[analysis.run.v5] dispatching next stage", {
+      runId,
+      nextStage: outcome.nextStage,
+      workerUrl
+    })
 
     const dispatch = fetch(workerUrl, {
       method: "POST",
@@ -146,13 +149,14 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({ runId })
     }).then(
       (res) => {
-        console.log(
-          `[analysis.run.v5] runId=${runId} next-stage dispatched ok: status=${res.status}`
-        )
+        console.log("[analysis.run.v5] next-stage dispatched ok", {
+          runId,
+          status: res.status
+        })
       },
       (err) => {
         const msg = err instanceof Error ? err.message : String(err)
-        console.error(`[analysis.run.v5] runId=${runId} next-stage dispatch failed: ${msg}`)
+        console.error("[analysis.run.v5] next-stage dispatch failed", { runId, message: msg })
       }
     )
 
@@ -167,7 +171,7 @@ export async function POST(req: NextRequest) {
   }
 
   // nextStage === null → COMPLETED
-  console.log(`[analysis.run.v5] runId=${runId} pipeline COMPLETED`)
+  console.log("[analysis.run.v5] pipeline completed", { runId })
   return NextResponse.json({
     ok: true,
     stage: currentStage,

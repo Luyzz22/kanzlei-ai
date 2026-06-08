@@ -32,8 +32,9 @@ class DashboardService:
     
     def get_overview_metrics(self, days: int = 30) -> Dict[str, Any]:
         """Gibt Übersichts-KPIs zurück."""
+        interval = f"-{days} days"
         with self.get_db_connection() as conn:
-            rows = conn.execute(f"""
+            rows = conn.execute("""
             SELECT 
                 COUNT(*) as total_analyses,
                 SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) as successful,
@@ -43,8 +44,8 @@ class DashboardService:
                 SUM(CASE WHEN contract_type='employment' THEN 1 ELSE 0 END) as employment_count,
                 SUM(CASE WHEN contract_type='saas' THEN 1 ELSE 0 END) as saas_count
             FROM analysis_log
-            WHERE datetime(created_at) > datetime('now', '-{days} days')
-            """).fetchall()
+            WHERE datetime(created_at) > datetime('now', ?)
+            """, (interval,)).fetchall()
             
             row = rows[0]
             total = row[0] or 0
@@ -76,23 +77,24 @@ class DashboardService:
     
     def get_risk_distribution(self, days: int = 30) -> Dict[str, Any]:
         """Gibt Risiko-Verteilung zurück."""
+        interval = f"-{days} days"
         with self.get_db_connection() as conn:
             # Durchschnittliche Risiken pro Analyse
-            avg_row = conn.execute(f"""
+            avg_row = conn.execute("""
             SELECT AVG(num_risk_flags) as avg_risks, MAX(num_risk_flags) as max_risks
             FROM analysis_log
-            WHERE status='success' AND datetime(created_at) > datetime('now', '-{days} days')
-            """).fetchone()
+            WHERE status='success' AND datetime(created_at) > datetime('now', ?)
+            """, (interval,)).fetchone()
             
             # Verteilung nach Schweregrad (safe fallback)
             try:
-                severity_rows = conn.execute(f"""
+                severity_rows = conn.execute("""
                 SELECT severity, COUNT(*) as count
                 FROM analysis_log, json_each(risk_flags)
-                WHERE datetime(created_at) > datetime('now', '-{days} days')
+                WHERE datetime(created_at) > datetime('now', ?)
                   AND risk_flags IS NOT NULL AND risk_flags != ''
                 GROUP BY severity
-                """).fetchall()
+                """, (interval,)).fetchall()
             except Exception:
                 severity_rows = []
             
@@ -100,17 +102,17 @@ class DashboardService:
             
             # Top-Risiken (häufigste Titel) - safe fallback
             try:
-                top_risks = conn.execute(f"""
+                top_risks = conn.execute("""
                 SELECT json_extract(value, '$.title') as title, 
                        json_extract(value, '$.severity') as severity, 
                        COUNT(*) as count
                 FROM analysis_log, json_each(risk_flags)
-                WHERE datetime(created_at) > datetime('now', '-{days} days')
+                WHERE datetime(created_at) > datetime('now', ?)
                   AND risk_flags IS NOT NULL AND risk_flags != ''
                 GROUP BY title, severity
                 ORDER BY count DESC
                 LIMIT 10
-                """).fetchall()
+                """, (interval,)).fetchall()
             except Exception:
                 top_risks = []
             
@@ -152,16 +154,17 @@ class DashboardService:
     
     def get_daily_trend(self, days: int = 14) -> List[Dict[str, Any]]:
         """Gibt Analysen pro Tag zurück."""
+        interval = f"-{days} days"
         with self.get_db_connection() as conn:
-            rows = conn.execute(f"""
+            rows = conn.execute("""
             SELECT DATE(created_at) as day, 
                    COUNT(*) as total,
                    SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) as successful
             FROM analysis_log
-            WHERE datetime(created_at) > datetime('now', '-{days} days')
+            WHERE datetime(created_at) > datetime('now', ?)
             GROUP BY DATE(created_at)
             ORDER BY day ASC
-            """).fetchall()
+            """, (interval,)).fetchall()
             
             return [
                 {

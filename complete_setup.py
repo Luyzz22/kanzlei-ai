@@ -10,12 +10,14 @@ Contract Analyzer – Complete Setup
 import os
 import sys
 import subprocess
+import shlex
 from pathlib import Path
 
 def run_command(cmd, cwd=None):
     """Führt Shell-Befehl aus und gibt Output zurück."""
-    print(f"▶️  {cmd}")
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)
+    args = cmd if isinstance(cmd, list) else shlex.split(cmd)
+    print(f"▶️  {' '.join(args)}")
+    result = subprocess.run(args, capture_output=True, text=True, cwd=cwd)
     if result.returncode != 0:
         print(f"❌ Fehler: {result.stderr}")
         sys.exit(1)
@@ -26,13 +28,14 @@ def setup_backend():
     print("\n=== 1. Backend Setup ===")
     
     # httpx auf kompatible Version setzen
-    run_command("pip install 'httpx==0.27.2'")
+    run_command([sys.executable, "-m", "pip", "install", "httpx==0.27.2"])
     
     # openai aktuell halten
-    run_command("pip install 'openai>=1.30.0'")
+    run_command([sys.executable, "-m", "pip", "install", "openai>=1.30.0"])
     
     # requirements speichern
-    run_command("pip freeze > requirements.txt")
+    requirements = run_command([sys.executable, "-m", "pip", "freeze"])
+    Path("requirements.txt").write_text(requirements)
     
     print("✓ Backend Libraries installiert")
 
@@ -58,7 +61,7 @@ def configure_frontend():
     package_json = frontend_dir / "package.json"
     if package_json.exists():
         print("📦 Installiere Frontend Dependencies...")
-        run_command("npm install", cwd=str(frontend_dir))
+        run_command(["npm", "install"], cwd=str(frontend_dir))
     
     return True
 
@@ -68,7 +71,7 @@ def test_all_modes():
     
     # Backend bereits laufen? Wenn nicht, starten
     try:
-        run_command("curl -s http://127.0.0.1:8000/health")
+        run_command(["curl", "-s", "http://127.0.0.1:8000/health"])
         print("✓ Backend läuft bereits")
     except:
         print("▶️  Starte Backend im Hintergrund...")
@@ -89,7 +92,7 @@ def test_all_modes():
     # 1. Upload
     print("\n▶️  Teste Upload...")
     upload_result = run_command(
-        "curl -s -F 'file=@testvertrag.pdf' http://127.0.0.1:8000/contracts/upload"
+        ["curl", "-s", "-F", "file=@testvertrag.pdf", "http://127.0.0.1:8000/contracts/upload"]
     )
     
     # contract_id extrahieren
@@ -101,9 +104,17 @@ def test_all_modes():
     # 2. Employment-Analyse
     print("\n▶️  Teste Employment-Analyse...")
     analyze_result = run_command(
-        f"curl -s -X POST http://127.0.0.1:8000/contracts/{contract_id}/analyze "
-        "-H 'Content-Type: application/json' "
-        "-d '{\"contract_type\": \"employment\", \"language\": \"de\"}'"
+        [
+            "curl",
+            "-s",
+            "-X",
+            "POST",
+            f"http://127.0.0.1:8000/contracts/{contract_id}/analyze",
+            "-H",
+            "Content-Type: application/json",
+            "-d",
+            '{"contract_type": "employment", "language": "de"}',
+        ]
     )
     try:
         analyze_data = json.loads(analyze_result)
@@ -124,9 +135,17 @@ def test_all_modes():
     # 3. SaaS-Analyse (mit gleichem PDF, simuliert)
     print("\n▶️  Teste SaaS-Analyse...")
     analyze_result_saas = run_command(
-        f"curl -s -X POST http://127.0.0.1:8000/contracts/{contract_id}/analyze "
-        "-H 'Content-Type: application/json' "
-        "-d '{\"contract_type\": \"saas\", \"language\": \"de\"}'"
+        [
+            "curl",
+            "-s",
+            "-X",
+            "POST",
+            f"http://127.0.0.1:8000/contracts/{contract_id}/analyze",
+            "-H",
+            "Content-Type: application/json",
+            "-d",
+            '{"contract_type": "saas", "language": "de"}',
+        ]
     )
     analyze_data_saas = json.loads(analyze_result_saas)
     print(f"✓ SaaS-Analyse erfolgreich")

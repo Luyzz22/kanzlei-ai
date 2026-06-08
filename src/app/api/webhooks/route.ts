@@ -20,7 +20,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     const event = await request.json() as WebhookEvent
     event.timestamp = new Date().toISOString()
 
-    console.log(`[WEBHOOK] ${event.type}`, JSON.stringify(event.data).slice(0, 200))
+    console.log("[WEBHOOK] event received", {
+      type: event.type,
+      preview: JSON.stringify(event.data).slice(0, 200)
+    })
 
     // Forward to n8n if configured
     const n8nUrl = process.env.N8N_WEBHOOK_URL

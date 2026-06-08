@@ -209,8 +209,9 @@ def get_analysis_metrics(days: int = 30) -> dict:
             'total_tokens': int,
         }
     """
+    interval = f"-{days} days"
     with get_db() as conn:
-        rows = conn.execute(f"""
+        rows = conn.execute("""
         SELECT 
             COUNT(*) as total,
             SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) as successful,
@@ -218,8 +219,8 @@ def get_analysis_metrics(days: int = 30) -> dict:
             AVG(duration_ms) as avg_duration_ms,
             SUM(COALESCE(llm_input_tokens, 0) + COALESCE(llm_output_tokens, 0)) as total_tokens
         FROM analysis_log
-        WHERE datetime(created_at) > datetime('now', '-{days} days')
-        """).fetchall()
+        WHERE datetime(created_at) > datetime('now', ?)
+        """, (interval,)).fetchall()
         
         row = rows[0] if rows else None
         if not row:
@@ -288,15 +289,16 @@ def get_tenant_metrics(tenant_id: str) -> dict:
 
 def get_daily_analysis_count(days: int = 30) -> list:
     """Gibt Anzahl Analysen pro Tag für Chart zurück."""
+    interval = f"-{days} days"
     with get_db() as conn:
-        rows = conn.execute(f"""
+        rows = conn.execute("""
         SELECT DATE(created_at) as day, COUNT(*) as count, 
                SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) as successful
         FROM analysis_log
-        WHERE datetime(created_at) > datetime('now', '-{days} days')
+        WHERE datetime(created_at) > datetime('now', ?)
         GROUP BY DATE(created_at)
         ORDER BY day ASC
-        """).fetchall()
+        """, (interval,)).fetchall()
         
         return [
             {'day': row[0], 'total': row[1], 'successful': row[2]}
@@ -414,12 +416,13 @@ def reset_monthly_counters():
 
 def cleanup_old_logs(days: int = 90):
     """Löscht Analyse-Logs älter als N Tage."""
+    interval = f"-{days} days"
     try:
         with get_db() as conn:
-            conn.execute(f"""
+            conn.execute("""
             DELETE FROM analysis_log
-            WHERE datetime(created_at) < datetime('now', '-{days} days')
-            """)
+            WHERE datetime(created_at) < datetime('now', ?)
+            """, (interval,))
             deleted = conn.total_changes
             conn.commit()
             logger.info(f"✓ Cleaned up {deleted} old log entries (>{days} days)")
@@ -491,4 +494,3 @@ if __name__ == "__main__":
     print(f"\nEstimated Monthly Cost: ${cfo['estimated_monthly_cost_usd']}")
     
     print("\n" + "="*40 + "\n")
-
