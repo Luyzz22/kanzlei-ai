@@ -1,0 +1,24 @@
+{
+  "id": "normpilot-corrective-action-basic",
+  "displayName": "Corrective Action Draft aus Gap",
+  "requirementSet": {
+    "title": "Synthetische Massnahmen-Checkliste",
+    "frameworkLabel": "Kundeneigene QMS-Kurzreferenz",
+    "sourceKind": "customer_checklist"
+  },
+  "requirements": [
+    {
+      "code": "QMS-020",
+      "title": "Schulungsnachweis nachreichen",
+      "customerText": "Fehlende Schulungsnachweise sollen vor dem Audit nachgereicht werden.",
+      "criticality": "MEDIUM"
+    }
+  ],
+  "evidenceSources": [],
+  "expected": {
+    "minGaps": 1,
+    "minCorrectiveActions": 1,
+    "requiredActionStatus": "DRAFT",
+    "requiredReviewState": "UNGEPRUEFT"
+  }
+}

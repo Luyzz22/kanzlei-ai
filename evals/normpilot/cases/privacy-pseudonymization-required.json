@@ -1,0 +1,42 @@
+{
+  "id": "normpilot-privacy-pseudonymization-required",
+  "displayName": "Policy markiert blockierten Drittlandtransfer ohne Pseudonymisierung",
+  "documentText": "SYNTHETISCHER INHALT: Kontakt max.mustermann@example.test und Telefonnummer 030 123456.",
+  "requirementSet": {
+    "title": "Synthetische Datenschutz-Policy-Checkliste",
+    "frameworkLabel": "Kundeneigene Datenschutz-Kurzreferenz",
+    "sourceKind": "customer_checklist"
+  },
+  "requirements": [
+    {
+      "code": "DSGVO-001",
+      "title": "Pseudonymisierung vor LLM-Transfer",
+      "customerText": "Personenbezogene Daten sollen vor Drittland-LLM-Transfer pseudonymisiert werden.",
+      "criticality": "HIGH"
+    }
+  ],
+  "evidenceSources": [
+    {
+      "sourceType": "txt",
+      "title": "Synthetischer Datenschutz-Hinweis",
+      "locator": {
+        "sectionKey": "privacy"
+      }
+    }
+  ],
+  "governance": {
+    "provider": "openai",
+    "allowedProviders": ["openai"],
+    "requirePseudonymization": true,
+    "allowThirdCountryLlmTransfer": false,
+    "aiPolicyEnforcement": "block",
+    "containsPersonalData": true,
+    "syntheticOrAnonymized": false,
+    "pseudonymized": false
+  },
+  "expected": {
+    "policyAllowed": false,
+    "policySeverity": "HIGH",
+    "pseudonymizationRequired": true
+  }
+}
