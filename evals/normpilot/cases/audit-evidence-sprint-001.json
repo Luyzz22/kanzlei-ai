@@ -1,0 +1,55 @@
+{
+  "id": "normpilot-audit-evidence-sprint-001",
+  "displayName": "Synthetischer Audit Evidence Sprint",
+  "riskClass": "limited_risk",
+  "requirementSet": {
+    "title": "Audit Evidence Sprint Checkliste",
+    "frameworkLabel": "Kundeneigene ISO-9001-nahe Checkliste",
+    "scopeLabel": "Wareneingangspruefung und Schulungsnachweise",
+    "versionLabel": "synthetic-2026-06",
+    "sourceKind": "customer_checklist"
+  },
+  "requirements": [
+    {
+      "code": "QMS-001",
+      "title": "Pruefberichte muessen auffindbar sein",
+      "customerText": "Fuer freigegebene Wareneingaenge soll ein Pruefbericht mit Datum und Losbezug vorliegen.",
+      "normReferenceCode": "ISO9001:8.6",
+      "criticality": "HIGH"
+    },
+    {
+      "code": "QMS-002",
+      "title": "Schulungsnachweise fuer Prueftaetigkeiten",
+      "customerText": "Mitarbeitende in pruefenden Rollen sollen einen aktuellen internen Schulungsnachweis besitzen.",
+      "normReferenceCode": "ISO9001:7.2",
+      "criticality": "MEDIUM"
+    }
+  ],
+  "evidenceSources": [
+    {
+      "sourceType": "pdf",
+      "title": "Synthetischer Pruefbericht PB-2026-001",
+      "locator": {
+        "page": 2,
+        "sectionKey": "inspection-summary"
+      }
+    },
+    {
+      "sourceType": "xlsx",
+      "title": "Synthetische Schulungsmatrix",
+      "locator": {
+        "sheet": "Training",
+        "row": 12,
+        "column": "D"
+      }
+    }
+  ],
+  "expected": {
+    "minRequirements": 2,
+    "minEvidenceMappings": 2,
+    "requiredStatuses": ["COVERED", "PARTIAL"],
+    "requiredGapSeverities": ["MEDIUM"],
+    "mustIncludeAiNotice": true,
+    "mustIncludeNormLicenseNotice": true
+  }
+}

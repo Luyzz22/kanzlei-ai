@@ -104,6 +104,76 @@ CREATE POLICY tenant_isolation_member ON "TenantMember"
   USING ("tenantId" = current_tenant_id())
   WITH CHECK ("tenantId" = current_tenant_id());
 
+-- 13. DynamicsVendor
+ALTER TABLE "DynamicsVendor" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_dynamics_vendor ON "DynamicsVendor";
+CREATE POLICY tenant_isolation_dynamics_vendor ON "DynamicsVendor"
+  USING ("tenantId" = current_tenant_id())
+  WITH CHECK ("tenantId" = current_tenant_id());
+
+-- 14. DynamicsPurchaseOrder
+ALTER TABLE "DynamicsPurchaseOrder" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_dynamics_purchase_order ON "DynamicsPurchaseOrder";
+CREATE POLICY tenant_isolation_dynamics_purchase_order ON "DynamicsPurchaseOrder"
+  USING ("tenantId" = current_tenant_id())
+  WITH CHECK ("tenantId" = current_tenant_id());
+
+-- 15. DynamicsPurchaseInvoice
+ALTER TABLE "DynamicsPurchaseInvoice" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_dynamics_purchase_invoice ON "DynamicsPurchaseInvoice";
+CREATE POLICY tenant_isolation_dynamics_purchase_invoice ON "DynamicsPurchaseInvoice"
+  USING ("tenantId" = current_tenant_id())
+  WITH CHECK ("tenantId" = current_tenant_id());
+
+-- 16. NormPilotRequirementSet
+ALTER TABLE "NormPilotRequirementSet" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_normpilot_requirement_set ON "NormPilotRequirementSet";
+CREATE POLICY tenant_isolation_normpilot_requirement_set ON "NormPilotRequirementSet"
+  USING ("tenantId" = current_tenant_id())
+  WITH CHECK ("tenantId" = current_tenant_id());
+
+-- 17. NormPilotRequirementItem
+ALTER TABLE "NormPilotRequirementItem" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_normpilot_requirement_item ON "NormPilotRequirementItem";
+CREATE POLICY tenant_isolation_normpilot_requirement_item ON "NormPilotRequirementItem"
+  USING ("tenantId" = current_tenant_id())
+  WITH CHECK ("tenantId" = current_tenant_id());
+
+-- 18. NormPilotEvidenceSource
+ALTER TABLE "NormPilotEvidenceSource" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_normpilot_evidence_source ON "NormPilotEvidenceSource";
+CREATE POLICY tenant_isolation_normpilot_evidence_source ON "NormPilotEvidenceSource"
+  USING ("tenantId" = current_tenant_id())
+  WITH CHECK ("tenantId" = current_tenant_id());
+
+-- 19. NormPilotEvidenceMapping
+ALTER TABLE "NormPilotEvidenceMapping" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_normpilot_evidence_mapping ON "NormPilotEvidenceMapping";
+CREATE POLICY tenant_isolation_normpilot_evidence_mapping ON "NormPilotEvidenceMapping"
+  USING ("tenantId" = current_tenant_id())
+  WITH CHECK ("tenantId" = current_tenant_id());
+
+-- 20. NormPilotGapFinding
+ALTER TABLE "NormPilotGapFinding" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_normpilot_gap_finding ON "NormPilotGapFinding";
+CREATE POLICY tenant_isolation_normpilot_gap_finding ON "NormPilotGapFinding"
+  USING ("tenantId" = current_tenant_id())
+  WITH CHECK ("tenantId" = current_tenant_id());
+
+-- 21. NormPilotCorrectiveAction
+ALTER TABLE "NormPilotCorrectiveAction" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_normpilot_corrective_action ON "NormPilotCorrectiveAction";
+CREATE POLICY tenant_isolation_normpilot_corrective_action ON "NormPilotCorrectiveAction"
+  USING ("tenantId" = current_tenant_id())
+  WITH CHECK ("tenantId" = current_tenant_id());
+
+-- 22. NormPilotEvidencePackExport
+ALTER TABLE "NormPilotEvidencePackExport" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_normpilot_evidence_pack_export ON "NormPilotEvidencePackExport";
+CREATE POLICY tenant_isolation_normpilot_evidence_pack_export ON "NormPilotEvidencePackExport"
+  USING ("tenantId" = current_tenant_id())
+  WITH CHECK ("tenantId" = current_tenant_id());
+
 -- =============================================================================
 -- Tabellen OHNE RLS (übergreifend)
 -- =============================================================================

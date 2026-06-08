@@ -9,7 +9,11 @@ export async function POST(req: NextRequest) {
     const payload = await req.json()
     const resource = (payload.resource ?? "").toLowerCase()
 
-    console.log(`[Dynamics Webhook] ${payload.changeType} on ${resource}`, { id: payload.resourceData?.id })
+    console.log("[Dynamics Webhook] received change", {
+      changeType: payload.changeType,
+      resource,
+      id: payload.resourceData?.id
+    })
 
     if (resource.includes("vendor") && payload.changeType === "created") {
       // TODO: Queue vendor contract analysis

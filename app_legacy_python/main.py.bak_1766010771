@@ -191,7 +191,7 @@ async def root():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "*"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1426,4 +1426,3 @@ def api_v3_contracts_get(contract_id: str):
         payload["analysis"] = json.loads(ana[0])
 
     return JSONResponse(payload)
-

@@ -136,6 +136,13 @@ model Tenant {
   dynamicsIntegration DynamicsIntegration?
   playbookRules      PlaybookRule[]
   tokenUsages        TenantTokenUsage[]
+  normPilotRequirementSets NormPilotRequirementSet[]
+  normPilotRequirementItems NormPilotRequirementItem[]
+  normPilotEvidenceSources NormPilotEvidenceSource[]
+  normPilotEvidenceMappings NormPilotEvidenceMapping[]
+  normPilotGapFindings NormPilotGapFinding[]
+  normPilotCorrectiveActions NormPilotCorrectiveAction[]
+  normPilotEvidencePackExports NormPilotEvidencePackExport[]
 }
 
 model TenantMember {
@@ -233,6 +240,8 @@ model Document {
   documentExtractions DocumentExtraction[]
   analysisFindingReviews AnalysisFindingReview[]
   auditEvents  AuditEvent[]
+  normPilotRequirementSets NormPilotRequirementSet[]
+  normPilotEvidenceSources NormPilotEvidenceSource[]
 
   @@index([tenantId, createdAt])
   @@index([tenantId, reviewDueAt])
@@ -408,6 +417,49 @@ enum FindingReviewDecision {
   KENNTNISGENOMMEN
 }
 
+enum NormPilotReviewState {
+  UNGEPRUEFT
+  IN_PRUEFUNG
+  FREIGEGEBEN
+  ZURUECKGEWIESEN
+}
+
+enum NormPilotEvidenceStatus {
+  COVERED
+  PARTIAL
+  MISSING
+  CONFLICTING
+  NOT_APPLICABLE
+  NEEDS_REVIEW
+}
+
+enum NormPilotGapSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum NormPilotActionStatus {
+  DRAFT
+  PLANNED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum NormPilotEvidencePackExportFormat {
+  MARKDOWN
+  CSV
+  JSON
+}
+
+enum NormPilotEvidencePackExportStatus {
+  REQUESTED
+  GENERATED
+  FAILED
+}
+
 enum AnalysisPipelineStageName {
   CLASSIFICATION
   EXTRACTION
@@ -572,6 +624,209 @@ model AnalysisFindingReview {
   @@index([tenantId, analysisFindingId, reviewedAt])
   @@index([analysisRunId])
   @@index([reviewerId, reviewedAt])
+}
+
+// --- NormPilot Industrie: Audit Evidence Sprint Domain Foundation ---
+
+model NormPilotRequirementSet {
+  id               String               @id @default(cuid())
+  tenantId         String
+  title            String               @db.VarChar(240)
+  description      String?              @db.Text
+  frameworkLabel   String?              @db.VarChar(120)
+  scopeLabel       String?              @db.VarChar(200)
+  versionLabel     String?              @db.VarChar(80)
+  sourceKind       String               @default("customer_checklist") @db.VarChar(80)
+  sourceDocumentId String?
+  contentHash      String?              @db.VarChar(64)
+  reviewState      NormPilotReviewState @default(UNGEPRUEFT)
+  metadata         Json?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  deletedAt        DateTime?
+  retentionUntil   DateTime?
+
+  tenant         Tenant                         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sourceDocument Document?                      @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  items          NormPilotRequirementItem[]
+  gapFindings    NormPilotGapFinding[]
+  exports        NormPilotEvidencePackExport[]
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, reviewState, createdAt])
+  @@index([tenantId, sourceDocumentId])
+}
+
+model NormPilotRequirementItem {
+  id                String                @id @default(cuid())
+  tenantId          String
+  requirementSetId  String
+  code              String                @db.VarChar(80)
+  title             String                @db.VarChar(240)
+  customerText      String?               @db.Text
+  normReferenceCode String?               @db.VarChar(120)
+  sectionLabel      String?               @db.VarChar(160)
+  sortOrder         Int                   @default(0)
+  criticality       NormPilotGapSeverity?
+  reviewState       NormPilotReviewState  @default(UNGEPRUEFT)
+  metadata          Json?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  deletedAt         DateTime?
+  retentionUntil    DateTime?
+
+  tenant            Tenant                         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  requirementSet    NormPilotRequirementSet        @relation(fields: [requirementSetId], references: [id], onDelete: Cascade)
+  mappings          NormPilotEvidenceMapping[]
+  gapFindings       NormPilotGapFinding[]
+  correctiveActions NormPilotCorrectiveAction[]
+
+  @@unique([tenantId, requirementSetId, code])
+  @@index([tenantId, requirementSetId, sortOrder])
+  @@index([tenantId, reviewState, createdAt])
+}
+
+model NormPilotEvidenceSource {
+  id             String               @id @default(cuid())
+  tenantId       String
+  documentId     String?
+  sourceType     String               @db.VarChar(80)
+  title          String               @db.VarChar(240)
+  sourceHash     String?              @db.VarChar(64)
+  locator        Json?
+  metadata       Json?
+  reviewState    NormPilotReviewState @default(UNGEPRUEFT)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  deletedAt      DateTime?
+  retentionUntil DateTime?
+
+  tenant   Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document Document?                  @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  mappings NormPilotEvidenceMapping[]
+
+  @@index([tenantId, documentId])
+  @@index([tenantId, sourceType, createdAt])
+  @@index([tenantId, reviewState, createdAt])
+}
+
+model NormPilotEvidenceMapping {
+  id                String                  @id @default(cuid())
+  tenantId          String
+  requirementItemId String
+  evidenceSourceId  String?
+  status            NormPilotEvidenceStatus @default(NEEDS_REVIEW)
+  confidence        Float?
+  rationale         String?                 @db.Text
+  anchorText        String?                 @db.VarChar(280)
+  locator           Json?
+  evidenceHash      String?                 @db.VarChar(64)
+  promptKey         String?                 @db.VarChar(120)
+  promptVersion     String?                 @db.VarChar(32)
+  provider          String?                 @db.VarChar(40)
+  model             String?                 @db.VarChar(120)
+  reviewState       NormPilotReviewState    @default(UNGEPRUEFT)
+  reviewedAt        DateTime?
+  reviewerLabel     String?                 @db.VarChar(120)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  deletedAt         DateTime?
+  retentionUntil    DateTime?
+
+  tenant          Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  requirementItem NormPilotRequirementItem  @relation(fields: [requirementItemId], references: [id], onDelete: Cascade)
+  evidenceSource  NormPilotEvidenceSource?  @relation(fields: [evidenceSourceId], references: [id], onDelete: SetNull)
+  gapFindings     NormPilotGapFinding[]
+
+  @@index([tenantId, requirementItemId, status])
+  @@index([tenantId, evidenceSourceId])
+  @@index([tenantId, reviewState, createdAt])
+}
+
+model NormPilotGapFinding {
+  id                String               @id @default(cuid())
+  tenantId          String
+  requirementSetId  String
+  requirementItemId String?
+  evidenceMappingId String?
+  severity          NormPilotGapSeverity @default(MEDIUM)
+  title             String               @db.VarChar(240)
+  description       String               @db.Text
+  recommendation    String?              @db.Text
+  sourceSummary     Json?
+  confidence        Float?
+  promptKey         String?              @db.VarChar(120)
+  promptVersion     String?              @db.VarChar(32)
+  provider          String?              @db.VarChar(40)
+  model             String?              @db.VarChar(120)
+  reviewState       NormPilotReviewState @default(UNGEPRUEFT)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  deletedAt         DateTime?
+  retentionUntil    DateTime?
+
+  tenant            Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  requirementSet    NormPilotRequirementSet   @relation(fields: [requirementSetId], references: [id], onDelete: Cascade)
+  requirementItem   NormPilotRequirementItem? @relation(fields: [requirementItemId], references: [id], onDelete: SetNull)
+  evidenceMapping   NormPilotEvidenceMapping? @relation(fields: [evidenceMappingId], references: [id], onDelete: SetNull)
+  correctiveActions NormPilotCorrectiveAction[]
+
+  @@index([tenantId, requirementSetId, severity])
+  @@index([tenantId, requirementItemId])
+  @@index([tenantId, reviewState, createdAt])
+}
+
+model NormPilotCorrectiveAction {
+  id                 String                 @id @default(cuid())
+  tenantId           String
+  gapFindingId       String?
+  requirementItemId  String?
+  title              String                 @db.VarChar(240)
+  description        String?                @db.Text
+  ownerRole          String?                @db.VarChar(120)
+  ownerLabel         String?                @db.VarChar(160)
+  dueDate            DateTime?
+  status             NormPilotActionStatus  @default(DRAFT)
+  acceptanceCriteria String?                @db.Text
+  reviewState        NormPilotReviewState   @default(UNGEPRUEFT)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  deletedAt          DateTime?
+  retentionUntil     DateTime?
+
+  tenant          Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  gapFinding      NormPilotGapFinding?      @relation(fields: [gapFindingId], references: [id], onDelete: SetNull)
+  requirementItem NormPilotRequirementItem? @relation(fields: [requirementItemId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, gapFindingId])
+  @@index([tenantId, status, dueDate])
+  @@index([tenantId, reviewState, createdAt])
+}
+
+model NormPilotEvidencePackExport {
+  id               String                            @id @default(cuid())
+  tenantId         String
+  requirementSetId String
+  title            String                            @db.VarChar(240)
+  format           NormPilotEvidencePackExportFormat @default(MARKDOWN)
+  status           NormPilotEvidencePackExportStatus @default(REQUESTED)
+  storageKey       String?
+  contentHash      String?                           @db.VarChar(64)
+  exportManifest   Json
+  promptMetadata   Json?
+  reviewSnapshot   Json?
+  generatedAt      DateTime?
+  createdAt        DateTime                          @default(now())
+  updatedAt        DateTime                          @updatedAt
+  deletedAt        DateTime?
+  retentionUntil   DateTime?
+
+  tenant         Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  requirementSet NormPilotRequirementSet @relation(fields: [requirementSetId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, requirementSetId, createdAt])
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, retentionUntil])
 }
 
 /// Playbook Miner: persistierte Klausel-Regeln aus Review-Entscheidungen

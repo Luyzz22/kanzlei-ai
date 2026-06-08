@@ -8,6 +8,21 @@ from typing import List, Dict
 import secrets
 
 DB_PATH = "/var/www/contract-app/data/contracts.db"
+USAGE_UPDATE_QUERIES = {
+    "contracts_analyzed": "UPDATE usage_stats SET contracts_analyzed = contracts_analyzed + ? WHERE month = ?",
+    "pages_processed": "UPDATE usage_stats SET pages_processed = pages_processed + ? WHERE month = ?",
+    "exports_generated": "UPDATE usage_stats SET exports_generated = exports_generated + ? WHERE month = ?",
+    "api_calls": "UPDATE usage_stats SET api_calls = api_calls + ? WHERE month = ?",
+    "storage_mb": "UPDATE usage_stats SET storage_mb = storage_mb + ? WHERE month = ?",
+}
+USER_SETTING_UPDATE_QUERIES = {
+    "notification_email": "UPDATE user_settings SET notification_email = ?, updated_at = ? WHERE user_email = ?",
+    "notification_slack": "UPDATE user_settings SET notification_slack = ?, updated_at = ? WHERE user_email = ?",
+    "language": "UPDATE user_settings SET language = ?, updated_at = ? WHERE user_email = ?",
+    "timezone": "UPDATE user_settings SET timezone = ?, updated_at = ? WHERE user_email = ?",
+    "theme": "UPDATE user_settings SET theme = ?, updated_at = ? WHERE user_email = ?",
+    "two_factor_enabled": "UPDATE user_settings SET two_factor_enabled = ?, updated_at = ? WHERE user_email = ?",
+}
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -221,7 +236,11 @@ def increment_usage(field: str, amount: int = 1):
     conn = get_db()
     cursor = conn.cursor()
     current_month = datetime.now().strftime('%Y-%m')
-    cursor.execute(f'UPDATE usage_stats SET {field} = {field} + ? WHERE month = ?', (amount, current_month))
+    query = USAGE_UPDATE_QUERIES.get(field)
+    if not query:
+        conn.close()
+        raise ValueError("Unsupported usage field")
+    cursor.execute(query, (amount, current_month))
     conn.commit()
     conn.close()
 
@@ -248,8 +267,9 @@ def update_user_settings(email: str, **kwargs) -> Dict:
     if not existing:
         cursor.execute("INSERT INTO user_settings (user_email, updated_at) VALUES (?, ?)", (email, datetime.now().isoformat()))
     for key, value in kwargs.items():
-        if key in ['notification_email', 'notification_slack', 'language', 'timezone', 'theme', 'two_factor_enabled']:
-            cursor.execute(f'UPDATE user_settings SET {key} = ?, updated_at = ? WHERE user_email = ?', (value, datetime.now().isoformat(), email))
+        query = USER_SETTING_UPDATE_QUERIES.get(key)
+        if query:
+            cursor.execute(query, (value, datetime.now().isoformat(), email))
     conn.commit()
     conn.close()
     return {"success": True}
