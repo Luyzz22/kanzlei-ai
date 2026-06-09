@@ -1,140 +1,163 @@
-# KanzleiAI – Next.js 14 Starter
+# NormPilot Industrie
 
-Dieses Repository enthält ein initiales **Next.js 14 App-Router Setup** für KanzleiAI inklusive DSGVO-Bausteinen, Auth-Grundlage und Dashboard-UI.
+Audit Evidence Copilot fuer deutsche Industrie-KMU.
 
-## Enthalten
+NormPilot organisiert Audit-Readiness aus Bestandsdaten: PDFs, Excel-Listen, Auditberichte, Checklisten, Pruefberichte, Zertifikate, Schulungsnachweise und QM-Dokumente werden in strukturierte Evidence Matrices, Gap-Listen, Maßnahmenplaene und exportierbare Evidence Packs ueberfuehrt.
 
-- Next.js 14 + TypeScript + TailwindCSS
-- shadcn/ui Grundkonfiguration (`components.json`, `Button`, Utility-Funktionen)
-- Prisma Schema für PostgreSQL inkl. RBAC-Rollen (`ADMIN`, `ANWALT`, `ASSISTENT`)
-- NextAuth.js v5 Basis mit:
-  - Credentials (E-Mail/Passwort)
-  - Google OAuth2
-  - Microsoft OAuth2
-  - Session-Timeout: 30 Minuten
-- DSGVO-Seiten:
-  - `/datenschutz`
-  - `/impressum`
-  - `/avv`
-  - Cookie-Consent-Banner
-- Basis-UI:
-  - Landing Page (Hero + Pricing)
-  - Dashboard-Layout mit Sidebar
-  - Dark Mode Support
+> Kein ERP-Ersatz. Kein QMS-/IMS-Monolith. Kein autonomes Audit- oder Zertifizierungsentscheidungssystem.
 
-## Projektstart
+## Status
 
-```bash
-pnpm install
-cp .env.example .env
-pnpm prisma generate
-pnpm dev
-```
+- Repository: `Luyzz22/normpilot-industrie`
+- Produkt: NormPilot Industrie
+- Zielgruppe: Industrie-KMU in DACH
+- Deployment-Ziel: Vercel Project `normpilot-industrie`
+- Production Domain: `app.normpilot-industrie.de`
+- Datenbank-Ziel: Neon PostgreSQL in EU Central / Frankfurt
+- EU AI Act Einstufung: `limited_risk`
+- Klassifikation: INTERN
 
-Lokale URL: `http://localhost:3001` (`NEXTAUTH_URL=http://localhost:3001`).
-Produktion: `https://www.kanzlei-ai.com`.
+## Kernversprechen
 
-## KI-Vertragsanalyse (Multi-Provider)
+Audit-Readiness aus Bestandsdaten in 2-6 Wochen.
 
-Die Workbench (`/workspace/dokumente/[id]`) kann eine **mandantenbezogene Vertragsanalyse** ausführen: zweistufige Pipeline (strukturierte Extraktion → Risiko- und Handlungsempfehlungen) mit **Zod-validierten** Ergebnissen, Speicherung in `AnalysisRun`, `AnalysisProviderDecision`, `AnalysisFinding`, `DocumentExtraction` sowie Audit-Events (`analysis.pipeline.*`).
+NormPilot fokussiert auf dokumenten- und compliance-nahe Prozesse:
 
-- **Anbieter:** OpenAI, Anthropic (Claude), Google Gemini, optional Llama über **OpenAI-kompatible** HTTP-API (`LLAMA_API_BASE` + `LLAMA_API_KEY`). Es werden nur Anbieter genutzt, für die ein Key gesetzt ist.
-- **Routing:** Kurze Texte / Extraktion → bevorzugt OpenAI (schema-freundlich); lange Texte → eher Gemini; Klausel- und Risikoteil → eher Claude. `AI_PROVIDER_PRIORITY` sortiert nur die **Fallback-Kette**, das Primärmodell bleibt führend.
-- **Konfiguration:** siehe `.env.example` (`OPENAI_*`, `ANTHROPIC_*`, `GEMINI_*`, `LLAMA_*`, `AI_ROUTER_ENABLED`, …).
-- **Tests:** `pnpm test` (Router, Schema-Validierung, Provider-Verfügbarkeit, Prompt-Resolver, Review-RBAC, Eval-Metriken).
+- ISO 9001/14001/45001-nahe Nachweisarbeit
+- IATF-nahe Evidence Packs ohne Norm-Volltexte
+- NIS-2-/EU-AI-Act-/DSGVO-/GoBD-nahe Nachweis- und Maßnahmenlogik
+- Auditfragen-Simulation fuer externe Audits
+- Human-in-the-Loop Review vor Freigabe
 
-### Prompt-Governance & Nachvollziehbarkeit
+## MVP v0.1 Scope
 
-- **Zentrale Textbausteine:** `src/lib/ai/prompt-registry/contract-defaults.ts` (keine freien Inline-Prompts in der Produktions-Pipeline).
-- **Auflösung zur Laufzeit:** `src/lib/ai/prompt-governance.server.ts` wählt über `PromptRelease` + `PromptDefinition` die aktive Version pro Stufe (`EXTRACTION`, `RISK_AND_GUIDANCE`) und Muster `contractTypePattern` (mandantenspezifisch oder global `tenantId: null`). Fehlt ein Release, gilt **Registry-Default** (explizit, kein stiller Drift).
-- **Persistenz pro Lauf:** `AnalysisRun` speichert u. a. `extractionPromptKey` / `extractionPromptVersion`, `riskPromptKey` / `riskPromptVersion`, `promptBundleKey`, `runSequence` (jede neue Analyse = neuer Lauf, keine Überschreibung des vorherigen Ergebnisses). Router-Details pro Versuch: `AnalysisProviderDecision` (`selectionReason`, Modell, Anbieter).
-- **Seed:** `pnpm prisma db seed` legt Baseline-`PromptDefinition` und globale `PromptRelease` an (Version synchron zu `CONTRACT_ANALYSIS_PROMPT_VERSION` in `src/lib/ai/schemas/contract-analysis.ts`).
+Enthalten:
 
-### Evaluierung (Golden Set, CI ohne API)
+- Requirement Sets und Requirement Items
+- Evidence Sources
+- Evidence Mapping
+- Gap Findings mit Severity
+- Corrective Actions
+- Human Review States
+- Markdown-/CSV-Export fuer Evidence Packs
+- AuditEvent-Logging und textarme Audit-Metadaten
+- Offline Smoke Tests fuer Tenant-Isolation, Provider-Call-Schutz und Normlizenz-Grenzen
 
-- **Fälle:** `evals/contracts/cases/*.json` (kuratiert, ohne Mandantendaten).
-- **Runner:** `pnpm eval:contracts` setzt `EVAL_MOCK=true` und bewertet synthetische Pipeline-Ergebnisse gegen Erwartungen (Schema, Extraktion, Findings, Heuristiken). Ausgabe: JSON auf stdout; optional `--out=reports/contract-eval.json`.
-- **Modell-Matrix (Vergleich / Ranking):** Umgebungsvariable `EVAL_MODEL_MATRIX` (kommagetrennt, z. B. `gpt-4o-mini,claude-sonnet-4,gemini-2.5-pro`) oder CLI `--matrix=…`. Pro Eintrag wird ein eigener Variantenlauf ausgeführt; das JSON enthält `ranking` nach `passRate01`. Im Mock-Modus sind die Metriken pro Variante inhaltlich gleich — sinnvoll für CI-Struktur und Persistenz-Smoke; für echte Modellvergleiche `EVAL_MOCK` weglassen und Keys setzen.
-- **Live-LLM:** `EVAL_MOCK` weglassen, API-Keys setzen — dann echte Pipeline mit `createRegistryOnlyContractPromptResolver`. Pro Matrix-Eintrag erzwingt der Router-Kontext `evalPrimaryByStage` dasselbe Primärmodell für Extraktion und Risiko-Stufe (Fallbacks über unveränderte Verfügbarkeitslogik).
-- **DB-Persistenz (`EvalRun` / `EvalResultRow`):** `EVAL_PERSIST_DB=1` und/oder `--persist`, plus `DATABASE_URL`. Kurzform: `pnpm eval:contracts:persist`. Optional `EVAL_RUN_NAME`, `EVAL_EVALUATOR_NAME`. **Lesen:** Plattform-Admins unter `/dashboard/admin/prompt-governance` (letzte Läufe).
-- **Schwellen:** `EVAL_MIN_PASS_RATE` (0–1, Standard 1) bezieht sich auf alle Zellen (Fälle × Matrix-Varianten).
-- **CI:** Schritt mit Mock-Matrix in `.github/workflows/ci.yml` (ohne DB-Persistenz, damit der Schritt ohne Secrets-Abhängigkeit stabil bleibt).
+Nicht enthalten:
 
-### Human Review (KI-Findings)
+- produktive Public-LLM-Provider Calls ohne Freigabe
+- ISO-/DIN-/IATF-/VDA-Norm-Volltexte
+- ERP-/QMS-Schreibintegration
+- automatisches Zertifizierungsurteil
+- Garantie „Audit bestanden“
 
-- **Zustände am Lauf:** `AnalysisRun.reviewState` (u. a. `ANALYSIERT` nach erfolgreicher Pipeline, `IN_PRUEFUNG` nach erster Finding-Bewertung).
-- **Finding-Bewertungen:** `AnalysisFindingReview` (Entscheidung, Kommentar, optional angepasster Text). **Berechtigung:** Plattform `ANWALT`/`ADMIN` oder Mandantenrolle `OWNER`/`ADMIN` (`analysis-finding-review-policy.ts`). UI: Workbench-Panel pro Finding.
-- **RLS:** `AnalysisFindingReview` in `db/rls.sql` mandantenisoliert — nach Migration erneut `psql … -f db/rls.sql` ausführen.
+## Compliance-Leitplanken
 
-## Prisma
+### EU AI Act
 
-```bash
-pnpm prisma migrate dev --name init
-```
+NormPilot arbeitet als Assistenzsystem. KI-Ausgaben sind Entwuerfe und muessen durch Fachverantwortliche geprueft werden.
 
-Für Neon/Postgres mit Pooling gilt:
-- `DATABASE_URL` = Runtime/Pooling-Verbindung
-- `DIRECT_URL` = direkte Prisma-CLI-Verbindung (Migrate/Introspect)
-- Die Prisma-Skripte setzen für lokale Convenience automatisch `DIRECT_URL=$DATABASE_URL`, falls `DIRECT_URL` nicht explizit gesetzt ist.
+Pflichthinweis fuer KI-generierte Inhalte:
 
-## Hinweise
+> ⚠️ KI-generiert (NormPilot, limited_risk, EU AI Act). Vor Maßnahmenumsetzung durch Fachverantwortlichen prüfen.
 
-- Für produktiven Einsatz müssen Rechts- und AVV-Texte rechtlich geprüft werden.
-- OAuth-Credentials in `.env` ergänzen (`AUTH_GOOGLE_*`, `AUTH_MICROSOFT_*`).
-- Microsoft Entra wird nur geladen, wenn `AUTH_MICROSOFT_ID`, `AUTH_MICROSOFT_SECRET` **und** `AUTH_MICROSOFT_ENTRA_ID_ISSUER` gesetzt sind.
-- SCIM ist standardmäßig deaktiviert und wird nur aktiviert, wenn Token **und** `SCIM_TENANT_SLUG` gesetzt sind.
-- CI: GitHub Actions (lint/typecheck/build).
+### DSGVO
 
-## Tenant RLS (Enterprise)
-Nach `prisma migrate deploy` muss Row-Level Security angewendet werden:
+- Datensparsamkeit
+- Zweckbindung
+- Privacy by Design und by Default
+- keine personenbezogenen Daten in Logs, Tests, Seeds oder Screenshots
+- Pseudonymisierung vor Drittland-LLM-Transfer pruefen
+- echte Kundendaten nur in freigegebenen, geschuetzten Environments
 
-```bash
-psql "$DATABASE_URL" -f db/rls.sql
-```
+### GoBD / Audit Trail
 
-## PROD Deployment (Kurzablauf)
+- Audit-relevante Aktionen werden protokolliert
+- Hash-/tamper-evident Audit-Trail bleibt erhalten
+- Evidence Packs enthalten Quellen, Fundstellen, Prompt-Version, Modell/Provider, Zeitstempel und Review-Status
 
-Für produktive Deployments (z. B. CI/CD) sollte der Ablauf in dieser Reihenfolge erfolgen:
+### Normlizenz
+
+- Keine Norm-Volltexte im Repository
+- Nur kundeneigene Anforderungen, Checklisten, Kapitelcodes, Metadaten und Kurzreferenzen verwenden
+- Bei unbekanntem Normtext: `Diesen Abschnitt bitte direkt in der Norm prüfen.`
+
+## Tech Stack
+
+- Next.js 14 App Router
+- TypeScript
+- Tailwind CSS / shadcn/ui Patterns
+- Prisma ORM
+- PostgreSQL / Neon
+- NextAuth v5
+- RLS / Tenant-Isolation
+- Audit Events
+- Prompt Registry
+- Zod-validierte strukturierte Outputs
+- GitHub Actions CI / Security Gates
+- Vercel Deployment
+
+## Lokale Entwicklung
 
 ```bash
 pnpm install --frozen-lockfile
+pnpm prisma:validate
+pnpm prisma:generate
 pnpm lint
 pnpm typecheck
+pnpm test
+pnpm eval:normpilot
+pnpm smoke:normpilot
 pnpm build
-pnpm prisma migrate deploy
-psql "$DATABASE_URL" -f db/rls.sql
 ```
 
-Optional: Audit-Retention ausführen (z. B. als geplanter Job):
+## Environment Variables
 
-```bash
-psql "$DATABASE_URL" -f db/retention.sql
+Production-Ziel fuer Vercel `normpilot-industrie`:
+
+```text
+NEXTAUTH_URL=https://app.normpilot-industrie.de
+AUTH_TRUST_HOST=true
+NEXTAUTH_SECRET=<secret>
+DATABASE_URL=<neon-pooled-url>
+DIRECT_URL=<neon-direct-url>
+DATABASE_URL_PSQL=<neon-psql-direct-url>
 ```
 
-## Compliance Index
+Nicht fuer v0.1 setzen, solange keine explizite Freigabe vorliegt:
 
-### Security Controls (Tech)
-- **Tenant Isolation (Postgres RLS):** `db/rls.sql`
-- **Audit Logging:** `AuditEvent` (siehe DB Schema), Admin API: `/api/admin/audit`, UI: `/dashboard/audit`
-- **Tamper-Evident Audit Trail:** `AuditEvent.prevHash` / `AuditEvent.eventHash`
-- **Retention (Audit):** `db/retention.sql`
+```text
+OPENAI_API_KEY
+ANTHROPIC_API_KEY
+GEMINI_API_KEY
+LLAMA_API_KEY
+```
 
-### Identity & Access (Enterprise)
-- **SSO (Microsoft Entra OIDC):** `docs/sso-microsoft-entra.md`
-- **SCIM v2 (Users/Groups):** `docs/scim.md`
-  - Endpoints: `/api/scim/v2/*`
-  - Auth: Bearer Token (`SCIM_BEARER_TOKEN` / `SCIM_BEARER_TOKENS`) + optional `SCIM_ALLOWED_IPS`
+## Repository Governance
 
-### ISMS / ISO 27001 Preparation
-- ISMS Overview: `docs/isms/README.md`
-- Risk Register: `docs/isms/risk-register.md`
-- Asset Inventory: `docs/isms/asset-inventory.md`
-- Access Control Policy: `docs/isms/access-control-policy.md`
-- Logging & Monitoring Policy: `docs/isms/logging-monitoring-policy.md`
-- Incident Response: `docs/isms/incident-response.md`
-- Vendor Management: `docs/isms/vendor-management.md`
-- Change Management: `docs/isms/change-management.md`
+- `main` ist protected.
+- Aenderungen erfolgen ueber PRs.
+- Kein Merge ohne explizites `ok merge` des Owners.
+- Keine Secrets, Kundendaten oder Norm-Volltexte committen.
+- PRs muessen Tests, Compliance Impact, Migrationshinweis und bekannte Grenzen dokumentieren.
 
-### Privacy (DSGVO)
-- DSFA/DPIA Template: `docs/privacy/dsfa-template.md`
-- AVV Template: `docs/privacy/avv-template.md`
+## Relevante Dokumentation
+
+- `AGENTS.md` — verbindliche Agent-/Codex-Regeln
+- `docs/normpilot-industrie/repo-setup.md` — Enterprise Repo Setup
+- `docs/normpilot-industrie/vercel-neon-production.md` — Vercel/Neon Production Setup
+- `docs/normpilot-industrie/standalone-cleanup-plan.md` — KanzleiAI-to-NormPilot Cleanup Plan
+- `docs/normpilot-industrie/security-governance.md` — Security, Datenschutz und Audit-Trail-Governance
+
+## Produktpositionierung
+
+NormPilot wird verkauft als:
+
+> Audit Evidence Sprint fuer Industrie-KMU: In 14 Tagen von verstreuten Bestandsdokumenten zu einer reviewbaren Evidence Matrix, Gap-Liste und Maßnahmenplanung.
+
+Nicht verkaufen als:
+
+- generische KI-Plattform
+- ERP-Ersatz
+- QMS-/IMS-Komplettsystem
+- autonomer Auditor
