@@ -22,6 +22,7 @@ const workspaceNav = [
   { label: "Benchmarking", href: "/workspace/benchmarking", emoji: "📊" },
   { label: "Vertragsradar", href: "/workspace/vertragsradar", emoji: "🛰️", badge: "NEU" },
   { label: "Verhandlungssimulator", href: "/workspace/verhandlung", emoji: "🎯", badge: "BETA" },
+  { label: "Business Central", href: "/workspace/integrationen/bc", emoji: "🔗", badge: "DEMO" },
 ]
 
 const adminNav = [
@@ -51,7 +52,7 @@ function NavItem({ item, active, collapsed }: { item: typeof workspaceNav[0]; ac
       {!collapsed && (
         <span className="flex flex-1 items-center gap-1.5 truncate">
           <span className="text-[13px] truncate">{item.label}</span>
-          {"badge" in item && item.badge && <span className={`shrink-0 rounded px-1 py-0.5 text-[8px] font-bold ${item.badge === "NEU" ? "bg-gold-500 text-white" : "bg-blue-500 text-white"}`}>{item.badge}</span>}
+          {"badge" in item && item.badge && <span className={`shrink-0 rounded px-1 py-0.5 text-[8px] font-bold ${item.badge === "NEU" ? "bg-gold-500 text-white" : item.badge === "DEMO" ? "bg-[#003856] text-white" : "bg-blue-500 text-white"}`}>{item.badge}</span>}
         </span>
       )}
       {collapsed && (
