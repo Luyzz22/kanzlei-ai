@@ -1,343 +1,885 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "next/link"
+import { useEffect, useRef, useState } from "react"
 
-export default function HomePage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [mobileMenu, setMobileMenu] = useState(false);
+/* ============================================================
+   Kleine, dependency-freie Animations-Helfer
+   ============================================================ */
+
+function prefersReduced() {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+}
+
+function Reveal({
+  children,
+  className = "",
+  delay = 0,
+}: {
+  children: React.ReactNode
+  className?: string
+  delay?: number
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [shown, setShown] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem("sbs_token");
-    setIsLoggedIn(!!token);
-  }, []);
+    const el = ref.current
+    if (!el) return
+    if (prefersReduced()) {
+      setShown(true)
+      return
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            setShown(true)
+            io.disconnect()
+          }
+        })
+      },
+      { threshold: 0.15 }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
-      {/* Header */}
-      <header className="fixed top-0 w-full bg-slate-950/80 backdrop-blur-xl border-b border-white/5 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center font-bold text-slate-900 text-sm">SN</div>
-            <span className="text-xl font-bold tracking-tight">SBS Nexus</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#produkte" className="text-sm text-slate-400 hover:text-white transition">Produkte</a>
-            <a href="#features" className="text-sm text-slate-400 hover:text-white transition">Features</a>
-            <a href="#preise" className="text-sm text-slate-400 hover:text-white transition">Preise</a>
-            <a href="https://sbsdeutschland.com/sbshomepage/" className="text-sm text-slate-400 hover:text-white transition">Unternehmen</a>
-            <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="text-sm text-slate-400 hover:text-white transition">Kontakt</a>
-          </nav>
-          <div className="flex items-center gap-3">
-            {isLoggedIn ? (
-              <Link href="/dashboard" className="bg-amber-500 hover:bg-amber-400 text-slate-900 px-5 py-2.5 rounded-lg text-sm font-semibold transition">
-                Dashboard
-              </Link>
-            ) : (
-              <>
-                <Link href="/login" className="text-sm text-slate-400 hover:text-white transition hidden md:block">Anmelden</Link>
-                <Link href="/register" className="bg-amber-500 hover:bg-amber-400 text-slate-900 px-5 py-2.5 rounded-lg text-sm font-semibold transition">
-                  Kostenlos starten
-                </Link>
-              </>
-            )}
-            <button onClick={() => setMobileMenu(!mobileMenu)} className="md:hidden text-slate-400 hover:text-white p-2">
-              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><path d={mobileMenu ? "M6 6l12 12M6 18L18 6" : "M4 6h16M4 12h16M4 18h16"}/></svg>
-            </button>
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: shown ? 1 : 0,
+        transform: shown ? "none" : "translateY(22px)",
+        transition: `opacity .7s cubic-bezier(.2,.7,.2,1) ${delay}ms, transform .7s cubic-bezier(.2,.7,.2,1) ${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function CountUp({
+  end,
+  prefix = "",
+  suffix = "",
+  className = "",
+}: {
+  end: number
+  prefix?: string
+  suffix?: string
+  className?: string
+}) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const [val, setVal] = useState(0)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (prefersReduced()) {
+      setVal(end)
+      return
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return
+          io.disconnect()
+          const dur = 1100
+          const t0 = performance.now()
+          const tick = (t: number) => {
+            const p = Math.min(1, (t - t0) / dur)
+            setVal(Math.round(end * (1 - Math.pow(1 - p, 3))))
+            if (p < 1) requestAnimationFrame(tick)
+          }
+          requestAnimationFrame(tick)
+        })
+      },
+      { threshold: 0.4 }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [end])
+
+  return (
+    <span ref={ref} className={className}>
+      {prefix}
+      {val}
+      {suffix}
+    </span>
+  )
+}
+
+/* ============================================================
+   Hero-Preview — animiertes Workspace-Mockup (Desktop)
+   ============================================================ */
+
+function HeroPreview() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    if (prefersReduced()) {
+      setMounted(true)
+      return
+    }
+    const t = setTimeout(() => setMounted(true), 80)
+    return () => clearTimeout(t)
+  }, [])
+
+  const docs = [
+    { name: "Arbeitsvertrag_Mueller.pdf", risks: 8, score: 72, label: "Mittleres Risiko", tone: "amber" },
+    { name: "SaaS_Vertrag_CloudCorp.pdf", risks: 3, score: 34, label: "Geringes Risiko", tone: "emerald" },
+    { name: "NDA_Partner_GmbH.pdf", risks: 12, score: 89, label: "Hohes Risiko", tone: "red" },
+  ] as const
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-card">
+      <div className="mb-4 flex items-center gap-2">
+        <div className="h-3 w-3 rounded-full bg-red-300" />
+        <div className="h-3 w-3 rounded-full bg-amber-300" />
+        <div className="h-3 w-3 rounded-full bg-emerald-300" />
+        <span className="ml-2 text-[11px] text-gray-400">kanzlei-ai.com/workspace</span>
+        <span className="ml-auto inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-600">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
+          Analyse aktiv
+        </span>
+      </div>
+
+      <div className="space-y-2.5">
+        {docs.map((d, i) => (
+          <div
+            key={d.name}
+            className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3.5"
+            style={{
+              opacity: mounted ? 1 : 0,
+              transform: mounted ? "none" : "translateY(10px)",
+              transition: `opacity .5s ease ${i * 140 + 150}ms, transform .5s ease ${i * 140 + 150}ms`,
+            }}
+          >
+            <span className="text-[20px]">📄</span>
+            <div className="flex-1">
+              <p className="text-[13px] font-medium text-gray-900">{d.name}</p>
+              <p className="text-[11px] text-gray-400">
+                <CountUp end={d.risks} /> Risiken erkannt · Score: <CountUp end={d.score} />/100
+              </p>
+            </div>
+            <span
+              className={
+                d.tone === "amber"
+                  ? "rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-700"
+                  : d.tone === "emerald"
+                  ? "rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-medium text-emerald-700"
+                  : "rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-700"
+              }
+            >
+              {d.label}
+            </span>
           </div>
+        ))}
+      </div>
+
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <div className="rounded-lg bg-gold-50 p-2.5 text-center">
+          <p className="text-[16px] font-semibold text-gray-900">
+            <CountUp end={847} />
+          </p>
+          <p className="text-[10px] text-gold-700">Verträge</p>
         </div>
-        {/* Mobile Menu */}
-        {mobileMenu && (
-          <div className="md:hidden bg-slate-950/95 backdrop-blur-xl border-t border-white/5 px-6 py-6 space-y-4">
-            <a href="#produkte" onClick={() => setMobileMenu(false)} className="block text-slate-300 hover:text-white">Produkte</a>
-            <a href="#features" onClick={() => setMobileMenu(false)} className="block text-slate-300 hover:text-white">Features</a>
-            <a href="#preise" onClick={() => setMobileMenu(false)} className="block text-slate-300 hover:text-white">Preise</a>
-            <a href="https://sbsdeutschland.com/sbshomepage/" className="block text-slate-300 hover:text-white">Unternehmen</a>
-            <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="block text-slate-300 hover:text-white">Kontakt</a>
-            {!isLoggedIn && <Link href="/login" onClick={() => setMobileMenu(false)} className="block text-slate-300 hover:text-white">Anmelden</Link>}
+        <div className="rounded-lg bg-gold-50 p-2.5 text-center">
+          <p className="text-[16px] font-semibold text-gray-900">
+            <CountUp end={94} suffix="%" />
+          </p>
+          <p className="text-[10px] text-gold-700">Genauigkeit</p>
+        </div>
+        <div className="rounded-lg bg-gold-50 p-2.5 text-center">
+          <p className="text-[16px] font-semibold text-gray-900">
+            <CountUp end={30} prefix="<" suffix="s" />
+          </p>
+          <p className="text-[10px] text-gold-700">Analysezeit</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ============================================================
+   Signature: interaktive Klausel-Demo
+   ============================================================ */
+
+type ClauseTone = "high" | "mid" | "low"
+type Clause = {
+  id: string
+  tone: ClauseTone
+  text: string
+  label: string
+  title: string
+  quote: string
+  norm: string
+  rec: string
+}
+
+const CLAUSES: Clause[] = [
+  {
+    id: "avail",
+    tone: "mid",
+    text: "Es wird eine Verfügbarkeit von 99,0 % im Jahresmittel angestrebt; Service-Gutschriften bei Unterschreitung sind ausgeschlossen.",
+    label: "Mittleres Risiko",
+    title: "SLA ohne Service-Gutschrift",
+    quote: "„…Verfügbarkeit von 99,0 % … Service-Gutschriften … ausgeschlossen.“",
+    norm: "AGB-rechtliche Angemessenheit (§ 307 BGB)",
+    rec: "Mindestverfügbarkeit auf marktübliche 99,9 % anheben und Service-Gutschriften als Rechtsfolge aufnehmen.",
+  },
+  {
+    id: "dp",
+    tone: "high",
+    text: "Die Datenverarbeitung erfolgt in Rechenzentren innerhalb und außerhalb der EU nach Wahl des Auftragnehmers.",
+    label: "Hohes Risiko",
+    title: "Datenverarbeitung außerhalb der EU",
+    quote: "„…Rechenzentren innerhalb und außerhalb der EU nach Wahl des Auftragnehmers.“",
+    norm: "Art. 44 ff. DSGVO (Drittlandtransfer)",
+    rec: "Verarbeitung vertraglich auf EU-/EWR-Standorte beschränken oder geeignete Garantien (SCC) verbindlich vereinbaren.",
+  },
+  {
+    id: "agb",
+    tone: "mid",
+    text: "Der Auftragnehmer ist berechtigt, die AGB einseitig zu ändern; die geänderten Bedingungen gelten als angenommen, sofern nicht innerhalb von 14 Tagen widersprochen wird.",
+    label: "Mittleres Risiko",
+    title: "Einseitiges AGB-Änderungsrecht",
+    quote: "„…AGB einseitig zu ändern … als angenommen … innerhalb von 14 Tagen widersprochen.“",
+    norm: "§ 308 Nr. 5 BGB (Zustimmungsfiktion)",
+    rec: "Zustimmungsfiktion entfernen oder auf nicht wesentliche Änderungen mit angemessener Frist und Hinweispflicht begrenzen.",
+  },
+  {
+    id: "liab",
+    tone: "low",
+    text: "Die Gesamthaftung ist auf 10 % der Jahresvergütung begrenzt.",
+    label: "Geringes Risiko",
+    title: "Haftungsbegrenzung auf 10 %",
+    quote: "„Die Gesamthaftung ist auf 10 % der Jahresvergütung begrenzt.“",
+    norm: "§ 309 Nr. 7 BGB",
+    rec: "Marktüblich. Sicherstellen, dass Vorsatz und grobe Fahrlässigkeit von der Begrenzung ausgenommen bleiben.",
+  },
+]
+
+function underlineClass(tone: ClauseTone) {
+  if (tone === "high") return "decoration-red-400"
+  if (tone === "mid") return "decoration-amber-400"
+  return "decoration-emerald-400"
+}
+function badgeClass(tone: ClauseTone) {
+  if (tone === "high") return "bg-red-100 text-red-700"
+  if (tone === "mid") return "bg-amber-100 text-amber-700"
+  return "bg-emerald-100 text-emerald-700"
+}
+
+function ClauseDemo() {
+  const [activeId, setActiveId] = useState<string>("dp")
+  const active = CLAUSES.find((c) => c.id === activeId) ?? CLAUSES[1]
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-start">
+      <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-card sm:p-9">
+        <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400">
+          Auszug · SaaS-Vertrag (Cloud-Dienstleister)
+        </p>
+        <p className="text-[16.5px] leading-[1.95] text-gray-700">
+          Die Bereitstellung erfolgt als Software-as-a-Service.{" "}
+          {CLAUSES.map((c) => (
+            <span key={c.id}>
+              <button
+                onClick={() => setActiveId(c.id)}
+                onMouseEnter={() => setActiveId(c.id)}
+                className={`cursor-pointer rounded px-1 underline decoration-2 underline-offset-4 transition-colors hover:bg-gray-100 ${underlineClass(
+                  c.tone
+                )} ${activeId === c.id ? "bg-gray-100" : ""}`}
+              >
+                {c.text}
+              </button>{" "}
+            </span>
+          ))}
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-card lg:sticky lg:top-24">
+        <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold ${badgeClass(active.tone)}`}>
+          ● {active.label}
+        </span>
+        <h3 className="mt-4 text-[19px] font-semibold leading-snug text-gray-950">{active.title}</h3>
+        <p className="mt-3 border-l-2 border-gold-300 pl-3 text-[14px] italic text-gray-500">{active.quote}</p>
+        <div className="mt-5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#003856]">Einschlägige Norm</p>
+          <p className="mt-1 text-[14px] text-gray-700">{active.norm}</p>
+        </div>
+        <div className="mt-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#003856]">Empfehlung</p>
+          <p className="mt-1 text-[14px] text-gray-700">{active.rec}</p>
+        </div>
+        <p className="mt-5 text-[12px] text-gray-400">Klicken Sie auf eine markierte Klausel im Vertrag.</p>
+      </div>
+    </div>
+  )
+}
+
+/* ============================================================
+   Interaktive Pipeline (ersetzt „So funktioniert's")
+   ============================================================ */
+
+const PIPELINE = [
+  {
+    n: "01",
+    title: "Klassifikation",
+    blurb: "Vertragstyp, Sprache und fachlicher Kontext werden erkannt.",
+  },
+  {
+    n: "02",
+    title: "Extraktion",
+    blurb: "Relevante Klauseln werden strukturiert herausgelöst.",
+  },
+  {
+    n: "03",
+    title: "Risikoanalyse",
+    blurb: "Risiken werden bewertet, mit Normen verknüpft und priorisiert.",
+  },
+] as const
+
+function AnalysisPipeline() {
+  const [active, setActive] = useState(0)
+  const [auto, setAuto] = useState(true)
+
+  useEffect(() => {
+    if (!auto || prefersReduced()) return
+    const t = setInterval(() => setActive((a) => (a + 1) % 3), 3600)
+    return () => clearInterval(t)
+  }, [auto])
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
+      <div className="space-y-2.5">
+        {PIPELINE.map((s, i) => (
+          <button
+            key={s.n}
+            onClick={() => {
+              setActive(i)
+              setAuto(false)
+            }}
+            className={`flex w-full gap-4 rounded-2xl border p-5 text-left transition-all ${
+              active === i
+                ? "border-gray-200 bg-white shadow-soft"
+                : "border-transparent hover:bg-white"
+            }`}
+          >
+            <span className={`text-[18px] font-bold ${active === i ? "text-[#003856]" : "text-gold-600"}`}>{s.n}</span>
+            <span>
+              <span className="block text-[16px] font-semibold text-gray-900">{s.title}</span>
+              <span className="mt-0.5 block text-[14px] text-gray-500">{s.blurb}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <div className="min-h-[320px] rounded-2xl border border-gray-200 bg-white p-6 shadow-card sm:p-7">
+        {active === 0 && (
+          <div className="animate-fade-in">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400">Schritt 01 · Klassifikation</p>
+            {[
+              ["Vertragstyp", "SaaS-/Cloud-Vertrag"],
+              ["Sprache", "Deutsch (DE)"],
+              ["Gerichtsbarkeit", "DACH"],
+              ["Konfidenz", "96 %"],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between border-b border-gray-100 py-3.5 text-[15px] last:border-0">
+                <span className="text-gray-500">{k}</span>
+                <span className="font-medium text-gray-900">{v}</span>
+              </div>
+            ))}
           </div>
         )}
-      </header>
-
-      {/* Hero */}
-      <section className="relative pt-36 pb-24 px-6 overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl"></div>
-        
-        <div className="max-w-7xl mx-auto relative">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full">
-              <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
-              <span className="text-amber-400 text-sm font-medium">Neu: Smart Maintenance Alert mit Gemini Vision</span>
-            </div>
-            
-            <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-[1.1] tracking-tight">
-              Enterprise KI-Plattform
-              <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500">
-                für den deutschen Mittelstand
-              </span>
-            </h1>
-            
-            <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
-              Rechnungsverarbeitung, Vertragsanalyse, Wartungs-KI und technische Dokumentation – 
-              alles DSGVO-konform auf Servern in Frankfurt.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register" className="bg-amber-500 hover:bg-amber-400 text-slate-900 px-8 py-4 rounded-xl font-semibold text-lg transition shadow-lg shadow-amber-500/20">
-                Kostenlos testen
-              </Link>
-              <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="border border-slate-700 hover:border-slate-500 text-white px-8 py-4 rounded-xl font-semibold text-lg transition flex items-center justify-center gap-2">
-                Demo vereinbaren
-              </a>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="mt-24 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            {[
-              { value: "5", label: "KI-Module", sub: "in Produktion" },
-              { value: "98.5%", label: "KI-Genauigkeit", sub: "Ø über alle Module" },
-              { value: "<3s", label: "Verarbeitung", sub: "pro Dokument" },
-              { value: "100%", label: "DSGVO", sub: "Server in Frankfurt" },
-            ].map((stat, i) => (
-              <div key={i} className="text-center p-6 bg-white/[0.02] border border-white/5 rounded-2xl">
-                <p className="text-3xl md:text-4xl font-bold text-amber-400">{stat.value}</p>
-                <p className="text-white text-sm font-medium mt-1">{stat.label}</p>
-                <p className="text-slate-500 text-xs mt-0.5">{stat.sub}</p>
+        {active === 1 && (
+          <div className="animate-fade-in">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400">Schritt 02 · Extraktion</p>
+            {["§ Haftung", "§ Laufzeit & Kündigung", "§ Datenverarbeitung", "§ Gerichtsstand", "§ Vergütung"].map((k) => (
+              <div key={k} className="flex items-center justify-between border-b border-gray-100 py-3.5 text-[15px] last:border-0">
+                <span className="text-gray-500">{k}</span>
+                <span className="font-medium text-emerald-600">erkannt</span>
               </div>
             ))}
+          </div>
+        )}
+        {active === 2 && (
+          <div className="animate-fade-in space-y-3">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400">Schritt 03 · Risikoanalyse</p>
+            {[
+              { tone: "bg-red-500", t: "Datenverarbeitung außerhalb der EU", s: "Keine Beschränkung auf EU-Standorte.", n: "Art. 44 ff. DSGVO" },
+              { tone: "bg-amber-500", t: "Einseitiges AGB-Änderungsrecht", s: "Zustimmungsfiktion nach 14 Tagen.", n: "§ 308 Nr. 5 BGB" },
+              { tone: "bg-emerald-500", t: "Haftungsbegrenzung 10 %", s: "Marktüblich, aber prüfenswert.", n: "§ 309 Nr. 7 BGB" },
+            ].map((f) => (
+              <div key={f.t} className="flex gap-3.5 rounded-xl border border-gray-100 bg-gray-50 p-3.5">
+                <span className={`w-1.5 flex-none rounded-full ${f.tone}`} />
+                <div>
+                  <p className="text-[14.5px] font-medium text-gray-900">{f.t}</p>
+                  <p className="text-[13px] text-gray-500">{f.s}</p>
+                  <p className="mt-1 text-[12px] font-semibold text-[#003856]">{f.n}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ============================================================
+   Statische Inhalte (aus bestehender Seite übernommen)
+   ============================================================ */
+
+const capabilities = [
+  {
+    emoji: "📋",
+    title: "Vertragsprüfung DE/EN",
+    description:
+      "KI-gestützte Analyse deutscher und englischsprachiger Verträge: Arbeits-, SaaS-, NDA-, Lieferanten- und 12 weitere Vertragstypen — mit Recherche zu BGB, HGB sowie Common Law.",
+  },
+  {
+    emoji: "⚠️",
+    title: "Risikoerkennung",
+    description:
+      "Automatische Identifikation kritischer Klauseln mit Risikobewertung, Handlungsempfehlungen und Gesetzesreferenzen.",
+  },
+  {
+    emoji: "✅",
+    title: "Review & Freigabe",
+    description:
+      "Strukturierte Prüfprozesse mit Rollenkonzept, Human-in-the-Loop und nachvollziehbarer Entscheidungshistorie.",
+  },
+  {
+    emoji: "🔒",
+    title: "Audit & Nachweise",
+    description:
+      "Manipulationssichere Protokollierung aller Entscheidungen für ISO 27001, DSGVO und interne Governance.",
+  },
+]
+
+const trustSignals = [
+  { emoji: "🇪🇺", label: "DSGVO-konform", sublabel: "EU-Betrieb" },
+  { emoji: "🔐", label: "Mandantentrennung", sublabel: "Row-Level Security" },
+  { emoji: "🤖", label: "Multi-Provider KI", sublabel: "OpenAI · Claude · Gemini" },
+  { emoji: "📜", label: "Audit Trail", sublabel: "Manipulationssicher" },
+]
+
+const contractTypes = [
+  { emoji: "👔", label: "Arbeitsvertrag", jurisdiction: "DE" },
+  { emoji: "☁️", label: "SaaS-Vertrag", jurisdiction: "DE" },
+  { emoji: "🤝", label: "NDA", jurisdiction: "DE" },
+  { emoji: "🏭", label: "Lieferantenvertrag", jurisdiction: "DE" },
+  { emoji: "🔧", label: "Dienstleistungsvertrag", jurisdiction: "DE" },
+  { emoji: "🏢", label: "Mietvertrag", jurisdiction: "DE" },
+  { emoji: "🛒", label: "Kaufvertrag", jurisdiction: "DE" },
+  { emoji: "⚖️", label: "AGB", jurisdiction: "DE" },
+  { emoji: "👔", label: "Employment Agreement", jurisdiction: "EN" },
+  { emoji: "☁️", label: "SaaS Agreement / MSA", jurisdiction: "EN" },
+  { emoji: "🤝", label: "NDA / Confidentiality", jurisdiction: "EN" },
+  { emoji: "🏭", label: "Supply Agreement", jurisdiction: "EN" },
+  { emoji: "🔧", label: "Service Agreement", jurisdiction: "EN" },
+  { emoji: "💼", label: "License Agreement", jurisdiction: "EN" },
+  { emoji: "📜", label: "Terms & Conditions", jurisdiction: "EN" },
+  { emoji: "🤲", label: "Data Processing Agreement", jurisdiction: "EN" },
+]
+
+const processSteps = [
+  { step: "01", emoji: "📤", title: "Upload", description: "Vertrag als PDF hochladen. Die KI erkennt den Vertragstyp automatisch." },
+  { step: "02", emoji: "🔍", title: "Analyse", description: "Multi-Provider KI extrahiert Daten, identifiziert Risiken und prüft gegen deutsches Recht." },
+  { step: "03", emoji: "👨‍⚖️", title: "Review", description: "Juristische Prüfung der KI-Hinweise mit klaren Freigabeschritten und Rollenkonzept." },
+  { step: "04", emoji: "📊", title: "Nachweis", description: "Export als PDF-Report, DATEV-Anbindung und manipulationssicheres Audit-Protokoll." },
+]
+
+/* ============================================================
+   Seite
+   ============================================================ */
+
+export default function LandingPage() {
+  return (
+    <main>
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-[#FAFAF7] pb-20 pt-20 sm:pb-28 sm:pt-28 lg:pb-36 lg:pt-32">
+        <div className="pointer-events-none absolute -right-40 -top-40 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-gold-200/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-20 h-[400px] w-[400px] rounded-full bg-gradient-to-tr from-[#003856]/[0.04] to-transparent blur-3xl" />
+
+        <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+          <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+            <div>
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-4 py-1.5 shadow-soft">
+                <span className="text-[16px]">⚖️</span>
+                <span className="text-[12px] font-medium text-gold-700">KI-Vertragsanalyse für juristische Teams</span>
+              </div>
+
+              <h1 className="max-w-xl text-[2.5rem] font-semibold leading-[1.1] tracking-tight text-gray-950 sm:text-[3.25rem]">
+                Verträge prüfen. <span className="text-[#003856]">Risiken erkennen.</span> Sicher entscheiden.
+              </h1>
+
+              <p className="mt-6 max-w-lg text-[17px] leading-relaxed text-gray-500">
+                KanzleiAI unterstützt Kanzleien und Rechtsabteilungen bei der strukturierten Prüfung von Verträgen in{" "}
+                <span className="font-medium text-gray-700">Deutsch und Englisch</span> — mit nachvollziehbarer KI und
+                auditfähigen Nachweisen.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/enterprise-kontakt"
+                  className="inline-flex items-center justify-center rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white shadow-lg shadow-[#003856]/12 transition-all hover:bg-[#002a42] active:scale-[0.98]"
+                >
+                  Demo anfragen →
+                </Link>
+                <Link
+                  href="/produkt"
+                  className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-7 py-3.5 text-[15px] font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50 active:scale-[0.98]"
+                >
+                  Produkt ansehen
+                </Link>
+              </div>
+
+              <p className="mt-8 text-[12px] text-gray-400">
+                🇩🇪 Ein Produkt der SBS Deutschland GmbH &amp; Co. KG · Made in Germany
+              </p>
+            </div>
+
+            {/* Right: animiertes Mockup */}
+            <div className="hidden lg:block">
+              <HeroPreview />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Products */}
-      <section id="produkte" className="py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-amber-400 text-sm font-semibold tracking-wider uppercase mb-3">Plattform</p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">5 KI-Module. Eine Plattform.</h2>
-            <p className="text-slate-400 max-w-xl mx-auto">Modulare Enterprise-Lösungen, die sich nahtlos in Ihre bestehenden Prozesse integrieren.</p>
+      {/* Trust Strip */}
+      <section className="border-y border-gray-200 bg-gold-50/40">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px sm:grid-cols-4 lg:px-10">
+          {trustSignals.map((signal) => (
+            <div key={signal.label} className="bg-white px-6 py-6 text-center sm:py-7">
+              <p className="text-[18px]">{signal.emoji}</p>
+              <p className="mt-1 text-[14px] font-semibold text-gray-900">{signal.label}</p>
+              <p className="text-[12px] text-gray-500">{signal.sublabel}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Platform Metrics (mit count-up) */}
+      <section className="border-b border-gray-200 bg-white py-16">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="text-center">
+              <p className="text-[2.5rem] font-semibold tracking-tight text-[#003856]">
+                <CountUp end={3} prefix="<" suffix="s" />
+              </p>
+              <p className="mt-1 text-[14px] font-medium text-gray-900">Analyse-Antwortzeit</p>
+              <p className="text-[12px] text-gray-400">Multi-Provider KI-Pipeline</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[2.5rem] font-semibold tracking-tight text-[#003856]">
+                <CountUp end={12} />
+              </p>
+              <p className="mt-1 text-[14px] font-medium text-gray-900">Kernmodule</p>
+              <p className="text-[12px] text-gray-400">Inkl. Vertragsradar + Simulator</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[2.5rem] font-semibold tracking-tight text-[#003856]">
+                <CountUp end={78} />
+              </p>
+              <p className="mt-1 text-[14px] font-medium text-gray-900">Enterprise-Seiten</p>
+              <p className="text-[12px] text-gray-400">Analyse bis Compliance-Monitor</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[2.5rem] font-semibold tracking-tight text-[#003856]">
+                <CountUp end={34} />
+              </p>
+              <p className="mt-1 text-[14px] font-medium text-gray-900">API-Endpunkte</p>
+              <p className="text-[12px] text-gray-400">REST + Webhooks + SCIM</p>
+            </div>
           </div>
-          
-          {/* Featured: Smart Maintenance Alert */}
-          <div className="mb-8">
-            <Link href="/maintenance" className="group block relative bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border-2 border-amber-500/30 rounded-3xl p-8 md:p-12 hover:border-amber-500/60 transition-all duration-500 overflow-hidden">
-              <div className="absolute top-4 right-4 md:top-6 md:right-6 bg-amber-500 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide">Neu in 2026</div>
-              <div className="flex flex-col md:flex-row md:items-center gap-8">
-                <div className="flex-shrink-0">
-                  <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center text-4xl shadow-lg shadow-amber-500/20">
-                    📸
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl md:text-3xl font-bold mb-3">Smart Maintenance Alert</h3>
-                  <p className="text-slate-400 text-lg mb-4 max-w-2xl">
-                    Techniker fotografieren defekte Teile – Gemini Vision identifiziert automatisch Komponenten, 
-                    prüft Garantie und empfiehlt Beschaffung. Von der Kamera zur Bestellung in Sekunden.
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    {["Gemini 2.0 Flash Vision", "95% Confidence", "Auto-Beschaffung", "Slack & E-Mail Alerts", "Mobile PWA"].map((tag, i) => (
-                      <span key={i} className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full text-sm">{tag}</span>
-                    ))}
-                  </div>
-                </div>
-                <div className="hidden md:flex items-center text-amber-400 group-hover:translate-x-2 transition-transform">
-                  <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 16h22m-7-7l7 7-7 7"/></svg>
-                </div>
-              </div>
+        </div>
+      </section>
+
+      {/* SIGNATURE: Klausel-Demo */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <Reveal className="mx-auto mb-12 max-w-3xl text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🔍 Sehen, was die KI sieht</p>
+            <h2 className="mt-3 text-display-sm text-gray-950">Jede Markierung ist nachvollziehbar.</h2>
+            <p className="mt-4 text-[16px] text-gray-500">
+              Klicken Sie auf eine markierte Klausel — KanzleiAI zeigt Risiko, einschlägige Norm und eine konkrete
+              Empfehlung. Kein Score ohne Begründung.
+            </p>
+          </Reveal>
+          <Reveal>
+            <ClauseDemo />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Pipeline (ersetzt How it works) */}
+      <section className="border-y border-gray-200 bg-gray-50 py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <Reveal className="mx-auto mb-12 max-w-3xl text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">⚡ Wie es funktioniert</p>
+            <h2 className="mt-3 text-display-sm text-gray-950">Von der Datei zum belastbaren Befund — in drei Schritten.</h2>
+            <p className="mt-4 text-[16px] text-gray-500">
+              Jeder Schritt ist nachvollziehbar dokumentiert. Keine Blackbox, sondern eine prüfbare Kette von der
+              Klassifikation bis zur Empfehlung.
+            </p>
+          </Reveal>
+          <Reveal>
+            <AnalysisPipeline />
+          </Reveal>
+          <div className="mt-10 text-center">
+            <Link href="/workspace/analyse" className="rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42]">
+              Jetzt ausprobieren →
             </Link>
           </div>
-
-          {/* Product Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Rechnungsverarbeitung */}
-            <a href="https://app.sbsdeutschland.com" className="group bg-white/[0.02] border border-white/5 rounded-2xl p-8 hover:border-cyan-500/30 hover:bg-white/[0.04] transition-all duration-300">
-              <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center text-2xl mb-6">📄</div>
-              <h3 className="text-xl font-semibold mb-2">Rechnungsverarbeitung</h3>
-              <p className="text-slate-500 text-sm mb-5">OCR + KI-Extraktion mit DATEV-Export. XRechnung, ZUGFeRD und E-Rechnung ready.</p>
-              <ul className="space-y-2.5 text-sm text-slate-400">
-                <li className="flex items-center gap-2"><span className="text-cyan-400 text-xs">●</span> Auto-Kontierung SKR03/04</li>
-                <li className="flex items-center gap-2"><span className="text-cyan-400 text-xs">●</span> DATEV-Export</li>
-                <li className="flex items-center gap-2"><span className="text-cyan-400 text-xs">●</span> Zahlungsmanagement</li>
-                <li className="flex items-center gap-2"><span className="text-cyan-400 text-xs">●</span> Skonto-Optimierung</li>
-              </ul>
-            </a>
-            
-            {/* Vertragsanalyse */}
-            <a href="https://contract.sbsdeutschland.com" className="group bg-white/[0.02] border border-white/5 rounded-2xl p-8 hover:border-purple-500/30 hover:bg-white/[0.04] transition-all duration-300">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center text-2xl mb-6">📝</div>
-              <h3 className="text-xl font-semibold mb-2">Vertragsanalyse</h3>
-              <p className="text-slate-500 text-sm mb-5">Multimodale Analyse von Verträgen, Klauseln und Risiken mit automatischem Fristentracking.</p>
-              <ul className="space-y-2.5 text-sm text-slate-400">
-                <li className="flex items-center gap-2"><span className="text-purple-400 text-xs">●</span> Risiko-Erkennung</li>
-                <li className="flex items-center gap-2"><span className="text-purple-400 text-xs">●</span> Vertragsvergleich</li>
-                <li className="flex items-center gap-2"><span className="text-purple-400 text-xs">●</span> Klausel-Bibliothek</li>
-                <li className="flex items-center gap-2"><span className="text-purple-400 text-xs">●</span> JSON/CSV-Export</li>
-              </ul>
-            </a>
-            
-            {/* HydraulikDoc AI */}
-            <a href="https://sbsdeutschland.com/static/landing/hydraulikdoc.html" className="group bg-white/[0.02] border border-white/5 rounded-2xl p-8 hover:border-orange-500/30 hover:bg-white/[0.04] transition-all duration-300">
-              <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center text-2xl mb-6">🔧</div>
-              <h3 className="text-xl font-semibold mb-2">HydraulikDoc AI</h3>
-              <p className="text-slate-500 text-sm mb-5">Video-Diagnose mit Gemini 2.5 Pro. RAG-Search in technischer Dokumentation.</p>
-              <ul className="space-y-2.5 text-sm text-slate-400">
-                <li className="flex items-center gap-2"><span className="text-orange-400 text-xs">●</span> Video-Analyse</li>
-                <li className="flex items-center gap-2"><span className="text-orange-400 text-xs">●</span> RAG-Dokumentensuche</li>
-                <li className="flex items-center gap-2"><span className="text-orange-400 text-xs">●</span> Multi-Modal AI</li>
-                <li className="flex items-center gap-2"><span className="text-orange-400 text-xs">●</span> Projekt Hephaestus</li>
-              </ul>
-            </a>
-            
-            {/* Finance Copilot */}
-            <a href="https://app.sbsdeutschland.com/copilot" className="group bg-white/[0.02] border border-white/5 rounded-2xl p-8 hover:border-emerald-500/30 hover:bg-white/[0.04] transition-all duration-300">
-              <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-2xl mb-6">🤖</div>
-              <h3 className="text-xl font-semibold mb-2">Finance Copilot</h3>
-              <p className="text-slate-500 text-sm mb-5">Chat mit Ihren Finanzdaten. Analysen, Reports und Budget-Tracking auf natürliche Weise.</p>
-              <ul className="space-y-2.5 text-sm text-slate-400">
-                <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">●</span> Natural Language</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">●</span> Budget-Dashboard</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">●</span> Smart Analytics</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">●</span> Auto-Reports</li>
-              </ul>
-            </a>
-          </div>
         </div>
       </section>
 
-      {/* Enterprise Features */}
-      <section id="features" className="py-24 px-6 bg-white/[0.01]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-amber-400 text-sm font-semibold tracking-wider uppercase mb-3">Enterprise-Grade</p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">Gebaut für den Mittelstand</h2>
-            <p className="text-slate-400 max-w-xl mx-auto">Keine Spielerei – enterprise-reife Infrastruktur für kritische Geschäftsprozesse.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { icon: "🔒", title: "DSGVO-konform", desc: "Alle Daten auf deutschen Servern in Frankfurt. Verarbeitung ausschließlich in der EU. Google Cloud mit DPA.", color: "amber" },
-              { icon: "🧠", title: "Hybrid AI Engine", desc: "GPT-4o, Claude 3.5, Gemini 2.0 Flash – automatisch das beste Modell für jeden Task. Multi-Provider-Redundanz.", color: "cyan" },
-              { icon: "🔗", title: "Enterprise-Integrationen", desc: "DATEV, SAP, Google Workspace, Slack, E-Mail via Resend, n8n-Workflows. Webhook-basierte Automation.", color: "purple" },
-              { icon: "👥", title: "RBAC & Multi-User", desc: "Rollenbasierte Zugriffskontrolle mit Admin, Manager und Viewer. Google OAuth SSO. Audit-Logs.", color: "emerald" },
-              { icon: "📊", title: "Echtzeit-Dashboards", desc: "Live-Monitoring aller Prozesse. Analytics, KPIs und automatisierte Reports für Management-Ebene.", color: "orange" },
-              { icon: "🔔", title: "Multi-Channel Alerts", desc: "Slack, E-Mail und Google Sheets Notifications. n8n-Workflows für individuelle Automatisierungen.", color: "rose" },
-            ].map((feature, i) => (
-              <div key={i} className="group p-8 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-white/10 transition-all">
-                <div className="text-3xl mb-4">{feature.icon}</div>
-                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-slate-500 text-sm leading-relaxed">{feature.desc}</p>
+      {/* Capabilities */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <Reveal className="mx-auto max-w-3xl text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">✨ Leistungsumfang</p>
+            <h2 className="mt-3 text-display-sm text-gray-950">Strukturierte Dokumentenprüfung, von Intake bis Nachweis</h2>
+          </Reveal>
+
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {capabilities.map((cap) => (
+              <div
+                key={cap.title}
+                className="group rounded-2xl border border-gray-100 bg-white p-6 transition-all hover:-translate-y-1 hover:border-gold-200 hover:shadow-card"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold-100 text-[24px] transition-transform group-hover:-rotate-6">
+                  {cap.emoji}
+                </div>
+                <h3 className="mt-4 text-[15px] font-semibold text-gray-900">{cap.title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-gray-500">{cap.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Tech Stack */}
-      <section className="py-16 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">Technologie-Stack</p>
+      {/* Contract Types */}
+      <section className="border-y border-gray-200 bg-gray-50 py-20 sm:py-24">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <Reveal className="mx-auto max-w-3xl text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">⚖️ 16 Vertragstypen · DE + EN</p>
+            <h2 className="mt-3 text-display-sm text-gray-950">Deutsches Recht und internationales Vertragswesen</h2>
+            <p className="mt-4 text-[15px] leading-relaxed text-gray-500">
+              KanzleiAI analysiert Verträge in Deutsch (BGB, HGB, AGB-Recht) und Englisch (Common Law). Für DACH-Teams mit
+              internationalen Mandanten, Konzernen und Cross-Border-Deals.
+            </p>
+          </Reveal>
+
+          <div className="mt-12 grid gap-8 lg:grid-cols-2">
+            <Reveal className="rounded-2xl border border-gray-200 bg-white p-7">
+              <div className="flex items-center gap-3">
+                <span className="text-[22px]">🇩🇪</span>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gold-700">Deutsches Recht</p>
+                  <h3 className="mt-0.5 text-[16px] font-semibold text-gray-950">BGB · HGB · AGB-Recht</h3>
+                </div>
+              </div>
+              <p className="mt-3 text-[13px] leading-relaxed text-gray-500">
+                Acht spezialisierte Vertragstypen mit Klauselkatalog, Kündigungsfristen-Ampel und Risikobewertung gemäß
+                deutscher Rechtsprechung.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {contractTypes
+                  .filter((t) => t.jurisdiction === "DE")
+                  .map((type) => (
+                    <span
+                      key={`de-${type.label}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-[12px] font-medium text-gray-700"
+                    >
+                      <span className="text-[13px]">{type.emoji}</span>
+                      {type.label}
+                    </span>
+                  ))}
+              </div>
+            </Reveal>
+
+            <Reveal delay={80} className="rounded-2xl border border-gray-200 bg-white p-7">
+              <div className="flex items-center gap-3">
+                <span className="text-[22px]">🌐</span>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gold-700">English-Language Contracts</p>
+                  <h3 className="mt-0.5 text-[16px] font-semibold text-gray-950">Common Law · International</h3>
+                </div>
+              </div>
+              <p className="mt-3 text-[13px] leading-relaxed text-gray-500">
+                Acht englischsprachige Vertragstypen für internationale Mandanten, Konzernbeziehungen und Cross-Border-Deals
+                — inklusive DPA (Art. 28 DSGVO) und MSAs.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {contractTypes
+                  .filter((t) => t.jurisdiction === "EN")
+                  .map((type) => (
+                    <span
+                      key={`en-${type.label}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-[12px] font-medium text-gray-700"
+                    >
+                      <span className="text-[13px]">{type.emoji}</span>
+                      {type.label}
+                    </span>
+                  ))}
+              </div>
+            </Reveal>
           </div>
-          <div className="flex flex-wrap justify-center gap-4">
-            {["GPT-4o", "Gemini 2.0 Flash", "Claude 3.5", "FastAPI", "Next.js", "DATEV", "Google Cloud", "n8n", "Stripe", "OAuth 2.0"].map((tech, i) => (
-              <span key={i} className="px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-sm text-slate-400">{tech}</span>
+
+          <div className="mt-8 text-center">
+            <Link href="/vertragstypen" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#003856] hover:text-gold-700">
+              Alle 16 Vertragstypen mit Risikokatalog ansehen
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Process */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <Reveal className="mx-auto max-w-3xl text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🔄 Prozess</p>
+            <h2 className="mt-3 text-display-sm text-gray-950">Von Upload bis Nachweis in vier Schritten</h2>
+          </Reveal>
+
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {processSteps.map((step) => (
+              <div key={step.step} className="rounded-2xl border border-gray-100 bg-white p-6 text-center transition-all hover:-translate-y-1 hover:shadow-card">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold-100 text-[22px]">{step.emoji}</div>
+                <div className="mt-2 text-[11px] font-bold text-gold-700">{step.step}</div>
+                <h3 className="mt-1 text-[15px] font-semibold text-gray-900">{step.title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-gray-500">{step.description}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="preise" className="py-24 px-6 bg-white/[0.01]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-amber-400 text-sm font-semibold tracking-wider uppercase mb-3">Preise</p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">Transparent & fair</h2>
-            <p className="text-slate-400 max-w-xl mx-auto">Keine versteckten Kosten. Monatlich kündbar. 14 Tage kostenlos testen.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {/* Starter */}
-            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-8">
-              <p className="text-slate-500 text-sm font-medium uppercase tracking-wider mb-2">Starter</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold">€99</span>
-                <span className="text-slate-500 text-sm">/Monat</span>
+      {/* Target Groups */}
+      <section className="border-t border-gray-200 bg-gray-50 py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <Reveal className="mx-auto max-w-3xl text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">👥 Zielgruppen</p>
+            <h2 className="mt-3 text-display-sm text-gray-950">Für Teams, die Verträge professionell prüfen</h2>
+          </Reveal>
+
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {[
+              {
+                emoji: "🏛️",
+                title: "Kanzleien",
+                description: "Vertragsprüfung, Mandatskontext und strukturierte Teamabstimmung mit klaren Zuständigkeiten.",
+                link: { href: "/loesungen/kanzleien", label: "Mehr erfahren →" },
+              },
+              {
+                emoji: "🏢",
+                title: "Rechtsabteilungen",
+                description: "Einheitliche Review-Abläufe mit definierten Freigabeschritten und nachvollziehbaren Entscheidungspfaden.",
+                link: { href: "/loesungen/rechtsabteilungen", label: "Mehr erfahren →" },
+              },
+              {
+                emoji: "🛡️",
+                title: "Compliance & Datenschutz",
+                description: "Zugriff auf Trust-Informationen, Nachweise und Betriebsdokumentation für Audits und interne Prüfungen.",
+                link: { href: "/trust-center", label: "Trust Center →" },
+              },
+            ].map((group) => (
+              <div key={group.title} className="rounded-2xl border border-gray-100 bg-white p-6 transition-all hover:-translate-y-1 hover:shadow-card">
+                <span className="text-[28px]">{group.emoji}</span>
+                <h3 className="mt-3 text-[17px] font-semibold text-gray-900">{group.title}</h3>
+                <p className="mt-2 text-[14px] leading-relaxed text-gray-500">{group.description}</p>
+                <Link href={group.link.href} className="mt-5 inline-flex items-center text-[13px] font-medium text-[#003856] hover:text-[#00507a]">
+                  {group.link.label}
+                </Link>
               </div>
-              <ul className="space-y-3 text-sm text-slate-400 mb-8">
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> 100 Rechnungen/Monat</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> 50 Verträge/Monat</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> DATEV-Export</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> E-Mail Support</li>
-              </ul>
-              <Link href="/register" className="block text-center w-full py-3 border border-white/10 hover:border-white/20 text-white rounded-xl transition text-sm font-medium">
-                14 Tage kostenlos
-              </Link>
-            </div>
-            
-            {/* Professional */}
-            <div className="relative bg-gradient-to-b from-amber-500/10 to-transparent border-2 border-amber-500/30 rounded-2xl p-8">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-900 text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wide">
-                Beliebt
-              </div>
-              <p className="text-amber-400 text-sm font-medium uppercase tracking-wider mb-2">Professional</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold">€299</span>
-                <span className="text-slate-500 text-sm">/Monat</span>
-              </div>
-              <ul className="space-y-3 text-sm text-slate-300 mb-8">
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> 500 Rechnungen/Monat</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Unbegrenzt Verträge</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Smart Maintenance Alert</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> HydraulikDoc AI</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Finance Copilot</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> 5 Team-Mitglieder</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Priority Support</li>
-              </ul>
-              <Link href="/register" className="block text-center w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-xl transition text-sm font-semibold">
-                Jetzt starten
-              </Link>
-            </div>
-            
-            {/* Enterprise */}
-            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-8">
-              <p className="text-slate-500 text-sm font-medium uppercase tracking-wider mb-2">Enterprise</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold">Custom</span>
-              </div>
-              <ul className="space-y-3 text-sm text-slate-400 mb-8">
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Unbegrenzte Nutzung</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Alle 5 Module</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Unbegrenzt Team</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> SSO / SAML / SCIM</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Dedicated Support</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Custom Integrationen</li>
-                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> On-Premise möglich</li>
-              </ul>
-              <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="block text-center w-full py-3 border border-white/10 hover:border-white/20 text-white rounded-xl transition text-sm font-medium">
-                Gespräch vereinbaren
-              </a>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Trust */}
-      <section className="py-16 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      {/* Stats (count-up) */}
+      <section className="border-y border-gray-200 bg-white py-12">
+        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-8 px-5 sm:grid-cols-4 sm:px-8">
+          <div className="text-center">
+            <p className="text-[28px] font-semibold text-[#003856]">
+              <CountUp end={3} prefix="<" suffix="s" />
+            </p>
+            <p className="mt-1 text-[12px] text-gray-500">Analyse-Antwortzeit</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[28px] font-semibold text-[#003856]">
+              <CountUp end={16} />
+            </p>
+            <p className="mt-1 text-[12px] text-gray-500">Vertragstypen (DE + EN)</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[28px] font-semibold text-[#003856]">
+              <CountUp end={3} />
+            </p>
+            <p className="mt-1 text-[12px] text-gray-500">KI-Provider aktiv</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[28px] font-semibold text-[#003856]">
+              <CountUp end={4} />
+            </p>
+            <p className="mt-1 text-[12px] text-gray-500">Export-Formate</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-5xl px-5 sm:px-8">
+          <Reveal>
+            <p className="text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">💬 Vertrauen</p>
+            <h2 className="mt-3 text-center text-display-sm text-gray-950">Gebaut für juristische Teams</h2>
+          </Reveal>
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
             {[
-              { icon: "🇩🇪", text: "Made in Weinheim" },
-              { icon: "🔒", text: "DSGVO-konform" },
-              { icon: "☁️", text: "Server in Frankfurt" },
-              { icon: "🏛️", text: "GmbH & Co. KG" },
-            ].map((badge, i) => (
-              <div key={i} className="flex items-center justify-center gap-2.5 text-slate-500 text-sm">
-                <span className="text-xl">{badge.icon}</span>
-                <span>{badge.text}</span>
+              { quote: "Die Kombination aus Risiko-Score und BGB-Referenzen spart uns bei der Erstprüfung erheblich Zeit.", role: "Partner, Wirtschaftskanzlei", location: "Frankfurt" },
+              { quote: "Mandantentrennung auf DB-Ebene war für uns ein Muss. Die RLS-Architektur hat uns überzeugt.", role: "IT-Leiter, Großkanzlei", location: "München" },
+              { quote: "Der DATEV-Export integriert sich nahtlos in unsere bestehende Buchhaltung.", role: "Rechtsabteilung, Mittelstand", location: "Hamburg" },
+            ].map((t, i) => (
+              <div key={i} className="rounded-2xl border border-gray-100 bg-white p-6">
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <span key={s} className="text-[14px] text-gold-400">
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-3 text-[14px] leading-relaxed text-gray-600">&ldquo;{t.quote}&rdquo;</p>
+                <div className="mt-4 border-t border-gray-100 pt-3">
+                  <p className="text-[13px] font-medium text-gray-900">{t.role}</p>
+                  <p className="text-[11px] text-gray-400">{t.location}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-6">
+            {[
+              { emoji: "🇪🇺", label: "DSGVO-konform" },
+              { emoji: "🇩🇪", label: "Hosting in Frankfurt" },
+              { emoji: "🔐", label: "Row-Level Security" },
+              { emoji: "📋", label: "Audit Trail" },
+              { emoji: "🤖", label: "Kein KI-Training" },
+            ].map((b) => (
+              <div key={b.label} className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2">
+                <span className="text-[14px]">{b.emoji}</span>
+                <span className="text-[12px] font-medium text-gray-600">{b.label}</span>
               </div>
             ))}
           </div>
@@ -345,95 +887,29 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="py-24 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="relative bg-gradient-to-br from-amber-600 via-amber-500 to-orange-500 rounded-3xl p-12 md:p-16 text-center overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)] pointer-events-none"></div>
-            <div className="relative">
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">Bereit für Enterprise KI?</h2>
-              <p className="text-amber-100 mb-10 text-lg max-w-lg mx-auto">14 Tage kostenlos. Keine Kreditkarte. Sofort produktiv.</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/register" className="bg-white text-amber-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-amber-50 transition shadow-lg">
-                  Kostenlos starten
-                </Link>
-                <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="border-2 border-white/40 hover:border-white text-white px-8 py-4 rounded-xl font-semibold text-lg transition">
-                  Demo buchen
-                </a>
-              </div>
-            </div>
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-4xl px-5 text-center sm:px-8">
+          <p className="text-[28px]">🚀</p>
+          <h2 className="mt-3 text-display-sm text-gray-950">Bereit für strukturierte Vertragsprüfung?</h2>
+          <p className="mx-auto mt-4 max-w-xl text-[16px] leading-relaxed text-gray-500">
+            Sprechen Sie mit uns über Ihren Arbeitskontext und Ihre Anforderungen. Unverbindlich, in 30 Minuten.
+          </p>
+          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href="/enterprise-kontakt"
+              className="inline-flex w-full items-center justify-center rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white shadow-lg shadow-[#003856]/12 transition-all hover:bg-[#002a42] active:scale-[0.98] sm:w-auto"
+            >
+              📞 Demo anfragen
+            </Link>
+            <Link
+              href="/preise"
+              className="inline-flex w-full items-center justify-center rounded-full border border-gray-200 bg-white px-7 py-3.5 text-[15px] font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50 sm:w-auto"
+            >
+              Preise ansehen
+            </Link>
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-white/5 py-16 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-            {/* Brand */}
-            <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center font-bold text-slate-900 text-xs">SN</div>
-                <span className="font-bold">SBS Nexus</span>
-              </div>
-              <p className="text-slate-500 text-sm leading-relaxed">Enterprise KI-Plattform für den deutschen Mittelstand.</p>
-              <p className="text-slate-600 text-xs mt-3">📍 Weinheim, Deutschland</p>
-            </div>
-            
-            {/* Produkte */}
-            <div>
-              <h4 className="text-sm font-semibold mb-4 text-slate-300">Produkte</h4>
-              <ul className="space-y-2.5 text-sm text-slate-500">
-                <li><a href="https://app.sbsdeutschland.com" className="hover:text-white transition">Rechnungsverarbeitung</a></li>
-                <li><a href="https://contract.sbsdeutschland.com" className="hover:text-white transition">Vertragsanalyse</a></li>
-                <li><Link href="/maintenance" className="hover:text-white transition">Smart Maintenance</Link></li>
-                <li><a href="https://sbsdeutschland.com/static/landing/hydraulikdoc.html" className="hover:text-white transition">HydraulikDoc AI</a></li>
-                <li><a href="https://app.sbsdeutschland.com/copilot" className="hover:text-white transition">Finance Copilot</a></li>
-              </ul>
-            </div>
-            
-            {/* Plattform */}
-            <div>
-              <h4 className="text-sm font-semibold mb-4 text-slate-300">Plattform</h4>
-              <ul className="space-y-2.5 text-sm text-slate-500">
-                <li><Link href="/dashboard" className="hover:text-white transition">Dashboard</Link></li>
-                <li><Link href="/integrations" className="hover:text-white transition">Integrationen</Link></li>
-                <li><Link href="/security" className="hover:text-white transition">Sicherheit</Link></li>
-                <li><Link href="/pricing" className="hover:text-white transition">Preise</Link></li>
-              </ul>
-            </div>
-            
-            {/* Unternehmen */}
-            <div>
-              <h4 className="text-sm font-semibold mb-4 text-slate-300">Unternehmen</h4>
-              <ul className="space-y-2.5 text-sm text-slate-500">
-                <li><a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html" className="hover:text-white transition">Über uns</a></li>
-                <li><a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="hover:text-white transition">Kontakt</a></li>
-                <li><a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html" className="hover:text-white transition">SAP Consulting</a></li>
-                <li><a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html" className="hover:text-white transition">IT Consulting</a></li>
-              </ul>
-            </div>
-            
-            {/* Rechtliches */}
-            <div>
-              <h4 className="text-sm font-semibold mb-4 text-slate-300">Rechtliches</h4>
-              <ul className="space-y-2.5 text-sm text-slate-500">
-                <li><Link href="/datenschutz" className="hover:text-white transition">Datenschutz</Link></li>
-                <li><Link href="/impressum" className="hover:text-white transition">Impressum</Link></li>
-                <li><a href="https://sbsdeutschland.com/sbshomepage/agb.html" className="hover:text-white transition">AGB</a></li>
-              </ul>
-              <div className="mt-6">
-                <p className="text-slate-600 text-xs">Support</p>
-                <a href="mailto:ki@sbsdeutschland.de" className="text-slate-500 text-sm hover:text-white transition">ki@sbsdeutschland.de</a>
-              </div>
-            </div>
-          </div>
-          
-          <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-600">
-            <p>© 2026 SBS Deutschland GmbH & Co. KG · Weinheim</p>
-            <p>Enterprise KI-Plattform für den DACH-Markt</p>
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
+    </main>
+  )
 }
