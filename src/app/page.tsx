@@ -1,469 +1,343 @@
-import Link from "next/link"
-export const revalidate = 3600
+"use client";
 
-const capabilities = [
-  {
-    emoji: "📋",
-    title: "Vertragsprüfung DE/EN",
-    description: "KI-gestützte Analyse deutscher und englischsprachiger Verträge: Arbeits-, SaaS-, NDA-, Lieferanten- und 12 weitere Vertragstypen — mit Recherche zu BGB, HGB sowie Common Law."
-  },
-  {
-    emoji: "⚠️",
-    title: "Risikoerkennung",
-    description: "Automatische Identifikation kritischer Klauseln mit Risikobewertung, Handlungsempfehlungen und Gesetzesreferenzen."
-  },
-  {
-    emoji: "✅",
-    title: "Review & Freigabe",
-    description: "Strukturierte Prüfprozesse mit Rollenkonzept, Human-in-the-Loop und nachvollziehbarer Entscheidungshistorie."
-  },
-  {
-    emoji: "🔒",
-    title: "Audit & Nachweise",
-    description: "Manipulationssichere Protokollierung aller Entscheidungen für ISO 27001, DSGVO und interne Governance."
-  },
-]
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
-const trustSignals = [
-  { emoji: "🇪🇺", label: "DSGVO-konform", sublabel: "EU-Betrieb" },
-  { emoji: "🔐", label: "Mandantentrennung", sublabel: "Row-Level Security" },
-  { emoji: "🤖", label: "Multi-Provider KI", sublabel: "OpenAI · Claude · Gemini" },
-  { emoji: "📜", label: "Audit Trail", sublabel: "Manipulationssicher" },
-]
+export default function HomePage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
 
-const contractTypes = [
-  // Deutsche Verträge (BGB / HGB)
-  { emoji: "👔", label: "Arbeitsvertrag", jurisdiction: "DE" },
-  { emoji: "☁️", label: "SaaS-Vertrag", jurisdiction: "DE" },
-  { emoji: "🤝", label: "NDA", jurisdiction: "DE" },
-  { emoji: "🏭", label: "Lieferantenvertrag", jurisdiction: "DE" },
-  { emoji: "🔧", label: "Dienstleistungsvertrag", jurisdiction: "DE" },
-  { emoji: "🏢", label: "Mietvertrag", jurisdiction: "DE" },
-  { emoji: "🛒", label: "Kaufvertrag", jurisdiction: "DE" },
-  { emoji: "⚖️", label: "AGB", jurisdiction: "DE" },
-  // English-language contracts (Common Law)
-  { emoji: "👔", label: "Employment Agreement", jurisdiction: "EN" },
-  { emoji: "☁️", label: "SaaS Agreement / MSA", jurisdiction: "EN" },
-  { emoji: "🤝", label: "NDA / Confidentiality", jurisdiction: "EN" },
-  { emoji: "🏭", label: "Supply Agreement", jurisdiction: "EN" },
-  { emoji: "🔧", label: "Service Agreement", jurisdiction: "EN" },
-  { emoji: "💼", label: "License Agreement", jurisdiction: "EN" },
-  { emoji: "📜", label: "Terms & Conditions", jurisdiction: "EN" },
-  { emoji: "🤲", label: "Data Processing Agreement", jurisdiction: "EN" },
-]
+  useEffect(() => {
+    const token = localStorage.getItem("sbs_token");
+    setIsLoggedIn(!!token);
+  }, []);
 
-const processSteps = [
-  { step: "01", emoji: "📤", title: "Upload", description: "Vertrag als PDF hochladen. Die KI erkennt den Vertragstyp automatisch." },
-  { step: "02", emoji: "🔍", title: "Analyse", description: "Multi-Provider KI extrahiert Daten, identifiziert Risiken und prüft gegen deutsches Recht." },
-  { step: "03", emoji: "👨‍⚖️", title: "Review", description: "Juristische Prüfung der KI-Hinweise mit klaren Freigabeschritten und Rollenkonzept." },
-  { step: "04", emoji: "📊", title: "Nachweis", description: "Export als PDF-Report, DATEV-Anbindung und manipulationssicheres Audit-Protokoll." },
-]
-
-export default function LandingPage() {
   return (
-    <main>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+      {/* Header */}
+      <header className="fixed top-0 w-full bg-slate-950/80 backdrop-blur-xl border-b border-white/5 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center font-bold text-slate-900 text-sm">SN</div>
+            <span className="text-xl font-bold tracking-tight">SBS Nexus</span>
+          </Link>
+          <nav className="hidden md:flex items-center gap-8">
+            <a href="#produkte" className="text-sm text-slate-400 hover:text-white transition">Produkte</a>
+            <a href="#features" className="text-sm text-slate-400 hover:text-white transition">Features</a>
+            <a href="#preise" className="text-sm text-slate-400 hover:text-white transition">Preise</a>
+            <a href="https://sbsdeutschland.com/sbshomepage/" className="text-sm text-slate-400 hover:text-white transition">Unternehmen</a>
+            <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="text-sm text-slate-400 hover:text-white transition">Kontakt</a>
+          </nav>
+          <div className="flex items-center gap-3">
+            {isLoggedIn ? (
+              <Link href="/dashboard" className="bg-amber-500 hover:bg-amber-400 text-slate-900 px-5 py-2.5 rounded-lg text-sm font-semibold transition">
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm text-slate-400 hover:text-white transition hidden md:block">Anmelden</Link>
+                <Link href="/register" className="bg-amber-500 hover:bg-amber-400 text-slate-900 px-5 py-2.5 rounded-lg text-sm font-semibold transition">
+                  Kostenlos starten
+                </Link>
+              </>
+            )}
+            <button onClick={() => setMobileMenu(!mobileMenu)} className="md:hidden text-slate-400 hover:text-white p-2">
+              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><path d={mobileMenu ? "M6 6l12 12M6 18L18 6" : "M4 6h16M4 12h16M4 18h16"}/></svg>
+            </button>
+          </div>
+        </div>
+        {/* Mobile Menu */}
+        {mobileMenu && (
+          <div className="md:hidden bg-slate-950/95 backdrop-blur-xl border-t border-white/5 px-6 py-6 space-y-4">
+            <a href="#produkte" onClick={() => setMobileMenu(false)} className="block text-slate-300 hover:text-white">Produkte</a>
+            <a href="#features" onClick={() => setMobileMenu(false)} className="block text-slate-300 hover:text-white">Features</a>
+            <a href="#preise" onClick={() => setMobileMenu(false)} className="block text-slate-300 hover:text-white">Preise</a>
+            <a href="https://sbsdeutschland.com/sbshomepage/" className="block text-slate-300 hover:text-white">Unternehmen</a>
+            <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="block text-slate-300 hover:text-white">Kontakt</a>
+            {!isLoggedIn && <Link href="/login" onClick={() => setMobileMenu(false)} className="block text-slate-300 hover:text-white">Anmelden</Link>}
+          </div>
+        )}
+      </header>
+
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#FAFAF7] pb-20 pt-20 sm:pb-28 sm:pt-28 lg:pb-36 lg:pt-32">
-        <div className="pointer-events-none absolute -right-40 -top-40 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-gold-200/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-20 h-[400px] w-[400px] rounded-full bg-gradient-to-tr from-[#003856]/[0.04] to-transparent blur-3xl" />
-
-        <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
-          <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-center">
-            {/* Left: Text */}
-            <div>
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-4 py-1.5 shadow-soft">
-                <span className="text-[16px]">⚖️</span>
-                <span className="text-[12px] font-medium text-gold-700">KI-Vertragsanalyse für juristische Teams</span>
-              </div>
-
-              <h1 className="max-w-xl text-[2.5rem] font-semibold leading-[1.1] tracking-tight text-gray-950 sm:text-[3.25rem]">
-                Verträge prüfen.{" "}
-                <span className="text-[#003856]">Risiken erkennen.</span>{" "}
-                Sicher entscheiden.
-              </h1>
-
-              <p className="mt-6 max-w-lg text-[17px] leading-relaxed text-gray-500">
-                KanzleiAI unterstützt Kanzleien und Rechtsabteilungen bei der strukturierten Prüfung von Verträgen
-                in <span className="font-medium text-gray-700">Deutsch und Englisch</span> — mit nachvollziehbarer
-                KI und auditfähigen Nachweisen.
-              </p>
-
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href="/enterprise-kontakt"
-                  className="inline-flex items-center justify-center rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white shadow-lg shadow-[#003856]/12 transition-all hover:bg-[#002a42] active:scale-[0.98]"
-                >
-                  Demo anfragen →
-                </Link>
-                <Link
-                  href="/produkt"
-                  className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-7 py-3.5 text-[15px] font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50 active:scale-[0.98]"
-                >
-                  Produkt ansehen
-                </Link>
-              </div>
-
-              <p className="mt-8 text-[12px] text-gray-400">
-                🇩🇪 Ein Produkt der SBS Deutschland GmbH & Co. KG · Made in Germany
-              </p>
+      <section className="relative pt-36 pb-24 px-6 overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute top-20 left-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl"></div>
+        
+        <div className="max-w-7xl mx-auto relative">
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full">
+              <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
+              <span className="text-amber-400 text-sm font-medium">Neu: Smart Maintenance Alert mit Gemini Vision</span>
             </div>
-
-            {/* Right: Hero Feature Preview */}
-            <div className="hidden lg:block">
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-card">
-                {/* Mini App Preview */}
-                <div className="mb-4 flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-red-300" />
-                  <div className="h-3 w-3 rounded-full bg-amber-300" />
-                  <div className="h-3 w-3 rounded-full bg-emerald-300" />
-                  <span className="ml-2 text-[11px] text-gray-400">kanzlei-ai.com/workspace</span>
-                </div>
-
-                {/* Simulated Document Row */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3.5">
-                    <span className="text-[20px]">📄</span>
-                    <div className="flex-1">
-                      <p className="text-[13px] font-medium text-gray-900">Arbeitsvertrag_Mueller.pdf</p>
-                      <p className="text-[11px] text-gray-400">8 Risiken erkannt · Score: 72/100</p>
-                    </div>
-                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-700">Mittleres Risiko</span>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3.5">
-                    <span className="text-[20px]">📄</span>
-                    <div className="flex-1">
-                      <p className="text-[13px] font-medium text-gray-900">SaaS_Vertrag_CloudCorp.pdf</p>
-                      <p className="text-[11px] text-gray-400">3 Risiken erkannt · Score: 34/100</p>
-                    </div>
-                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-medium text-emerald-700">Geringes Risiko</span>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3.5">
-                    <span className="text-[20px]">📄</span>
-                    <div className="flex-1">
-                      <p className="text-[13px] font-medium text-gray-900">NDA_Partner_GmbH.pdf</p>
-                      <p className="text-[11px] text-gray-400">12 Risiken erkannt · Score: 89/100</p>
-                    </div>
-                    <span className="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-700">Hohes Risiko</span>
-                  </div>
-                </div>
-
-                {/* Mini Stats Bar */}
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  <div className="rounded-lg bg-gold-50 p-2.5 text-center">
-                    <p className="text-[16px] font-semibold text-gray-900">847</p>
-                    <p className="text-[10px] text-gold-700">Verträge</p>
-                  </div>
-                  <div className="rounded-lg bg-gold-50 p-2.5 text-center">
-                    <p className="text-[16px] font-semibold text-gray-900">94%</p>
-                    <p className="text-[10px] text-gold-700">Genauigkeit</p>
-                  </div>
-                  <div className="rounded-lg bg-gold-50 p-2.5 text-center">
-                    <p className="text-[16px] font-semibold text-gray-900">&lt;30s</p>
-                    <p className="text-[10px] text-gold-700">Analysezeit</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust Strip */}
-      <section className="border-y border-gray-200 bg-gold-50/40">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px sm:grid-cols-4 lg:px-10">
-          {trustSignals.map((signal) => (
-            <div key={signal.label} className="bg-white px-6 py-6 text-center sm:py-7">
-              <p className="text-[18px]">{signal.emoji}</p>
-              <p className="mt-1 text-[14px] font-semibold text-gray-900">{signal.label}</p>
-              <p className="text-[12px] text-gray-500">{signal.sublabel}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Platform Metrics */}
-      <section className="border-b border-gray-200 bg-white py-16">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { value: "< 3s", label: "Analyse-Antwortzeit", sub: "Multi-Provider KI-Pipeline" },
-              { value: "12", label: "Kernmodule", sub: "Inkl. Vertragsradar + Simulator" },
-              { value: "78", label: "Enterprise-Seiten", sub: "Analyse bis Compliance-Monitor" },
-              { value: "34", label: "API-Endpunkte", sub: "REST + Webhooks + SCIM" },
-            ].map((m) => (
-              <div key={m.label} className="text-center">
-                <p className="text-[2.5rem] font-semibold tracking-tight text-[#003856]">{m.value}</p>
-                <p className="mt-1 text-[14px] font-medium text-gray-900">{m.label}</p>
-                <p className="text-[12px] text-gray-400">{m.sub}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it Works */}
-      <section className="py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">⚡ Workflow</p>
-            <h2 className="mt-3 text-display-sm text-gray-950">So funktioniert&apos;s</h2>
-            <p className="mt-4 text-[16px] text-gray-500">Von Upload bis Export in unter 60 Sekunden — drei Schritte zur vollstaendigen Vertragsanalyse.</p>
-          </div>
-          <div className="mt-12 grid gap-8 lg:grid-cols-3">
-            {[
-              { step: "1", emoji: "📤", title: "Vertrag hochladen", desc: "PDF, DOCX oder Text einfuegen. Die KI erkennt Sprache und Vertragstyp automatisch — Deutsch und Englisch.", time: "5 Sekunden" },
-              { step: "2", emoji: "🧠", title: "KI analysiert", desc: "Multi-Provider-Pipeline (Claude + GPT-4o + Gemini) extrahiert Daten, bewertet Risiken, identifiziert Klauseln und generiert Formulierungsvorschlaege.", time: "< 3 Sekunden" },
-              { step: "3", emoji: "📊", title: "Ergebnis nutzen", desc: "Risiko-Score, Findings mit Vorschlägen, Kündigungsfristen-Ampel, Copilot-Chat, PDF-Export oder DATEV-Import.", time: "Sofort verfügbar" },
-            ].map((s) => (
-              <div key={s.step} className="relative rounded-2xl border border-gray-100 bg-white p-7 text-center transition-all hover:border-gold-300 hover:shadow-card">
-                <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#003856] text-[15px] font-bold text-white">{s.step}</span>
-                <span className="mt-4 block text-[32px]">{s.emoji}</span>
-                <h3 className="mt-3 text-[17px] font-semibold text-gray-900">{s.title}</h3>
-                <p className="mt-2 text-[14px] leading-relaxed text-gray-500">{s.desc}</p>
-                <p className="mt-4 inline-block rounded-full bg-gold-50 px-3 py-1 text-[11px] font-semibold text-gold-700">{s.time}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-10 text-center">
-            <Link href="/workspace/analyse" className="rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white hover:bg-[#002a42]">Jetzt ausprobieren →</Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Capabilities */}
-      <section className="py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">
-              ✨ Leistungsumfang
+            
+            <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-[1.1] tracking-tight">
+              Enterprise KI-Plattform
+              <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500">
+                für den deutschen Mittelstand
+              </span>
+            </h1>
+            
+            <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
+              Rechnungsverarbeitung, Vertragsanalyse, Wartungs-KI und technische Dokumentation – 
+              alles DSGVO-konform auf Servern in Frankfurt.
             </p>
-            <h2 className="mt-3 text-display-sm text-gray-950">
-              Strukturierte Dokumentenprüfung, von Intake bis Nachweis
-            </h2>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/register" className="bg-amber-500 hover:bg-amber-400 text-slate-900 px-8 py-4 rounded-xl font-semibold text-lg transition shadow-lg shadow-amber-500/20">
+                Kostenlos testen
+              </Link>
+              <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="border border-slate-700 hover:border-slate-500 text-white px-8 py-4 rounded-xl font-semibold text-lg transition flex items-center justify-center gap-2">
+                Demo vereinbaren
+              </a>
+            </div>
           </div>
 
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {capabilities.map((cap) => (
-              <div key={cap.title} className="group rounded-2xl border border-gray-100 bg-white p-6 transition-all hover:border-gray-200 hover:shadow-card">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold-100 text-[24px]">
-                  {cap.emoji}
-                </div>
-                <h3 className="mt-4 text-[15px] font-semibold text-gray-900">{cap.title}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-gray-500">{cap.description}</p>
+          {/* Stats */}
+          <div className="mt-24 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            {[
+              { value: "5", label: "KI-Module", sub: "in Produktion" },
+              { value: "98.5%", label: "KI-Genauigkeit", sub: "Ø über alle Module" },
+              { value: "<3s", label: "Verarbeitung", sub: "pro Dokument" },
+              { value: "100%", label: "DSGVO", sub: "Server in Frankfurt" },
+            ].map((stat, i) => (
+              <div key={i} className="text-center p-6 bg-white/[0.02] border border-white/5 rounded-2xl">
+                <p className="text-3xl md:text-4xl font-bold text-amber-400">{stat.value}</p>
+                <p className="text-white text-sm font-medium mt-1">{stat.label}</p>
+                <p className="text-slate-500 text-xs mt-0.5">{stat.sub}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Contract Types — bilingual DE/EN */}
-      <section className="border-y border-gray-200 bg-gray-50 py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">⚖️ 16 Vertragstypen · DE + EN</p>
-            <h2 className="mt-3 text-display-sm text-gray-950">
-              Deutsches Recht und internationales Vertragswesen
-            </h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-gray-500">
-              KanzleiAI analysiert Verträge in Deutsch (BGB, HGB, AGB-Recht) und Englisch (Common Law).
-              Für DACH-Teams mit internationalen Mandanten, Konzernen und Cross-Border-Deals.
-            </p>
+      {/* Products */}
+      <section id="produkte" className="py-24 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-amber-400 text-sm font-semibold tracking-wider uppercase mb-3">Plattform</p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">5 KI-Module. Eine Plattform.</h2>
+            <p className="text-slate-400 max-w-xl mx-auto">Modulare Enterprise-Lösungen, die sich nahtlos in Ihre bestehenden Prozesse integrieren.</p>
           </div>
-
-          <div className="mt-12 grid gap-8 lg:grid-cols-2">
-            {/* Deutsche Verträge */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-7">
-              <div className="flex items-center gap-3">
-                <span className="text-[22px]">🇩🇪</span>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gold-700">Deutsches Recht</p>
-                  <h3 className="mt-0.5 text-[16px] font-semibold text-gray-950">BGB · HGB · AGB-Recht</h3>
+          
+          {/* Featured: Smart Maintenance Alert */}
+          <div className="mb-8">
+            <Link href="/maintenance" className="group block relative bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border-2 border-amber-500/30 rounded-3xl p-8 md:p-12 hover:border-amber-500/60 transition-all duration-500 overflow-hidden">
+              <div className="absolute top-4 right-4 md:top-6 md:right-6 bg-amber-500 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide">Neu in 2026</div>
+              <div className="flex flex-col md:flex-row md:items-center gap-8">
+                <div className="flex-shrink-0">
+                  <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center text-4xl shadow-lg shadow-amber-500/20">
+                    📸
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-2xl md:text-3xl font-bold mb-3">Smart Maintenance Alert</h3>
+                  <p className="text-slate-400 text-lg mb-4 max-w-2xl">
+                    Techniker fotografieren defekte Teile – Gemini Vision identifiziert automatisch Komponenten, 
+                    prüft Garantie und empfiehlt Beschaffung. Von der Kamera zur Bestellung in Sekunden.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {["Gemini 2.0 Flash Vision", "95% Confidence", "Auto-Beschaffung", "Slack & E-Mail Alerts", "Mobile PWA"].map((tag, i) => (
+                      <span key={i} className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full text-sm">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="hidden md:flex items-center text-amber-400 group-hover:translate-x-2 transition-transform">
+                  <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 16h22m-7-7l7 7-7 7"/></svg>
                 </div>
               </div>
-              <p className="mt-3 text-[13px] leading-relaxed text-gray-500">
-                Acht spezialisierte Vertragstypen mit Klauselkatalog, Kündigungsfristen-Ampel und Risikobewertung
-                gemäß deutscher Rechtsprechung.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {contractTypes.filter((t) => t.jurisdiction === "DE").map((type) => (
-                  <span
-                    key={`de-${type.label}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-[12px] font-medium text-gray-700"
-                  >
-                    <span className="text-[13px]">{type.emoji}</span>
-                    {type.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* English-language Contracts */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-7">
-              <div className="flex items-center gap-3">
-                <span className="text-[22px]">🌐</span>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gold-700">English-Language Contracts</p>
-                  <h3 className="mt-0.5 text-[16px] font-semibold text-gray-950">Common Law · International</h3>
-                </div>
-              </div>
-              <p className="mt-3 text-[13px] leading-relaxed text-gray-500">
-                Acht englischsprachige Vertragstypen für internationale Mandanten, Konzernbeziehungen
-                und Cross-Border-Deals — inklusive DPA (Art. 28 DSGVO) und MSAs.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {contractTypes.filter((t) => t.jurisdiction === "EN").map((type) => (
-                  <span
-                    key={`en-${type.label}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-[12px] font-medium text-gray-700"
-                  >
-                    <span className="text-[13px]">{type.emoji}</span>
-                    {type.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Link */}
-          <div className="mt-8 text-center">
-            <Link
-              href="/vertragstypen"
-              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#003856] hover:text-gold-700"
-            >
-              Alle 16 Vertragstypen mit Risikokatalog ansehen
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
             </Link>
           </div>
+
+          {/* Product Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Rechnungsverarbeitung */}
+            <a href="https://app.sbsdeutschland.com" className="group bg-white/[0.02] border border-white/5 rounded-2xl p-8 hover:border-cyan-500/30 hover:bg-white/[0.04] transition-all duration-300">
+              <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center text-2xl mb-6">📄</div>
+              <h3 className="text-xl font-semibold mb-2">Rechnungsverarbeitung</h3>
+              <p className="text-slate-500 text-sm mb-5">OCR + KI-Extraktion mit DATEV-Export. XRechnung, ZUGFeRD und E-Rechnung ready.</p>
+              <ul className="space-y-2.5 text-sm text-slate-400">
+                <li className="flex items-center gap-2"><span className="text-cyan-400 text-xs">●</span> Auto-Kontierung SKR03/04</li>
+                <li className="flex items-center gap-2"><span className="text-cyan-400 text-xs">●</span> DATEV-Export</li>
+                <li className="flex items-center gap-2"><span className="text-cyan-400 text-xs">●</span> Zahlungsmanagement</li>
+                <li className="flex items-center gap-2"><span className="text-cyan-400 text-xs">●</span> Skonto-Optimierung</li>
+              </ul>
+            </a>
+            
+            {/* Vertragsanalyse */}
+            <a href="https://contract.sbsdeutschland.com" className="group bg-white/[0.02] border border-white/5 rounded-2xl p-8 hover:border-purple-500/30 hover:bg-white/[0.04] transition-all duration-300">
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center text-2xl mb-6">📝</div>
+              <h3 className="text-xl font-semibold mb-2">Vertragsanalyse</h3>
+              <p className="text-slate-500 text-sm mb-5">Multimodale Analyse von Verträgen, Klauseln und Risiken mit automatischem Fristentracking.</p>
+              <ul className="space-y-2.5 text-sm text-slate-400">
+                <li className="flex items-center gap-2"><span className="text-purple-400 text-xs">●</span> Risiko-Erkennung</li>
+                <li className="flex items-center gap-2"><span className="text-purple-400 text-xs">●</span> Vertragsvergleich</li>
+                <li className="flex items-center gap-2"><span className="text-purple-400 text-xs">●</span> Klausel-Bibliothek</li>
+                <li className="flex items-center gap-2"><span className="text-purple-400 text-xs">●</span> JSON/CSV-Export</li>
+              </ul>
+            </a>
+            
+            {/* HydraulikDoc AI */}
+            <a href="https://sbsdeutschland.com/static/landing/hydraulikdoc.html" className="group bg-white/[0.02] border border-white/5 rounded-2xl p-8 hover:border-orange-500/30 hover:bg-white/[0.04] transition-all duration-300">
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center text-2xl mb-6">🔧</div>
+              <h3 className="text-xl font-semibold mb-2">HydraulikDoc AI</h3>
+              <p className="text-slate-500 text-sm mb-5">Video-Diagnose mit Gemini 2.5 Pro. RAG-Search in technischer Dokumentation.</p>
+              <ul className="space-y-2.5 text-sm text-slate-400">
+                <li className="flex items-center gap-2"><span className="text-orange-400 text-xs">●</span> Video-Analyse</li>
+                <li className="flex items-center gap-2"><span className="text-orange-400 text-xs">●</span> RAG-Dokumentensuche</li>
+                <li className="flex items-center gap-2"><span className="text-orange-400 text-xs">●</span> Multi-Modal AI</li>
+                <li className="flex items-center gap-2"><span className="text-orange-400 text-xs">●</span> Projekt Hephaestus</li>
+              </ul>
+            </a>
+            
+            {/* Finance Copilot */}
+            <a href="https://app.sbsdeutschland.com/copilot" className="group bg-white/[0.02] border border-white/5 rounded-2xl p-8 hover:border-emerald-500/30 hover:bg-white/[0.04] transition-all duration-300">
+              <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-2xl mb-6">🤖</div>
+              <h3 className="text-xl font-semibold mb-2">Finance Copilot</h3>
+              <p className="text-slate-500 text-sm mb-5">Chat mit Ihren Finanzdaten. Analysen, Reports und Budget-Tracking auf natürliche Weise.</p>
+              <ul className="space-y-2.5 text-sm text-slate-400">
+                <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">●</span> Natural Language</li>
+                <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">●</span> Budget-Dashboard</li>
+                <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">●</span> Smart Analytics</li>
+                <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">●</span> Auto-Reports</li>
+              </ul>
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* Process */}
-      <section className="py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">🔄 Prozess</p>
-            <h2 className="mt-3 text-display-sm text-gray-950">
-              Von Upload bis Nachweis in vier Schritten
-            </h2>
+      {/* Enterprise Features */}
+      <section id="features" className="py-24 px-6 bg-white/[0.01]">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-amber-400 text-sm font-semibold tracking-wider uppercase mb-3">Enterprise-Grade</p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">Gebaut für den Mittelstand</h2>
+            <p className="text-slate-400 max-w-xl mx-auto">Keine Spielerei – enterprise-reife Infrastruktur für kritische Geschäftsprozesse.</p>
           </div>
-
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {processSteps.map((step) => (
-              <div key={step.step} className="rounded-2xl border border-gray-100 bg-white p-6 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold-100 text-[22px]">
-                  {step.emoji}
-                </div>
-                <div className="mt-2 text-[11px] font-bold text-gold-700">{step.step}</div>
-                <h3 className="mt-1 text-[15px] font-semibold text-gray-900">{step.title}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-gray-500">{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Target Groups */}
-      <section className="border-t border-gray-200 bg-gray-50 py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">👥 Zielgruppen</p>
-            <h2 className="mt-3 text-display-sm text-gray-950">
-              Für Teams, die Verträge professionell prüfen
-            </h2>
-          </div>
-
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              {
-                emoji: "🏛️",
-                title: "Kanzleien",
-                description: "Vertragsprüfung, Mandatskontext und strukturierte Teamabstimmung mit klaren Zuständigkeiten.",
-                link: { href: "/loesungen/kanzleien", label: "Mehr erfahren →" }
-              },
-              {
-                emoji: "🏢",
-                title: "Rechtsabteilungen",
-                description: "Einheitliche Review-Abläufe mit definierten Freigabeschritten und nachvollziehbaren Entscheidungspfaden.",
-                link: { href: "/loesungen/rechtsabteilungen", label: "Mehr erfahren →" }
-              },
-              {
-                emoji: "🛡️",
-                title: "Compliance & Datenschutz",
-                description: "Zugriff auf Trust-Informationen, Nachweise und Betriebsdokumentation für Audits und interne Prüfungen.",
-                link: { href: "/trust-center", label: "Trust Center →" }
-              },
-            ].map((group) => (
-              <div key={group.title} className="rounded-2xl border border-gray-100 bg-white p-6">
-                <span className="text-[28px]">{group.emoji}</span>
-                <h3 className="mt-3 text-[17px] font-semibold text-gray-900">{group.title}</h3>
-                <p className="mt-2 text-[14px] leading-relaxed text-gray-500">{group.description}</p>
-                <Link
-                  href={group.link.href}
-                  className="mt-5 inline-flex items-center text-[13px] font-medium text-[#003856] hover:text-[#00507a]"
-                >
-                  {group.link.label}
-                </Link>
+              { icon: "🔒", title: "DSGVO-konform", desc: "Alle Daten auf deutschen Servern in Frankfurt. Verarbeitung ausschließlich in der EU. Google Cloud mit DPA.", color: "amber" },
+              { icon: "🧠", title: "Hybrid AI Engine", desc: "GPT-4o, Claude 3.5, Gemini 2.0 Flash – automatisch das beste Modell für jeden Task. Multi-Provider-Redundanz.", color: "cyan" },
+              { icon: "🔗", title: "Enterprise-Integrationen", desc: "DATEV, SAP, Google Workspace, Slack, E-Mail via Resend, n8n-Workflows. Webhook-basierte Automation.", color: "purple" },
+              { icon: "👥", title: "RBAC & Multi-User", desc: "Rollenbasierte Zugriffskontrolle mit Admin, Manager und Viewer. Google OAuth SSO. Audit-Logs.", color: "emerald" },
+              { icon: "📊", title: "Echtzeit-Dashboards", desc: "Live-Monitoring aller Prozesse. Analytics, KPIs und automatisierte Reports für Management-Ebene.", color: "orange" },
+              { icon: "🔔", title: "Multi-Channel Alerts", desc: "Slack, E-Mail und Google Sheets Notifications. n8n-Workflows für individuelle Automatisierungen.", color: "rose" },
+            ].map((feature, i) => (
+              <div key={i} className="group p-8 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-white/10 transition-all">
+                <div className="text-3xl mb-4">{feature.icon}</div>
+                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="border-y border-gray-200 bg-white py-12">
-        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-8 px-5 sm:grid-cols-4 sm:px-8">
-          {[
-            { value: "< 3s", label: "Analyse-Antwortzeit" },
-            { value: "16", label: "Vertragstypen (DE + EN)" },
-            { value: "3", label: "KI-Provider aktiv" },
-            { value: "4", label: "Export-Formate" },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="text-[28px] font-semibold text-[#003856]">{stat.value}</p>
-              <p className="mt-1 text-[12px] text-gray-500">{stat.label}</p>
+      {/* Tech Stack */}
+      <section className="py-16 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">Technologie-Stack</p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-4">
+            {["GPT-4o", "Gemini 2.0 Flash", "Claude 3.5", "FastAPI", "Next.js", "DATEV", "Google Cloud", "n8n", "Stripe", "OAuth 2.0"].map((tech, i) => (
+              <span key={i} className="px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-sm text-slate-400">{tech}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="preise" className="py-24 px-6 bg-white/[0.01]">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-amber-400 text-sm font-semibold tracking-wider uppercase mb-3">Preise</p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">Transparent & fair</h2>
+            <p className="text-slate-400 max-w-xl mx-auto">Keine versteckten Kosten. Monatlich kündbar. 14 Tage kostenlos testen.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {/* Starter */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-8">
+              <p className="text-slate-500 text-sm font-medium uppercase tracking-wider mb-2">Starter</p>
+              <div className="mb-6">
+                <span className="text-4xl font-bold">€99</span>
+                <span className="text-slate-500 text-sm">/Monat</span>
+              </div>
+              <ul className="space-y-3 text-sm text-slate-400 mb-8">
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> 100 Rechnungen/Monat</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> 50 Verträge/Monat</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> DATEV-Export</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> E-Mail Support</li>
+              </ul>
+              <Link href="/register" className="block text-center w-full py-3 border border-white/10 hover:border-white/20 text-white rounded-xl transition text-sm font-medium">
+                14 Tage kostenlos
+              </Link>
             </div>
-          ))}
+            
+            {/* Professional */}
+            <div className="relative bg-gradient-to-b from-amber-500/10 to-transparent border-2 border-amber-500/30 rounded-2xl p-8">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-900 text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wide">
+                Beliebt
+              </div>
+              <p className="text-amber-400 text-sm font-medium uppercase tracking-wider mb-2">Professional</p>
+              <div className="mb-6">
+                <span className="text-4xl font-bold">€299</span>
+                <span className="text-slate-500 text-sm">/Monat</span>
+              </div>
+              <ul className="space-y-3 text-sm text-slate-300 mb-8">
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> 500 Rechnungen/Monat</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Unbegrenzt Verträge</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Smart Maintenance Alert</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> HydraulikDoc AI</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Finance Copilot</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> 5 Team-Mitglieder</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Priority Support</li>
+              </ul>
+              <Link href="/register" className="block text-center w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-xl transition text-sm font-semibold">
+                Jetzt starten
+              </Link>
+            </div>
+            
+            {/* Enterprise */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-8">
+              <p className="text-slate-500 text-sm font-medium uppercase tracking-wider mb-2">Enterprise</p>
+              <div className="mb-6">
+                <span className="text-4xl font-bold">Custom</span>
+              </div>
+              <ul className="space-y-3 text-sm text-slate-400 mb-8">
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Unbegrenzte Nutzung</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Alle 5 Module</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Unbegrenzt Team</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> SSO / SAML / SCIM</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Dedicated Support</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> Custom Integrationen</li>
+                <li className="flex items-center gap-2.5"><span className="text-amber-400 text-xs">●</span> On-Premise möglich</li>
+              </ul>
+              <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="block text-center w-full py-3 border border-white/10 hover:border-white/20 text-white rounded-xl transition text-sm font-medium">
+                Gespräch vereinbaren
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="py-20 sm:py-28">
-        <div className="mx-auto max-w-5xl px-5 sm:px-8">
-          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-700">💬 Vertrauen</p>
-          <h2 className="mt-3 text-center text-display-sm text-gray-950">Gebaut für juristische Teams</h2>
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+      {/* Trust */}
+      <section className="py-16 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { quote: "Die Kombination aus Risiko-Score und BGB-Referenzen spart uns bei der Erstprüfung erheblich Zeit.", role: "Partner, Wirtschaftskanzlei", location: "Frankfurt" },
-              { quote: "Mandantentrennung auf DB-Ebene war für uns ein Muss. Die RLS-Architektur hat uns überzeugt.", role: "IT-Leiter, Großkanzlei", location: "München" },
-              { quote: "Der DATEV-Export integriert sich nahtlos in unsere bestehende Buchhaltung.", role: "Rechtsabteilung, Mittelstand", location: "Hamburg" },
-            ].map((t, i) => (
-              <div key={i} className="rounded-2xl border border-gray-100 bg-white p-6">
-                <div className="flex gap-0.5">
-                  {[1,2,3,4,5].map((s) => <span key={s} className="text-[14px] text-gold-400">★</span>)}
-                </div>
-                <p className="mt-3 text-[14px] leading-relaxed text-gray-600">&ldquo;{t.quote}&rdquo;</p>
-                <div className="mt-4 border-t border-gray-100 pt-3">
-                  <p className="text-[13px] font-medium text-gray-900">{t.role}</p>
-                  <p className="text-[11px] text-gray-400">{t.location}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Trust Badges */}
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-6">
-            {[
-              { emoji: "🇪🇺", label: "DSGVO-konform" },
-              { emoji: "🇩🇪", label: "Hosting in Frankfurt" },
-              { emoji: "🔐", label: "Row-Level Security" },
-              { emoji: "📋", label: "Audit Trail" },
-              { emoji: "🤖", label: "Kein KI-Training" },
-            ].map((b) => (
-              <div key={b.label} className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2">
-                <span className="text-[14px]">{b.emoji}</span>
-                <span className="text-[12px] font-medium text-gray-600">{b.label}</span>
+              { icon: "🇩🇪", text: "Made in Weinheim" },
+              { icon: "🔒", text: "DSGVO-konform" },
+              { icon: "☁️", text: "Server in Frankfurt" },
+              { icon: "🏛️", text: "GmbH & Co. KG" },
+            ].map((badge, i) => (
+              <div key={i} className="flex items-center justify-center gap-2.5 text-slate-500 text-sm">
+                <span className="text-xl">{badge.icon}</span>
+                <span>{badge.text}</span>
               </div>
             ))}
           </div>
@@ -471,29 +345,95 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 sm:py-28">
-        <div className="mx-auto max-w-4xl px-5 text-center sm:px-8">
-          <p className="text-[28px]">🚀</p>
-          <h2 className="mt-3 text-display-sm text-gray-950">Bereit für strukturierte Vertragsprüfung?</h2>
-          <p className="mx-auto mt-4 max-w-xl text-[16px] leading-relaxed text-gray-500">
-            Sprechen Sie mit uns über Ihren Arbeitskontext und Ihre Anforderungen. Unverbindlich, in 30 Minuten.
-          </p>
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link
-              href="/enterprise-kontakt"
-              className="inline-flex w-full items-center justify-center rounded-full bg-[#003856] px-7 py-3.5 text-[15px] font-medium text-white shadow-lg shadow-[#003856]/12 transition-all hover:bg-[#002a42] active:scale-[0.98] sm:w-auto"
-            >
-              📞 Demo anfragen
-            </Link>
-            <Link
-              href="/preise"
-              className="inline-flex w-full items-center justify-center rounded-full border border-gray-200 bg-white px-7 py-3.5 text-[15px] font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50 sm:w-auto"
-            >
-              Preise ansehen
-            </Link>
+      <section className="py-24 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="relative bg-gradient-to-br from-amber-600 via-amber-500 to-orange-500 rounded-3xl p-12 md:p-16 text-center overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)] pointer-events-none"></div>
+            <div className="relative">
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">Bereit für Enterprise KI?</h2>
+              <p className="text-amber-100 mb-10 text-lg max-w-lg mx-auto">14 Tage kostenlos. Keine Kreditkarte. Sofort produktiv.</p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/register" className="bg-white text-amber-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-amber-50 transition shadow-lg">
+                  Kostenlos starten
+                </Link>
+                <a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="border-2 border-white/40 hover:border-white text-white px-8 py-4 rounded-xl font-semibold text-lg transition">
+                  Demo buchen
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
-    </main>
-  )
+
+      {/* Footer */}
+      <footer className="border-t border-white/5 py-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+            {/* Brand */}
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center font-bold text-slate-900 text-xs">SN</div>
+                <span className="font-bold">SBS Nexus</span>
+              </div>
+              <p className="text-slate-500 text-sm leading-relaxed">Enterprise KI-Plattform für den deutschen Mittelstand.</p>
+              <p className="text-slate-600 text-xs mt-3">📍 Weinheim, Deutschland</p>
+            </div>
+            
+            {/* Produkte */}
+            <div>
+              <h4 className="text-sm font-semibold mb-4 text-slate-300">Produkte</h4>
+              <ul className="space-y-2.5 text-sm text-slate-500">
+                <li><a href="https://app.sbsdeutschland.com" className="hover:text-white transition">Rechnungsverarbeitung</a></li>
+                <li><a href="https://contract.sbsdeutschland.com" className="hover:text-white transition">Vertragsanalyse</a></li>
+                <li><Link href="/maintenance" className="hover:text-white transition">Smart Maintenance</Link></li>
+                <li><a href="https://sbsdeutschland.com/static/landing/hydraulikdoc.html" className="hover:text-white transition">HydraulikDoc AI</a></li>
+                <li><a href="https://app.sbsdeutschland.com/copilot" className="hover:text-white transition">Finance Copilot</a></li>
+              </ul>
+            </div>
+            
+            {/* Plattform */}
+            <div>
+              <h4 className="text-sm font-semibold mb-4 text-slate-300">Plattform</h4>
+              <ul className="space-y-2.5 text-sm text-slate-500">
+                <li><Link href="/dashboard" className="hover:text-white transition">Dashboard</Link></li>
+                <li><Link href="/integrations" className="hover:text-white transition">Integrationen</Link></li>
+                <li><Link href="/security" className="hover:text-white transition">Sicherheit</Link></li>
+                <li><Link href="/pricing" className="hover:text-white transition">Preise</Link></li>
+              </ul>
+            </div>
+            
+            {/* Unternehmen */}
+            <div>
+              <h4 className="text-sm font-semibold mb-4 text-slate-300">Unternehmen</h4>
+              <ul className="space-y-2.5 text-sm text-slate-500">
+                <li><a href="https://sbsdeutschland.com/sbshomepage/unternehmen.html" className="hover:text-white transition">Über uns</a></li>
+                <li><a href="https://sbsdeutschland.com/sbshomepage/kontakt.html" className="hover:text-white transition">Kontakt</a></li>
+                <li><a href="https://sbsdeutschland.com/sbshomepage/sap-consulting.html" className="hover:text-white transition">SAP Consulting</a></li>
+                <li><a href="https://sbsdeutschland.com/sbshomepage/it-consulting.html" className="hover:text-white transition">IT Consulting</a></li>
+              </ul>
+            </div>
+            
+            {/* Rechtliches */}
+            <div>
+              <h4 className="text-sm font-semibold mb-4 text-slate-300">Rechtliches</h4>
+              <ul className="space-y-2.5 text-sm text-slate-500">
+                <li><Link href="/datenschutz" className="hover:text-white transition">Datenschutz</Link></li>
+                <li><Link href="/impressum" className="hover:text-white transition">Impressum</Link></li>
+                <li><a href="https://sbsdeutschland.com/sbshomepage/agb.html" className="hover:text-white transition">AGB</a></li>
+              </ul>
+              <div className="mt-6">
+                <p className="text-slate-600 text-xs">Support</p>
+                <a href="mailto:ki@sbsdeutschland.de" className="text-slate-500 text-sm hover:text-white transition">ki@sbsdeutschland.de</a>
+              </div>
+            </div>
+          </div>
+          
+          <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-600">
+            <p>© 2026 SBS Deutschland GmbH & Co. KG · Weinheim</p>
+            <p>Enterprise KI-Plattform für den DACH-Markt</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 }
