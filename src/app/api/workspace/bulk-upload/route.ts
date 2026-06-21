@@ -11,6 +11,8 @@ import {
 } from "@/lib/documents/intake-core"
 import { processDocumentExtraction } from "@/lib/documents/processing-core"
 import { deleteStoredDocumentFile, storeDocumentFile } from "@/lib/storage/document-storage"
+import { validateUploadedFile } from "@/lib/security/file-validation"
+import { UPLOAD_LIMIT, checkRateLimit, retryAfterSeconds } from "@/lib/security/rate-limit"
 import { log } from "@/lib/security/secure-logging"
 
 const erlaubteMimeTypes = [
@@ -47,6 +49,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 })
     }
 
+    // Upload rate limit: 20 per hour per user (consistent with quick-intake + upload action)
+    const rl = checkRateLimit(`upload:${session.user.id}`, UPLOAD_LIMIT)
+    if (!rl.allowed) {
+      log.warn("bulk_upload.rate_limited", { code: "RATE_LIMITED" })
+      return NextResponse.json(
+        { error: "Upload-Limit erreicht. Bitte in einer Stunde erneut versuchen." },
+        { status: 429, headers: { "Retry-After": retryAfterSeconds(rl.retryAfterMs) } }
+      )
+    }
+
     const tenantContext = await resolveTenantContextForUser(session.user.id)
     if (tenantContext.status !== "single") {
       return NextResponse.json({ error: "Kein eindeutiger Mandantenkontext." }, { status: 400 })
@@ -69,6 +81,14 @@ export async function POST(request: Request) {
     const mimeType = resolveMimeType(file.name, file.type)
     if (!mimeType) {
       return NextResponse.json({ error: "Dateityp nicht unterst\u00FCtzt. Erlaubt: PDF, DOC, DOCX, TXT." }, { status: 400 })
+    }
+
+    // Magic-byte validation — defense-in-depth after MIME allowlist (OWASP A05).
+    // Verhindert Polyglot-/Spoofing-Uploads (z. B. Binärdatei als PDF deklariert).
+    const validation = await validateUploadedFile(file, MAX_FILE_SIZE_BYTES)
+    if (!validation.valid) {
+      log.warn("bulk_upload.file_rejected", { code: "FILE_VALIDATION_FAILED" })
+      return NextResponse.json({ error: validation.error ?? "Dateivalidierung fehlgeschlagen." }, { status: 422 })
     }
 
     if (!organizationName || organizationName.trim().length < 2) {
