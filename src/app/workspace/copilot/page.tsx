@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
+import { AiTransparencyBadge } from "@/components/compliance/ai-transparency-badge"
 
 type Message = {
   role: "user" | "assistant"
@@ -275,6 +276,7 @@ export default function CopilotPage() {
           <div>
             <h1 className="text-[17px] font-semibold text-gray-950">Contract Copilot</h1>
             <p className="text-[12px] text-gray-500">Powered by Claude Sonnet 4 &middot; Vertragsexperte f&uuml;r DACH-Recht</p>
+            <div className="mt-1.5"><AiTransparencyBadge compact /></div>
           </div>
           <div className="ml-auto relative" ref={pickerRef}>
             {contractName ? (
