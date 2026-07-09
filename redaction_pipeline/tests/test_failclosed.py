@@ -46,6 +46,22 @@ def test_low_coverage_forces_amber():
     assert ocr["severity"] in ("amber", "red")
 
 
+def test_qr_scanner_unavailable_forces_amber(corpus, mapping_dir, monkeypatch):
+    # QR-Scanner "nicht verfügbar" != "sauber": muss AMBER-Befund erzeugen.
+    from redaction_pipeline.stages import detect
+
+    monkeypatch.setattr(detect, "_ZBAR_AVAILABLE", False)
+    monkeypatch.setattr(detect, "_zbar_decode", None)
+
+    qr_doc = next(d for d in corpus if d.has_qr)
+    out = run_pipeline(qr_doc.pdf_bytes, TENANT, mapping_store_dir=mapping_dir)
+    qr = next(d for d in out["detectors"] if d["name"] == "qr_barcode")
+    assert qr["flagged"] is True
+    assert qr["severity"] == "amber"
+    assert qr["confidence"] == 0.0
+    assert "qr_scanner_unavailable" in qr["detail"]
+
+
 def test_active_content_flagged_by_sanitizer(corpus, mapping_dir):
     active = [d for d in corpus if d.name.startswith("mixed_active")]
     assert active

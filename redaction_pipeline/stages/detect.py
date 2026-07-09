@@ -25,6 +25,19 @@ from ..contract import DetectorResult, Severity
 from ..deny_terms import HEALTH_TERMS, MANDATE_TERMS
 from .ocr_layout import Token
 
+# QR-Scanner-Verfügbarkeit EINMAL zur Ladezeit kapseln. `except Exception`
+# fängt sowohl fehlendes pyzbar (ImportError) als auch fehlendes libzbar0
+# (OSError beim ctypes-Laden der Shared Library).
+try:
+    from pyzbar.pyzbar import decode as _zbar_decode
+
+    _ZBAR_AVAILABLE = True
+    _ZBAR_ERROR: str | None = None
+except Exception as _zbar_exc:  # ImportError ODER libzbar0 fehlt zur Ladezeit
+    _zbar_decode = None
+    _ZBAR_AVAILABLE = False
+    _ZBAR_ERROR = str(_zbar_exc)
+
 
 @dataclass(frozen=True)
 class Hit:
@@ -170,11 +183,9 @@ def _qr_hits(pdf_bytes: bytes, policy: PolicyConfig) -> tuple[list[Hit], bool]:
     Rendert Seiten und sucht QR/Barcodes. Der DECODIERTE Inhalt wird NIE
     zurückgegeben — nur die zu schwärzende Region. Gibt (hits, available).
     """
-    try:
-        from pyzbar import pyzbar  # noqa
-        from PIL import Image
-    except Exception:
+    if not _ZBAR_AVAILABLE or _zbar_decode is None:
         return [], False
+    from PIL import Image
 
     hits: list[Hit] = []
     zoom = policy.ocr_dpi / 72.0
@@ -185,7 +196,7 @@ def _qr_hits(pdf_bytes: bytes, policy: PolicyConfig) -> tuple[list[Hit], bool]:
             page = doc.load_page(pno)
             pix = page.get_pixmap(matrix=matrix, alpha=False)
             img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-            for sym in pyzbar.decode(img):
+            for sym in _zbar_decode(img):
                 r = sym.rect
                 x0 = r.left / zoom
                 y0 = r.top / zoom
@@ -217,6 +228,25 @@ def run_detectors(
     mandate_hits = _deny_hits(page_text, MANDATE_TERMS, "mandate")
 
     qr_hits, qr_available = _qr_hits(pdf_bytes, policy)
+
+    if qr_available:
+        qr_detector = DetectorResult(
+            "qr_barcode", policy.v("qr_barcode"),
+            flagged=bool(qr_hits),
+            severity=Severity.AMBER if qr_hits else Severity.NONE,
+            confidence=1.0,
+            detail=(f"{len(qr_hits)} codes" if qr_hits else None),
+        )
+    else:
+        # Scanner NICHT verfügbar ≠ sauber: Coverage unverifiziert ⇒ fail-closed
+        # AMBER-Befund, damit ein Dok mit ungeprüftem QR nicht GREEN passiert.
+        qr_detector = DetectorResult(
+            "qr_barcode", policy.v("qr_barcode"),
+            flagged=True,
+            severity=Severity.AMBER,
+            confidence=0.0,
+            detail="qr_scanner_unavailable: pyzbar/libzbar0 missing; coverage unverified",
+        )
 
     detectors = [
         DetectorResult(
@@ -250,14 +280,7 @@ def run_detectors(
             confidence=1.0,
             detail="deny_hit" if mandate_hits else None,
         ),
-        DetectorResult(
-            "qr_barcode", policy.v("qr_barcode"),
-            flagged=bool(qr_hits), severity=Severity.AMBER if qr_hits else Severity.NONE,
-            # libzbar fehlt ⇒ Confidence < min_coverage (fail-closed) wenn Scan.
-            confidence=1.0 if qr_available else 0.0,
-            detail=("zbar_unavailable" if not qr_available
-                    else (f"{len(qr_hits)} codes" if qr_hits else None)),
-        ),
+        qr_detector,
     ]
 
     all_hits = pii_hits + ner_hits + addr_hits + health_hits + mandate_hits + qr_hits
