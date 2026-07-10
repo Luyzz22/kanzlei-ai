@@ -1,0 +1,8 @@
+# CODEOWNERS — erzwingt Review durch Code-Owner bei Änderung/Löschung.
+# Ziel: der fail-closed Sicherheits-Keystone darf nicht durch einen
+# fehlgezweigten PR still gelöscht werden (grünes CI hätte das durchgelassen).
+
+# Fail-closed Sicherheits-Keystone — Löschung/Änderung erzwingt Review
+/src/lib/hybrid/                 @Luyzz22
+/redaction_pipeline/tenant.py    @Luyzz22
+/redaction_pipeline/stages/detect.py  @Luyzz22
