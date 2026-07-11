@@ -1,0 +1,16 @@
+# Gitleaks-Konfiguration KanzleiAI
+# Alle Default-Regeln bleiben aktiv.
+[extend]
+useDefault = true
+
+# False-Positive: Legacy-Dev-Skripte des Alt-Python-Backends senden einen
+# hartcodierten Platzhalter-Key (demo-key-123) im X-API-Key-Header gegen
+# http://127.0.0.1:8000. Kein Produktions-Credential, kein History-Incident.
+# Verifiziert 07/2026: 10 Funde, RuleID curl-auth-header, Entropie 3.25,
+# inkl. bewusster Negativtests (falscher/invalider Key).
+[allowlist]
+description = "Legacy local-dev test scripts with placeholder API key against localhost"
+paths = [
+  '''test_api\.sh$''',
+  '''test_all_features\.sh$''',
+]
