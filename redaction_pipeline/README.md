@@ -60,3 +60,14 @@ apt-get install -y tesseract-ocr tesseract-ocr-deu libzbar0
 # Env (systemd):  REDACTION_MASTER_KEY=<secret>  REDACTION_MAPPING_DIR=/var/lib/redaction/mappings
 # non-root Service-User; GPU/CPU-Queue serialisiert (kein OOM bei Parallel-Uploads).
 ```
+
+### Prod-Deploy-Checkliste (Sicherheit)
+- **`REDACTION_MASTER_KEY`** als Secret setzen — **>= 32 Bytes Entropie** (roh,
+  Hex oder Base64; wird vor dem Längencheck dekodiert). Fehlt der Key, ist die
+  Pipeline fail-closed und wirft `MasterKeyError` (kein stiller Fallback).
+- **`REDACTION_ALLOW_DEV_KEY` darf auf dem Prod-Host NIEMALS gesetzt sein.**
+  Dieser Escape-Hatch aktiviert den unsicheren Dev-Fallback-Key und würde den
+  Fail-closed-Schutz aushebeln. Nur für lokale Entwicklung/CI.
+- `libzbar0` + `tesseract-ocr(-deu)` installiert — sonst melden OCR/QR-Detektor
+  fail-closed AMBER (`qr_scanner_unavailable` bzw. `tesseract_unavailable`), und
+  Dokumente mit ungeprüftem QR/Scan passieren NICHT als GREEN.
