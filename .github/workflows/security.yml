@@ -63,8 +63,10 @@ jobs:
         run: |
           docker run --rm \
             -v "$PWD:/repo" \
+            -w /repo \
             zricethezav/gitleaks:latest \
-            detect --source=/repo --no-git --redact --verbose
+            detect --source=/repo --no-git --redact --verbose \
+              --config=/repo/.gitleaks.toml
 
   # ── Dependency Audit ────────────────────────────────────────────────────────
   dependency-audit:
