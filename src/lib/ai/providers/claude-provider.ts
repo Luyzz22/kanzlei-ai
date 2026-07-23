@@ -1,8 +1,11 @@
 import { ModelType, type AIProviderConfig } from "@/types/ai"
 
+import { createAnthropicClient } from "@/lib/ai/anthropic-client"
+
 import {
+  activeClaudeModelId,
   anthropicBetaHeaders,
-  anthropicChatModelId,
+  isBedrockEnabled,
   resolveAnthropicModelProfile
 } from "@/lib/ai/claude-model-config"
 
@@ -41,13 +44,13 @@ export class ClaudeProvider extends BaseAIProvider {
   }
 
   async analyze(input: AnalyzeInput): Promise<AIAnalysisResponse> {
-    if (!this.config.apiKey.trim()) {
+    if (!isBedrockEnabled() && !this.config.apiKey.trim()) {
       throw new Error("ANTHROPIC_API_KEY ist nicht gesetzt.")
     }
 
     const profile = resolveAnthropicModelProfile()
     const maxTokens = input.maxTokens ?? 8192
-    const betaHeaders = anthropicBetaHeaders(maxTokens)
+    const betaHeaders = isBedrockEnabled() ? undefined : anthropicBetaHeaders(maxTokens)
 
     if (profile.wasAliasResolved) {
       console.info("[ClaudeProvider] Alias auf Snapshot gemappt:", {
@@ -57,15 +60,13 @@ export class ClaudeProvider extends BaseAIProvider {
     }
 
     return this.withRetry(async () => {
-      const anthropicModule = await import("@anthropic-ai/sdk")
-      const Anthropic = anthropicModule.default
-      const client = new Anthropic({
+      const client = await createAnthropicClient({
         apiKey: this.config.apiKey,
         ...(betaHeaders ? { defaultHeaders: betaHeaders } : {})
       })
 
       const requestParams = {
-        model: anthropicChatModelId(),
+        model: activeClaudeModelId(),
         max_tokens: maxTokens,
         temperature: 0.2,
         messages: [{ role: "user" as const, content: buildClaudeUserContent(input) }]

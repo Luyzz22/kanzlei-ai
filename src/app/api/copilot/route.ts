@@ -4,6 +4,8 @@ export const maxDuration = 300
 import { NextResponse } from "next/server"
 
 import { auth } from "@/lib/auth"
+import { createAnthropicClient, claudeConfigured } from "@/lib/ai/anthropic-client"
+import { activeClaudeModelId } from "@/lib/ai/claude-model-config"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { COPILOT_LIMIT, checkRateLimit, retryAfterSeconds } from "@/lib/security/rate-limit"
 import { log } from "@/lib/security/secure-logging"
@@ -101,16 +103,14 @@ export async function POST(request: Request) {
   // Apply sliding-window trim to reduce input tokens on long sessions
   const trimmedMessages = trimConversationHistory(messages)
 
-  const anthropicKey = process.env.ANTHROPIC_API_KEY
   const openaiKey = process.env.OPENAI_API_KEY
 
-  if (anthropicKey) {
+  if (claudeConfigured()) {
     try {
-      const Anthropic = (await import("@anthropic-ai/sdk")).default
-      const client = new Anthropic({ apiKey: anthropicKey })
+      const client = await createAnthropicClient()
 
       const stream = await client.messages.stream({
-        model: process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-sonnet-4-20250514",
+        model: activeClaudeModelId(),
         max_tokens: 4096,
         temperature: 0.3,
         system: systemPrompt,
