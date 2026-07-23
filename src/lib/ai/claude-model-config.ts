@@ -144,3 +144,22 @@ export function anthropicBetaHeaders(requestedMaxTokens: number): Record<string,
 export function contractAnalysisClaudeOnly(): boolean {
   return process.env.AI_CONTRACT_ANALYSIS_CLAUDE_ONLY !== "false"
 }
+
+export function isBedrockEnabled(): boolean {
+  return process.env.AI_BEDROCK_ENABLED === "true"
+}
+const ANTHROPIC_TO_BEDROCK: Record<string, string> = {
+  "claude-sonnet-4-5-20250929": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+  "claude-sonnet-4-6-20260217": "anthropic.claude-sonnet-4-6-20260217-v1:0"
+}
+export function bedrockAnthropicModelId(): string {
+  const explicit = process.env.BEDROCK_ANTHROPIC_MODEL?.trim()
+  if (explicit) return explicit
+  const anthropicId = resolveAnthropicModelProfile().modelId
+  const base = ANTHROPIC_TO_BEDROCK[anthropicId] ?? `anthropic.${anthropicId}-v1:0`
+  const prefix = process.env.BEDROCK_INFERENCE_PROFILE_PREFIX?.trim()
+  return prefix ? `${prefix}.${base}` : base
+}
+export function activeClaudeModelId(): string {
+  return isBedrockEnabled() ? bedrockAnthropicModelId() : anthropicChatModelId()
+}

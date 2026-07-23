@@ -3,6 +3,8 @@ export const maxDuration = 60
 
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { createAnthropicClient, claudeConfigured } from "@/lib/ai/anthropic-client"
+import { activeClaudeModelId } from "@/lib/ai/claude-model-config"
 
 const NEGOTIATION_SYSTEM_PROMPT = `Du bist ein KI-gestützter Verhandlungssimulator für juristische Vertragsverhandlungen im DACH-Raum.
 
@@ -47,8 +49,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Szenario und Verhandlungszug erforderlich" }, { status: 400 })
   }
 
-  const anthropicKey = process.env.ANTHROPIC_API_KEY
-  if (!anthropicKey) {
+  if (!claudeConfigured()) {
     return NextResponse.json({ error: "KI-Provider nicht konfiguriert" }, { status: 503 })
   }
 
@@ -74,11 +75,10 @@ VERHANDLUNGSZIELE DES NUTZERS: ${scenario.objectives.join("; ")}`
   conversationMessages.push({ role: "user", content: userMove })
 
   try {
-    const Anthropic = (await import("@anthropic-ai/sdk")).default
-    const client = new Anthropic({ apiKey: anthropicKey })
+    const client = await createAnthropicClient()
 
     const stream = await client.messages.stream({
-      model: process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-sonnet-4-6",
+      model: activeClaudeModelId(),
       max_tokens: 2048,
       temperature: 0.5,
       system: `${NEGOTIATION_SYSTEM_PROMPT}\n\n${scenarioContext}`,

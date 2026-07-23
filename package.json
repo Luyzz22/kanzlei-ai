@@ -18,6 +18,7 @@
     "test": "AI_CONTRACT_ANALYSIS_CLAUDE_ONLY=false NODE_OPTIONS=--conditions=react-server tsx --test src/lib/ai/__tests__/*.test.ts src/lib/documents/__tests__/*.test.ts src/lib/security/__tests__/*.test.ts src/lib/evals/__tests__/contract-eval-runner.test.ts src/lib/evals/__tests__/eval-model-matrix.test.ts src/lib/normpilot/__tests__/*.test.ts"
   },
   "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.32.0",
     "@anthropic-ai/sdk": "^0.78.0",
     "@auth/core": "0.41.1",
     "@auth/prisma-adapter": "2.11.1",

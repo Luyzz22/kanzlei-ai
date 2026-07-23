@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 
 import { auth } from "@/lib/auth"
+import { createAnthropicClient, claudeConfigured } from "@/lib/ai/anthropic-client"
+import { activeClaudeModelId } from "@/lib/ai/claude-model-config"
 import { requireNonProductionOrAdmin } from "@/lib/security/admin-route-guard"
 import { buildRiskAndGuidancePromptBody } from "@/lib/ai/prompt-registry/contract-defaults"
 import { stripCodeFences, parseJsonUnknown, riskAndGuidanceStageSchema } from "@/lib/ai/schemas/contract-analysis"
@@ -35,20 +37,17 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  const model = process.env.ANTHROPIC_CHAT_MODEL?.trim() || "claude-sonnet-4-6"
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const model = activeClaudeModelId()
 
-  if (!apiKey) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY nicht gesetzt" }, { status: 500 })
+  if (!claudeConfigured()) {
+    return NextResponse.json({ error: "Claude-Provider nicht konfiguriert (ANTHROPIC_API_KEY oder AI_BEDROCK_ENABLED)" }, { status: 500 })
   }
 
   const prompt = buildRiskAndGuidancePromptBody(TEST_CONTRACT, TEST_EXTRACTION_SUMMARY)
   const userContent = `${prompt}\n\n${TEST_CONTRACT}\n\nAntworte ausschließlich mit einem gültigen JSON-Objekt ohne Markdown oder Erklärtext.`
 
   try {
-    const anthropicModule = await import("@anthropic-ai/sdk")
-    const Anthropic = anthropicModule.default
-    const client = new Anthropic({ apiKey })
+    const client = await createAnthropicClient()
 
     const startMs = Date.now()
     const response = await client.messages.create({
