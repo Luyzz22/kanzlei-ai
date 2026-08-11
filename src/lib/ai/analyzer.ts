@@ -12,12 +12,35 @@ import {
   selectOptimalModel
 } from "@/lib/ai/model-router"
 import { createProvider } from "@/lib/ai/providers"
+import {
+  authorizeAiRequest,
+  PolicyViolationError,
+  type AuthorizedAiRequest
+} from "@/lib/compliance/model-gateway"
+import type { SensitivityClass } from "@/lib/compliance/policy-decision"
 import type { AnalysisResult, DocumentMetadata } from "@/types/ai"
+
+/**
+ * Pflichtkontext für jede Analyse.
+ *
+ * Bewusst **nicht optional**: der Analyzer ist der gemeinsame Einstieg der
+ * Routen `analyze`, `analyze-quick` und `compare`. Wäre der Kontext optional,
+ * könnte ein künftiger Aufrufer ihn weglassen und damit den Policy Decision
+ * Point umgehen. So erzwingt der Compiler, dass jeder Aufrufer die Datenklasse
+ * benennt.
+ */
+export interface AnalyzeAuthContext {
+  classification: SensitivityClass
+  tenantId: string
+  actorId: string
+  useCase: string
+}
 
 export async function analyzeWithRouter(
   metadata: DocumentMetadata,
   prompt: string,
-  documentText: string
+  documentText: string,
+  context: AnalyzeAuthContext
 ): Promise<AnalysisResult> {
   const cacheKey = createHash("sha256")
     .update(`${metadata.documentId}:${metadata.analysisType}:${documentText}`)
@@ -32,12 +55,40 @@ export async function analyzeWithRouter(
   const primaryModel = selectOptimalModel(metadata)
   logModelSelection(metadata, primaryModel)
   assertAnyProviderConfigured()
-  const chain = getFilteredExecutionChain(metadata)
+  let chain = getFilteredExecutionChain(metadata)
   if (chain.length === 0) {
     throw new ProviderConfigurationError(
       "Kein KI-Anbieter mit gültigem API-Schlüssel verfügbar. Bitte mindestens einen Anbieter konfigurieren."
     )
   }
+
+  // ── Policy Decision Point ────────────────────────────────────────────────
+  let authorized: AuthorizedAiRequest
+  try {
+    authorized = await authorizeAiRequest({
+      classification: context.classification,
+      tenantId: context.tenantId,
+      actorId: context.actorId,
+      useCase: context.useCase
+    })
+  } catch (err) {
+    if (err instanceof PolicyViolationError) {
+      throw new ProviderConfigurationError(
+        `Analyse durch KI-Richtlinie blockiert: ${err.decision.reason}`
+      )
+    }
+    throw err
+  }
+
+  // Die Fallback-Kette darf die Entscheidung nicht überholen.
+  chain = chain.filter((m) => m === authorized.modelType)
+  if (chain.length === 0) {
+    throw new ProviderConfigurationError(
+      `Kein zugelassener Transport (Policy: ${authorized.decision.action}, ` +
+        `Grund: ${authorized.decision.reason}).`
+    )
+  }
+
   const fallbackUsed: AnalysisResult["fallbackUsed"] = []
 
   for (const model of chain) {
@@ -71,7 +122,14 @@ export async function analyzeWithRouter(
 }
 
 export async function analyzeMultipleInParallel(
-  jobs: Array<{ metadata: DocumentMetadata; prompt: string; documentText: string }>
+  jobs: Array<{
+    metadata: DocumentMetadata
+    prompt: string
+    documentText: string
+    context: AnalyzeAuthContext
+  }>
 ): Promise<AnalysisResult[]> {
-  return Promise.all(jobs.map((job) => analyzeWithRouter(job.metadata, job.prompt, job.documentText)))
+  return Promise.all(
+    jobs.map((job) => analyzeWithRouter(job.metadata, job.prompt, job.documentText, job.context))
+  )
 }

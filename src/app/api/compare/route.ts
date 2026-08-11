@@ -3,6 +3,7 @@ export const maxDuration = 300
 
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { analyzeWithRouter } from "@/lib/ai/analyzer"
 import { AnalysisType, type DocumentMetadata } from "@/types/ai"
 
@@ -212,7 +213,16 @@ WICHTIG: Antworte ausschließlich mit einem validen JSON-Objekt. Schema:
 ${comparisonSchema}`
 
   try {
-    const result = await analyzeWithRouter(metadata, prompt, docA + "\n---\n" + docB)
+    // Klasse 3: verglichen werden zwei Vertragsdokumente — Mandatsinhalt.
+    const cmpTenantCtx = await resolveTenantContextForUser(session.user.id)
+    const cmpTenantId = cmpTenantCtx.status === "single" ? cmpTenantCtx.tenantId : session.user.id
+
+    const result = await analyzeWithRouter(metadata, prompt, docA + "\n---\n" + docB, {
+      classification: 3,
+      tenantId: cmpTenantId,
+      actorId: session.user.id,
+      useCase: "compare"
+    })
     const parsed = parseAnalysis(result.analysis)
     return NextResponse.json({ parsed, modelUsed: result.modelUsed, tokensUsed: result.tokensUsed })
   } catch (e) {

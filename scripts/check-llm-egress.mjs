@@ -70,6 +70,32 @@ const ALLOWLIST = new Map([
   ]
 ])
 
+/**
+ * Wer einen Transport konstruiert, muss vorher das Gateway fragen.
+ *
+ * Diese Regel existiert, weil genau das schiefging: `src/lib/ai/analyzer.ts`
+ * rief `createProvider()` direkt auf und bediente damit drei API-Routen an
+ * jedem Policy Decision Point vorbei. Der Egress-Guard hat das nicht gesehen,
+ * weil analyzer.ts kein Provider-SDK importiert — nur die Fabrik.
+ */
+const TRANSPORT_FACTORIES = ["createProvider", "createAnthropicClient"]
+
+/** Der Gateway-Aufruf, der einen Transport-Nutzer legitimiert. */
+const GATEWAY_CALL = "authorizeAiRequest"
+
+/**
+ * Dateien, die den Transport selbst bereitstellen oder verdrahten. Sie treffen
+ * keine Policy-Entscheidung und dürfen die Fabriken deshalb ohne Gateway-Aufruf
+ * nennen.
+ */
+const TRANSPORT_INFRASTRUCTURE = new Set([
+  "src/lib/ai/providers/registry.ts",
+  "src/lib/ai/providers/index.ts",
+  "src/lib/ai/anthropic-client.ts",
+  "src/lib/ai/providers/claude-provider.ts",
+  "src/lib/ai/provider-availability.ts"
+])
+
 function buildImportPatterns(moduleName) {
   const quoted = moduleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
   return [
@@ -158,11 +184,32 @@ async function main() {
     )
   }
 
+  // 3. Transport-Nutzer ohne Gateway-Aufruf → Policy Decision Point umgangen.
+  let gatewayChecked = 0
+  for (const file of files) {
+    const normalized = file.split(path.sep).join("/")
+    if (TRANSPORT_INFRASTRUCTURE.has(normalized)) continue
+
+    const source = await readFile(path.join(root, file), "utf8")
+    const usedFactory = TRANSPORT_FACTORIES.find((fn) => source.includes(`${fn}(`))
+    if (!usedFactory) continue
+
+    gatewayChecked += 1
+    if (!source.includes(GATEWAY_CALL)) {
+      fail(
+        `${normalized}: ruft ${usedFactory}() auf, aber nirgends ${GATEWAY_CALL}(). ` +
+          `Jeder Modellaufruf braucht vorher eine PolicyDecision. ` +
+          `Ist die Datei reine Transport-Infrastruktur, ergänze TRANSPORT_INFRASTRUCTURE in scripts/check-llm-egress.mjs.`
+      )
+    }
+  }
+
   if (failures.length === 0) {
     pass(
       `Kein Provider-Egress ausserhalb der Allowlist (${files.length} Dateien geprüft, ` +
         `${ALLOWLIST.size} dokumentierte Alt-Pfade)`
     )
+    pass(`Alle ${gatewayChecked} Transport-Nutzer rufen ${GATEWAY_CALL}() auf`)
   }
 }
 
