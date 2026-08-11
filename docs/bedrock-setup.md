@@ -4,6 +4,28 @@ KanzleiAI kann alle Claude-Aufrufe wahlweise über die **direkte Anthropic-API**
 oder über **Amazon Bedrock** ausführen — umgeschaltet per ENV-Variable, ohne
 Code-Änderung. Default (Schalter aus) = unverändert direkte API.
 
+> **Rolle im Zielbild:** Bedrock in einer EU-Region ist nach
+> [ADR-0001](adr/0001-externer-mandats-llm-pfad.md) der **externe Pfad für
+> Mandatsdaten** — gewählt, weil Claude auf Azure Foundry derzeit keine EU Data
+> Zone hat. Klasse-3-Verarbeitung bleibt gesperrt, bis § 43e-Vertragskette, TIA
+> und DSFA vorliegen; Klasse 4 und RAG über Mandantenakten bleiben dauerhaft
+> lokal.
+
+## EU-Region ist Pflicht (fail closed)
+
+Bei `AI_BEDROCK_ENABLED=true` **muss** eine EU-Mitgliedstaat-Region gesetzt
+sein. Es gibt keinen Default: Fehlt sie oder liegt sie ausserhalb der EU, wirft
+der Client einen `BedrockRegionPolicyError`, statt still nach `us-east-1` zu
+routen.
+
+Zulässig: `eu-central-1` (Frankfurt), `eu-west-1` (Irland), `eu-west-3`
+(Paris), `eu-north-1` (Stockholm), `eu-south-1` (Mailand), `eu-south-2`
+(Spanien).
+
+Bewusst **nicht** zulässig: `eu-west-2` (London) und `eu-central-2` (Zürich) —
+trotz `eu-`Präfix keine EU-Mitgliedstaaten, für sie wäre nach § 43e Abs. 4 BRAO
+ein eigener Nachweis vergleichbaren Geheimnisschutzes zu führen.
+
 ## 1. Model Access in AWS freischalten
 
 1. AWS-Konsole → **Amazon Bedrock** → *Model access*.
