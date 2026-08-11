@@ -3,6 +3,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { createAnthropicClient, claudeConfigured } from "@/lib/ai/anthropic-client"
 import { activeClaudeModelId } from "@/lib/ai/claude-model-config"
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
+import { authorizeAiRequest, PolicyViolationError } from "@/lib/compliance/model-gateway"
 import { requireNonProductionOrAdmin } from "@/lib/security/admin-route-guard"
 import { buildRiskAndGuidancePromptBody } from "@/lib/ai/prompt-registry/contract-defaults"
 import { stripCodeFences, parseJsonUnknown, riskAndGuidanceStageSchema } from "@/lib/ai/schemas/contract-analysis"
@@ -41,6 +43,31 @@ export async function GET() {
 
   if (!claudeConfigured()) {
     return NextResponse.json({ error: "Claude-Provider nicht konfiguriert (ANTHROPIC_API_KEY oder AI_BEDROCK_ENABLED)" }, { status: 500 })
+  }
+
+  // ── Policy Decision Point ────────────────────────────────────────────────
+  // Klasse 0: verarbeitet wird ausschliesslich der oben fest einkompilierte
+  // TEST_CONTRACT (fiktive TestCorp/DemoCorp). Es gibt hier keine Eingabe von
+  // aussen und damit kein Mandatsgeheimnis. Der Aufruf laeuft trotzdem ueber
+  // das Gateway, damit auch Diagnosewege im Audit auftauchen.
+  const tenantCtx = await resolveTenantContextForUser(session.user.id)
+  const tenantId = tenantCtx.status === "single" ? tenantCtx.tenantId : session.user.id
+
+  try {
+    await authorizeAiRequest({
+      classification: 0,
+      tenantId,
+      actorId: session.user.id,
+      useCase: "admin-diagnose-risk"
+    })
+  } catch (err) {
+    if (err instanceof PolicyViolationError) {
+      return NextResponse.json(
+        { error: "Anfrage durch KI-Richtlinie blockiert", reason: err.decision.reason },
+        { status: 403 }
+      )
+    }
+    throw err
   }
 
   const prompt = buildRiskAndGuidancePromptBody(TEST_CONTRACT, TEST_EXTRACTION_SUMMARY)

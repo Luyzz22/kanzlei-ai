@@ -5,6 +5,13 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { createAnthropicClient, claudeConfigured } from "@/lib/ai/anthropic-client"
 import { activeClaudeModelId } from "@/lib/ai/claude-model-config"
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
+import {
+  authorizeAiRequest,
+  PolicyViolationError,
+  type AuthorizedAiRequest
+} from "@/lib/compliance/model-gateway"
+import { ModelType } from "@/types/ai"
 
 const NEGOTIATION_SYSTEM_PROMPT = `Du bist ein KI-gestützter Verhandlungssimulator für juristische Vertragsverhandlungen im DACH-Raum.
 
@@ -51,6 +58,39 @@ export async function POST(request: Request) {
 
   if (!claudeConfigured()) {
     return NextResponse.json({ error: "KI-Provider nicht konfiguriert" }, { status: 503 })
+  }
+
+  // ── Policy Decision Point ────────────────────────────────────────────────
+  // Klasse 2: die Szenarien selbst sind synthetisch (fiktive Gegenparteien),
+  // aber `userMove` ist Freitext — ein Anwalt kann dort Details aus einem
+  // echten Mandat hineinschreiben. Personenbezug ist also möglich, ein
+  // gesicherter Mandatskontext nicht. Klasse 2 ist die ehrliche Einstufung.
+  const tenantCtx = await resolveTenantContextForUser(session.user.id)
+  const tenantId = tenantCtx.status === "single" ? tenantCtx.tenantId : session.user.id
+
+  let authorized: AuthorizedAiRequest
+  try {
+    authorized = await authorizeAiRequest({
+      classification: 2,
+      tenantId,
+      actorId: session.user.id,
+      useCase: "verhandlung"
+    })
+  } catch (err) {
+    if (err instanceof PolicyViolationError) {
+      return NextResponse.json(
+        { error: "Anfrage durch KI-Richtlinie blockiert", reason: err.decision.reason },
+        { status: 403 }
+      )
+    }
+    throw err
+  }
+
+  if (authorized.modelType !== ModelType.CLAUDE_SONNET_4) {
+    return NextResponse.json(
+      { error: "Für diesen Vorgang ist kein zugelassener Transport verfügbar" },
+      { status: 503 }
+    )
   }
 
   const scenarioContext = `SZENARIO: ${scenario.title}

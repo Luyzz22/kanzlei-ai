@@ -36,6 +36,11 @@ import {
   type LlmProviderName
 } from "@/lib/ai/llm-transfer-policy"
 import { getTenantAiGovernance, type TenantAiGovernance } from "@/lib/ai/tenant-ai-governance"
+import {
+  authorizeAiRequest,
+  PolicyViolationError,
+  type AuthorizedAiRequest
+} from "@/lib/compliance/model-gateway"
 import { pseudonymizeDocumentText } from "@/lib/ai/privacy-redaction"
 import { formatStageFailureMessage } from "@/lib/ai/pipeline-failure-messages"
 import {
@@ -354,7 +359,7 @@ async function runJsonStage<T>(
   fallbackKeys: string[]
 ): Promise<{ data: T; model: ModelType; tokens: number }> {
   const prismaStage = toPrismaStage(pipelineStage)
-  const plan = buildModelExecutionPlan(pipelineStage, ctx)
+  let plan = buildModelExecutionPlan(pipelineStage, ctx)
   if (plan.length === 0) {
     let message = contractAnalysisClaudeOnly()
       ? "Claude Sonnet ist für Vertragsanalyse vorgeschrieben (AI_CONTRACT_ANALYSIS_CLAUDE_ONLY). ANTHROPIC_API_KEY prüfen."
@@ -394,6 +399,41 @@ async function runJsonStage<T>(
       // Governance-Fehler: weiter ohne — konservative Defaults im Policy-Guard
       console.warn("[Pipeline.v5.governance] Load failed, continuing without governance")
     }
+  }
+
+  // ── Policy Decision Point ─────────────────────────────────────────────
+  // Vertragsanalyse verarbeitet hochgeladene Mandatsdokumente — das ist der
+  // anwaltliche Standardfall, Klasse 3. `actorId` ist bewusst "pipeline":
+  // die Stufe laeuft serverseitig fuer einen Tenant, eine handelnde Person
+  // ist an dieser Stelle nicht bekannt. Der auditrelevante Scope ist der
+  // Tenant, nicht der Prozess.
+  let authorized: AuthorizedAiRequest
+  try {
+    authorized = await authorizeAiRequest({
+      classification: 3,
+      tenantId: tenantId || "unknown",
+      actorId: "pipeline",
+      useCase: `contract-analysis:${pipelineStage}`
+    })
+  } catch (err) {
+    if (err instanceof PolicyViolationError) {
+      throw new PipelineStageFailureError(
+        prismaStage,
+        `Analyse durch KI-Richtlinie blockiert: ${err.decision.reason}`
+      )
+    }
+    throw err
+  }
+
+  // Der Plan darf die Entscheidung nicht ueberholen: es bleibt nur der
+  // Transport uebrig, den das Gateway freigegeben hat.
+  plan = plan.filter((m) => m === authorized.modelType)
+  if (plan.length === 0) {
+    throw new PipelineStageFailureError(
+      prismaStage,
+      `Kein zugelassener Transport fuer diese Stufe (Policy: ${authorized.decision.action}, ` +
+        `Grund: ${authorized.decision.reason}).`
+    )
   }
 
   for (let i = 0; i < plan.length; i += 1) {
