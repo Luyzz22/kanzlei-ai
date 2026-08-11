@@ -68,6 +68,54 @@ jobs:
             detect --source=/repo --no-git --redact --verbose \
               --config=/repo/.gitleaks.toml
 
+  # ── Gitleaks — Git-History (report-only, noch nicht blockierend) ────────────
+  # Compliance-Handoff A4 verlangt einen History-Scan. Bewusst nicht blockierend
+  # gestartet: die History (1296 Commits) ist nie vollständig mit gitleaks
+  # geprüft worden. Eine gezielte Suche nach echten Anthropic-/Google-/OpenAI-
+  # Key-Formen über alle Refs blieb ohne Treffer, das deckt aber nur einen Teil
+  # des Regelsatzes ab. Nach dem ersten grünen Lauf auf `continue-on-error`
+  # verzichten und den Job blockierend schalten.
+  gitleaks-history:
+    name: Gitleaks History Scan (report-only)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks history scan
+        run: |
+          docker run --rm \
+            -v "$PWD:/repo" \
+            -w /repo \
+            zricethezav/gitleaks:latest \
+            detect --source=/repo --redact --verbose \
+              --log-opts="--all" \
+              --config=/repo/.gitleaks.toml
+
+  # ── LLM Egress Guard — Phase A1 "Stop the Bleeding" (blocking) ──────────────
+  # Friert die Menge direkter Provider-Egress-Punkte ein. Neue Umgehungen des
+  # künftigen ModelGateway fallen hier durch; getilgte Alt-Pfade müssen aus der
+  # Allowlist entfernt werden, damit die Liste beim Umbau schrumpft.
+  llm-egress:
+    name: LLM Egress Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check for provider egress outside the gateway allowlist
+        run: node scripts/check-llm-egress.mjs
+
   # ── Dependency Audit ────────────────────────────────────────────────────────
   dependency-audit:
     name: Dependency Vulnerability Audit
