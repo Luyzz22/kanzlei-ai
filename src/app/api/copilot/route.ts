@@ -103,8 +103,9 @@ export async function POST(request: Request) {
   // Apply sliding-window trim to reduce input tokens on long sessions
   const trimmedMessages = trimConversationHistory(messages)
 
-  const openaiKey = process.env.OPENAI_API_KEY
-
+  // Kein Provider-Fallback: nach ADR-0001 ist Claude (direkt oder über Bedrock
+  // EU) der einzige zugelassene externe Pfad. Ein Ausweichen auf einen anderen
+  // Anbieter wäre ein Sicherheits-Downgrade und ist deshalb entfallen.
   if (claudeConfigured()) {
     try {
       const client = await createAnthropicClient()
@@ -176,77 +177,6 @@ export async function POST(request: Request) {
       })
     } catch {
       log.warn("copilot.anthropic_failed", { code: "ANTHROPIC_ERROR" })
-    }
-  }
-
-  if (openaiKey) {
-    try {
-      const OpenAI = (await import("openai")).default
-      const client = new OpenAI({ apiKey: openaiKey })
-
-      const allMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
-        { role: "system", content: systemPrompt },
-        ...trimmedMessages
-          .filter((m) => m.role !== "system")
-          .map((m) => ({
-            role: (m.role === "assistant" ? "assistant" : "user") as "user" | "assistant",
-            content: m.content
-          }))
-      ]
-
-      const stream = await client.chat.completions.create({
-        model: process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-4o",
-        max_tokens: 4096,
-        temperature: 0.3,
-        stream: true,
-        messages: allMessages
-      })
-
-      const encoder = new TextEncoder()
-      const readable = new ReadableStream({
-        async start(controller) {
-          try {
-            let totalTokens = 0
-            for await (const chunk of stream as AsyncIterable<{ choices: Array<{ delta?: { content?: string } }>; usage?: { total_tokens?: number } }>) {
-              const text = chunk.choices[0]?.delta?.content
-              if (text) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text, model: "gpt-4o" })}\n\n`))
-              }
-              if (chunk.usage?.total_tokens) totalTokens = chunk.usage.total_tokens
-            }
-
-            log.info("copilot.tokens_used", { provider: "openai", totalTokens })
-            void trackTokenUsage({
-              tenantId,
-              userId: session.user.id,
-              source: "copilot",
-              provider: "openai",
-              inputTokens: Math.floor(totalTokens * 0.6),
-              outputTokens: Math.floor(totalTokens * 0.4)
-            })
-
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, model: "gpt-4o", tokens: totalTokens })}\n\n`))
-            controller.close()
-          } catch (err) {
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ error: err instanceof Error ? "Stream-Fehler" : "Unbekannter Fehler" })}\n\n`
-              )
-            )
-            controller.close()
-          }
-        }
-      })
-
-      return new Response(readable, {
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive"
-        }
-      })
-    } catch {
-      log.warn("copilot.openai_failed", { code: "OPENAI_ERROR" })
     }
   }
 

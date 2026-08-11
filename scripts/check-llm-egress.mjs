@@ -61,22 +61,6 @@ const ALLOWLIST = new Map([
     "Anthropic/Bedrock-Client-Factory — künftiger Transport des ModelGateway"
   ],
   [
-    "src/lib/ai/providers/openai-provider.ts",
-    "OpenAI-Provider — Migration auf ModelGateway ausstehend"
-  ],
-  [
-    "src/lib/ai/providers/gemini-provider.ts",
-    "Gemini-Provider — Migration auf ModelGateway ausstehend"
-  ],
-  [
-    "src/lib/documents/text-extraction.ts",
-    "Gemini-OCR bei Ingestion — Drittland VOR Klassifikation, P1-Befund, lokales OCR geplant"
-  ],
-  [
-    "src/app/api/copilot/route.ts",
-    "Direkter OpenAI-Fallbackzweig — entfällt mit ModelGateway"
-  ],
-  [
     "src/app/api/health/route.ts",
     "HEAD-Healthcheck gegen api.anthropic.com — kein Payload-Egress"
   ],

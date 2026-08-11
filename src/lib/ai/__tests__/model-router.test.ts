@@ -14,22 +14,22 @@ test("wählt Claude für Vertragsanalyse", () => {
   assert.equal(result, ModelType.CLAUDE_SONNET_4)
 })
 
-test("wählt Gemini für lange Dokumente", () => {
+test("lange Dokumente gehen an Claude statt Gemini (ADR-0001)", () => {
   const result = selectOptimalModel({
     documentId: "2",
     analysisType: AnalysisType.SUMMARY,
     documentLength: 60000
   })
 
-  assert.equal(result, ModelType.GEMINI_2_5_PRO)
+  assert.equal(result, ModelType.CLAUDE_SONNET_4)
 })
 
-test("wählt GPT-4o-mini für kurze Zusammenfassung", () => {
+test("kurze Zusammenfassung geht an Claude statt GPT (ADR-0001)", () => {
   const result = selectOptimalModel({
     documentId: "3",
     analysisType: AnalysisType.SUMMARY,
     documentLength: 1500
   })
 
-  assert.equal(result, ModelType.GPT_4O_MINI)
+  assert.equal(result, ModelType.CLAUDE_SONNET_4)
 })

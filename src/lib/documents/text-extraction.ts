@@ -1,12 +1,10 @@
 import "server-only"
 
-import { getTenantAiGovernance } from "@/lib/ai/tenant-ai-governance"
 import { readStoredDocumentFile } from "@/lib/storage/document-storage"
 
 export type ExtractionMode =
   | "txt-direct"
   | "pdf-text-layer"
-  | "pdf-ocr-gemini"
   | "docx-mammoth"
   | "unsupported"
 
@@ -41,46 +39,6 @@ const MAX_PREVIEW_CHARS = 16000
  * Dokument vor.
  */
 const MIN_VIABLE_TEXT_LENGTH = 50
-
-/**
- * Harte Obergrenze für Dateien, die wir an Gemini Vision (OCR) schicken.
- * Groesser als 20 MB wuerde den Lambda-Budget-Rahmen sprengen und die
- * Vercel-Function-Timeouts (60s Hobby / 300s Pro) reissen.
- */
-const OCR_MAX_FILE_BYTES = 20 * 1024 * 1024
-
-/**
- * Aktiviert OCR-Fallback über Gemini Vision bei PDFs ohne Text-Layer.
- *
- * Prüft in dieser Reihenfolge:
- * 1. GEMINI_API_KEY vorhanden
- * 2. KANZLEI_PDF_OCR_ENABLED=false → explizites Opt-out
- * 3. Wenn tenantId vorhanden: Tenant-Governance prüfen
- *    Gemini ist ein US-Cloud-Provider (Google). Wenn der Tenant
- *    allowThirdCountryLlmTransfer=false gesetzt hat, darf kein
- *    Dokument an Gemini OCR gesendet werden.
- *    Ref: DSGVO Art. 44-46, § 203 StGB, EU AI Act Art. 15
- */
-async function isOcrFallbackAllowed(tenantId?: string): Promise<boolean> {
-  const hasKey = Boolean(process.env.GEMINI_API_KEY?.trim())
-  if (!hasKey) return false
-
-  const flag = process.env.KANZLEI_PDF_OCR_ENABLED?.trim().toLowerCase()
-  if (flag === "false" || flag === "0") return false
-
-  if (tenantId) {
-    try {
-      const governance = await getTenantAiGovernance(tenantId)
-      // Gemini = US-Provider → Third-Country-Transfer
-      if (!governance.allowThirdCountryLlmTransfer) return false
-    } catch {
-      // Governance nicht ladbar → konservativ: OCR verweigern
-      return false
-    }
-  }
-
-  return true
-}
 
 type FileKind = "txt" | "pdf" | "docx" | "unsupported"
 
@@ -138,63 +96,6 @@ async function extractDocxText(buffer: Buffer): Promise<string> {
   return result.value
 }
 
-/**
- * OCR-Fallback via Gemini Vision für gescannte PDFs ohne Text-Layer.
- *
- * Gemini 1.5 Flash/Pro akzeptiert PDFs direkt als inline-Input
- * (bis 20 MB). Kein Zwischenschritt über Bildkonvertierung noetig.
- *
- * Kostenrahmen: gemini-1.5-flash ist ~75% billiger als gemini-1.5-pro
- * bei vergleichbarer OCR-Qualitaet für deutschen Rechtstext.
- */
-async function ocrPdfViaGemini(buffer: Buffer): Promise<string> {
-  if (!process.env.GEMINI_API_KEY?.trim()) {
-    throw new Error("GEMINI_API_KEY ist nicht gesetzt — OCR-Fallback nicht verfügbar.")
-  }
-
-  if (buffer.byteLength > OCR_MAX_FILE_BYTES) {
-    throw new Error(
-      `PDF ist zu gross für OCR (${Math.round(buffer.byteLength / 1024 / 1024)} MB, Limit ${OCR_MAX_FILE_BYTES / 1024 / 1024} MB).`
-    )
-  }
-
-  const geminiModule = await import("@google/generative-ai")
-  // Runtime unterstützt inlineData und generationConfig — Typ-Decl ist
-  // im Projekt bewusst minimal. Daher typed cast.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = new geminiModule.GoogleGenerativeAI(process.env.GEMINI_API_KEY) as any
-
-  const modelId = process.env.KANZLEI_OCR_MODEL?.trim() || "gemini-1.5-flash"
-  const model = client.getGenerativeModel({
-    model: modelId,
-    generationConfig: { temperature: 0.0 }
-  })
-
-  const base64 = buffer.toString("base64")
-
-  // Gemini akzeptiert PDFs direkt als inlineData mit mimeType "application/pdf".
-  // Kein OCR-Zwischenschritt über Page-Rasterisierung noetig.
-  const response = await model.generateContent([
-    {
-      inlineData: {
-        data: base64,
-        mimeType: "application/pdf"
-      }
-    },
-    {
-      text: [
-        "Extrahiere den vollstaendigen Text dieses Dokuments in Klartext.",
-        "Behalte die urspruengliche Reihenfolge und Absatzstruktur bei.",
-        "Fuege KEINE eigenen Kommentare, Zusammenfassungen oder Erklärungen hinzu.",
-        "Gib nur den extrahierten Text zurück, keine Markdown-Formatierung."
-      ].join(" ")
-    }
-  ])
-
-  const text = response.response.text()
-  return typeof text === "string" ? text : ""
-}
-
 export async function extractDocumentText(input: ExtractDocumentTextInput): Promise<ExtractDocumentTextResult> {
   if (!input.storageKey) {
     return {
@@ -207,8 +108,6 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
   }
 
   const kind = classifyFile(input.filename, input.mimeType)
-  // Pre-resolve OCR eligibility once (async governance check)
-  const ocrAllowed = kind === "pdf" ? await isOcrFallbackAllowed(input.tenantId) : false
 
   if (kind === "unsupported") {
     return {
@@ -284,42 +183,18 @@ export async function extractDocumentText(input: ExtractDocumentTextInput): Prom
       return buildResult(normalized, "pdf-text-layer")
     }
 
-    // Text-Layer leer -> OCR-Fallback, falls verfügbar und Tenant erlaubt
-    if (ocrAllowed) {
-      try {
-        const ocrText = await ocrPdfViaGemini(buffer)
-        const ocrNormalized = ocrText.trim()
-        if (ocrNormalized.length >= MIN_VIABLE_TEXT_LENGTH) {
-          return buildResult(ocrNormalized, "pdf-ocr-gemini")
-        }
-        return {
-          status: "failed",
-          mode: "pdf-ocr-gemini",
-          textPreview: null,
-      fullText: null,
-          errorHint: "OCR lieferte keinen verwertbaren Text. Das PDF ist möglicherweise leer, beschaedigt oder schlecht gescannt."
-        }
-      } catch (ocrErr) {
-        return {
-          status: "failed",
-          mode: "pdf-ocr-gemini",
-          textPreview: null,
-      fullText: null,
-          errorHint: `OCR-Fallback fehlgeschlagen${ocrErr instanceof Error ? `: ${ocrErr.message}` : ""}. Bitte eine OCR-Version erneut hochladen.`
-        }
-      }
-    }
-
-    // Kein OCR verfügbar oder durch Tenant-Governance blockiert
-    const ocrBlockedByGovernance = !ocrAllowed && Boolean(process.env.GEMINI_API_KEY?.trim())
+    // Text-Layer leer. Ein Cloud-OCR-Fallback existiert nicht mehr: OCR läuft
+    // bei der Ingestion, also VOR jeder Klassifikation — ein Dokument ginge
+    // damit an einen externen Anbieter, bevor überhaupt feststeht, ob es
+    // mandatsbezogen ist. Bis lokales OCR in der souveränen Zone bereitsteht,
+    // wird hier abgelehnt statt ausgelagert (ADR-0001, fail closed).
     return {
       status: "failed",
       mode: "pdf-text-layer",
       textPreview: null,
       fullText: null,
-      errorHint: ocrBlockedByGovernance
-        ? "Das PDF enthält keinen Text-Layer. OCR-Fallback ist für diesen Mandanten deaktiviert (Drittlandtransfer nicht erlaubt). Bitte eine OCR-Variante hochladen."
-        : "Das PDF enthaelt keinen extrahierbaren Text-Layer (möglicherweise gescannt). Bitte eine OCR-Variante der Datei erneut hochladen."
+      errorHint:
+        "Das PDF enthaelt keinen extrahierbaren Text-Layer (möglicherweise gescannt). Bitte eine OCR-Variante der Datei erneut hochladen."
     }
   } catch (e) {
     return {

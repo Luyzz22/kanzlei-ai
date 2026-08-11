@@ -18,7 +18,7 @@ test("ohne API-Keys sind keine Modelle verfügbar", () => {
   )
 })
 
-test("nur OpenAI gesetzt liefert GPT in der Verfügbarkeitsliste", () => {
+test("gesetzter OPENAI_API_KEY macht GPT NICHT verfügbar (ADR-0001)", () => {
   process.env.OPENAI_API_KEY = "sk-x"
   delete process.env.ANTHROPIC_API_KEY
   delete process.env.GEMINI_API_KEY
@@ -26,6 +26,18 @@ test("nur OpenAI gesetzt liefert GPT in der Verfügbarkeitsliste", () => {
   delete process.env.LLAMA_API_BASE
 
   const avail = getAvailableModelTypes()
-  assert.ok(avail.includes(ModelType.GPT_4O_MINI))
-  assert.equal(avail.length, 1)
+  assert.equal(avail.includes(ModelType.GPT_4O_MINI), false)
+  assert.equal(avail.length, 0)
+})
+
+test("gesetzter GEMINI_API_KEY macht Gemini NICHT verfügbar (ADR-0001)", () => {
+  process.env.GEMINI_API_KEY = "AIza-x"
+  delete process.env.OPENAI_API_KEY
+  delete process.env.ANTHROPIC_API_KEY
+  delete process.env.LLAMA_API_KEY
+  delete process.env.LLAMA_API_BASE
+
+  const avail = getAvailableModelTypes()
+  assert.equal(avail.includes(ModelType.GEMINI_2_5_PRO), false)
+  assert.equal(avail.length, 0)
 })

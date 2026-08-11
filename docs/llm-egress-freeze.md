@@ -32,17 +32,20 @@ implementiert und durch 14 Tests abgedeckt — wird zur Laufzeit aber von
 läuft produktiv jedoch nie. Das Schliessen dieser Lücke ist der Kern der
 nächsten Phase.
 
-## Dokumentierte Alt-Egress-Punkte (Stand Freeze)
+## Dokumentierte Alt-Egress-Punkte
+
+Nach dem Rückbau von OpenAI und Gemini (ADR-0001) sind noch drei Pfade offen:
 
 | Pfad | Warum noch offen |
 |---|---|
 | `src/lib/ai/anthropic-client.ts` | Client-Factory (Anthropic/Bedrock) — künftiger Transport des Gateways |
-| `src/lib/ai/providers/openai-provider.ts` | Migration auf ModelGateway ausstehend |
-| `src/lib/ai/providers/gemini-provider.ts` | Migration auf ModelGateway ausstehend |
-| `src/lib/documents/text-extraction.ts` | **Gemini-OCR bei Ingestion — Drittland VOR Klassifikation.** Höchste Priorität der Folgephase |
-| `src/app/api/copilot/route.ts` | Direkter OpenAI-Fallbackzweig |
 | `src/app/api/health/route.ts` | HEAD-Healthcheck, kein Payload-Egress |
 | `src/app/api/admin/test-anthropic/route.ts` | Admin-Konnektivitätstest, kein Mandatsinhalt |
+
+Entfallen sind: `providers/openai-provider.ts`, `providers/gemini-provider.ts`
+(Dateien gelöscht, SDKs deinstalliert), der OpenAI-Fallbackzweig in
+`api/copilot/route.ts` und der Gemini-OCR-Pfad in
+`documents/text-extraction.ts`.
 
 Änderungen an dieser Liste gehören in einen Review durch die CODEOWNERS des
 Hybrid-Keystones, nicht in einen beiläufigen Feature-PR.
