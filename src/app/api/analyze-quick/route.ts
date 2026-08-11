@@ -4,6 +4,7 @@ export const maxDuration = 300
 import { NextResponse } from "next/server"
 
 import { auth } from "@/lib/auth"
+import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
 import { analyzeWithRouter } from "@/lib/ai/analyzer"
 import { contractAnalysisPrompt } from "@/lib/ai/prompts"
 import { AnalysisType, type DocumentMetadata } from "@/types/ai"
@@ -76,7 +77,17 @@ export async function POST(request: Request): Promise<NextResponse> {
   const prompt = contractAnalysisPrompt({ documentText: documentText + contextHint, language: "auto" })
 
   try {
-    const result = await analyzeWithRouter(metadata, prompt, documentText)
+    // Klasse 3: hochgeladener oder eingefügter Vertragstext ist Mandatsinhalt.
+    const quickTenantCtx = await resolveTenantContextForUser(session.user.id)
+    const quickTenantId =
+      quickTenantCtx.status === "single" ? quickTenantCtx.tenantId : session.user.id
+
+    const result = await analyzeWithRouter(metadata, prompt, documentText, {
+      classification: 3,
+      tenantId: quickTenantId,
+      actorId: session.user.id,
+      useCase: "analyze-quick"
+    })
 
     // Fire webhook for high-risk analyses (non-blocking)
     // R-03 Fix: Nur Hash/ID übertragen — KEINE Vertragsinhalte

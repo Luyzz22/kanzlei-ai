@@ -108,7 +108,13 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const result: AnalysisResult = await analyzeWithRouter(metadata, prompt, parsed.data.documentText)
+    // Klasse 3: analysiert wird ein im Mandantenkontext abgelegtes Dokument.
+    const result: AnalysisResult = await analyzeWithRouter(metadata, prompt, parsed.data.documentText, {
+      classification: 3,
+      tenantId,
+      actorId,
+      useCase: "analyze"
+    })
 
     trackUsage({ userId: actorId, model: result.modelUsed, tokensUsed: result.tokensUsed })
 
