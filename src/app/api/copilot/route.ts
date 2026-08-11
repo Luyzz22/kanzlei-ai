@@ -6,7 +6,13 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { createAnthropicClient, claudeConfigured } from "@/lib/ai/anthropic-client"
 import { activeClaudeModelId } from "@/lib/ai/claude-model-config"
+import {
+  authorizeAiRequest,
+  PolicyViolationError,
+  type AuthorizedAiRequest
+} from "@/lib/compliance/model-gateway"
 import { resolveTenantContextForUser } from "@/lib/admin/tenant-access"
+import { ModelType } from "@/types/ai"
 import { COPILOT_LIMIT, checkRateLimit, retryAfterSeconds } from "@/lib/security/rate-limit"
 import { log } from "@/lib/security/secure-logging"
 import { trackTokenUsage } from "@/lib/token-tracking"
@@ -103,10 +109,34 @@ export async function POST(request: Request) {
   // Apply sliding-window trim to reduce input tokens on long sessions
   const trimmedMessages = trimConversationHistory(messages)
 
+  // ── Policy Decision Point ────────────────────────────────────────────────
+  // Vorläufige Klassifikation: liegt ein Vertrag im Kontext, wird über
+  // Mandatsinhalt gesprochen (Klasse 3); ohne Kontext sind es allgemeine
+  // Rechtsfragen (Klasse 1). Das ersetzt keinen echten Klassifikator — es
+  // stellt sicher, dass ueberhaupt eine Entscheidung getroffen und auditiert
+  // wird, bevor ein Modell angefasst wird.
+  let authorized: AuthorizedAiRequest
+  try {
+    authorized = await authorizeAiRequest({
+      classification: contractContext ? 3 : 1,
+      tenantId,
+      actorId: session.user.id,
+      useCase: "copilot"
+    })
+  } catch (err) {
+    if (err instanceof PolicyViolationError) {
+      return NextResponse.json(
+        { error: "Anfrage durch KI-Richtlinie blockiert", reason: err.decision.reason },
+        { status: 403 }
+      )
+    }
+    throw err
+  }
+
   // Kein Provider-Fallback: nach ADR-0001 ist Claude (direkt oder über Bedrock
   // EU) der einzige zugelassene externe Pfad. Ein Ausweichen auf einen anderen
   // Anbieter wäre ein Sicherheits-Downgrade und ist deshalb entfallen.
-  if (claudeConfigured()) {
+  if (authorized.modelType === ModelType.CLAUDE_SONNET_4 && claudeConfigured()) {
     try {
       const client = await createAnthropicClient()
 
