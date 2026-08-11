@@ -67,6 +67,11 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # Die node:test-Suite lief bislang in keinem CI-Schritt. Damit war unter
+      # anderem der Klasse-4-Hard-Deny (src/lib/compliance) nur lokal geprueft.
+      - name: Tests
+        run: pnpm test
+
       - name: Contract evals (mock + Modell-Matrix, keine API-Keys)
         env:
           EVAL_MODEL_MATRIX: gpt-4o-mini,claude-sonnet-4,gemini-2.5-pro
