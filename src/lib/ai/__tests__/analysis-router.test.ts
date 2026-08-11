@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 
 import {
   buildModelExecutionPlan,
+  getFallbackChainForStage,
   selectOptimalModel,
   selectPrimaryModelForStage,
   type RouterContext
@@ -11,20 +12,24 @@ import { AnalysisType, ModelType } from "@/types/ai"
 
 const baseCtx = (len: number): RouterContext => ({ documentLength: len })
 
-test("evalPrimaryByStage überschreibt das Primärmodell (Extraktion)", () => {
+test("evalPrimaryByStage kann keinen stillgelegten Provider wiederbeleben (ADR-0001)", () => {
   process.env.AI_ROUTER_ENABLED = "true"
   process.env.OPENAI_API_KEY = "sk-oai"
   process.env.ANTHROPIC_API_KEY = "sk-ant"
   process.env.GEMINI_API_KEY = "gem"
 
+  // Ein Eval-Override ist ein Bequemlichkeits-Feature und darf die
+  // Anbieter-Freigabe nicht aushebeln — sonst wäre er ein Compliance-Bypass.
   const plan = buildModelExecutionPlan("EXTRACTION", {
     documentLength: 3000,
     evalPrimaryByStage: { EXTRACTION: ModelType.GEMINI_2_5_PRO }
   })
-  assert.equal(plan[0], ModelType.GEMINI_2_5_PRO)
+  assert.equal(plan.includes(ModelType.GEMINI_2_5_PRO), false)
+  assert.equal(plan.includes(ModelType.GPT_4O_MINI), false)
+  assert.ok(plan.every((m) => m === ModelType.CLAUDE_SONNET_4 || m === ModelType.LLAMA_COMPAT))
 })
 
-test("EXTRACTION: kurzes Dokument bevorzugt GPT-4o-mini wenn OpenAI konfiguriert", () => {
+test("EXTRACTION: gesetzter OpenAI-Key erzeugt keinen GPT-Plan mehr (ADR-0001)", () => {
   process.env.AI_ROUTER_ENABLED = "true"
   process.env.OPENAI_API_KEY = "sk-test"
   delete process.env.ANTHROPIC_API_KEY
@@ -33,8 +38,8 @@ test("EXTRACTION: kurzes Dokument bevorzugt GPT-4o-mini wenn OpenAI konfiguriert
   delete process.env.LLAMA_API_BASE
 
   const plan = buildModelExecutionPlan("EXTRACTION", baseCtx(3000))
-  assert.ok(plan.includes(ModelType.GPT_4O_MINI))
-  assert.equal(plan[0], ModelType.GPT_4O_MINI)
+  assert.equal(plan.includes(ModelType.GPT_4O_MINI), false)
+  assert.equal(plan.includes(ModelType.GEMINI_2_5_PRO), false)
 })
 
 test("RISK_AND_GUIDANCE: Standard bevorzugt Claude wenn Anthropic konfiguriert", () => {
@@ -47,14 +52,14 @@ test("RISK_AND_GUIDANCE: Standard bevorzugt Claude wenn Anthropic konfiguriert",
   assert.equal(plan[0], ModelType.CLAUDE_SONNET_4)
 })
 
-test("EXTRACTION: langes Dokument nutzt Gemini wenn verfügbar", () => {
+test("EXTRACTION: langes Dokument bleibt bei Claude, auch mit Gemini-Key (ADR-0001)", () => {
   process.env.AI_ROUTER_ENABLED = "true"
   process.env.GEMINI_API_KEY = "g"
   process.env.OPENAI_API_KEY = "o"
   process.env.ANTHROPIC_API_KEY = "a"
 
   const primary = selectPrimaryModelForStage("EXTRACTION", baseCtx(80_000))
-  assert.equal(primary, ModelType.GEMINI_2_5_PRO)
+  assert.equal(primary, ModelType.CLAUDE_SONNET_4)
 })
 
 test("Vertragsanalyse (Legacy): langer Vertrag bleibt bei Claude", () => {
@@ -76,4 +81,17 @@ test("Llama-Priorität bei AI_SENSITIVE_USE_LLAMA", () => {
 
   const primary = selectPrimaryModelForStage("EXTRACTION", { documentLength: 1000, preferLocalOrPrivate: true })
   assert.equal(primary, ModelType.LLAMA_COMPAT)
+})
+
+test("lokales Modell fällt NICHT auf einen Cloud-Provider zurück (Invariante 3)", () => {
+  // Lokal wird gewählt, weil die Daten sensibel sind. Ein Ausweichen nach
+  // extern wäre ein Sicherheits-Downgrade — die Kette muss leer sein.
+  assert.deepEqual(getFallbackChainForStage(ModelType.LLAMA_COMPAT), [])
+})
+
+test("externes Modell darf auf das lokale zurückfallen", () => {
+  const chain = getFallbackChainForStage(ModelType.CLAUDE_SONNET_4)
+  assert.deepEqual(chain, [ModelType.LLAMA_COMPAT])
+  assert.equal(chain.includes(ModelType.GPT_4O_MINI), false)
+  assert.equal(chain.includes(ModelType.GEMINI_2_5_PRO), false)
 })

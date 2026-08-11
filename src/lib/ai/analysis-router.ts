@@ -54,7 +54,7 @@ function envModelToType(envName: string, fallback: ModelType): ModelType {
  */
 export function selectPrimaryModelForStage(stage: PipelineStage, ctx: RouterContext): ModelType {
   if (!routerEnabled()) {
-    return envModelToType("DEFAULT_MODEL", ModelType.GPT_4O_MINI)
+    return envModelToType("DEFAULT_MODEL", ModelType.CLAUDE_SONNET_4)
   }
 
   if (contractAnalysisClaudeOnly()) {
@@ -74,8 +74,10 @@ export function selectPrimaryModelForStage(stage: PipelineStage, ctx: RouterCont
 
   if (stage === "EXTRACTION") {
     if (longDoc) {
-      const long = envModelToType("LONG_DOCUMENT_MODEL", ModelType.GEMINI_2_5_PRO)
-      return long === ModelType.GEMINI_2_5_PRO || long === ModelType.CLAUDE_SONNET_4 ? long : ModelType.GEMINI_2_5_PRO
+      const long = envModelToType("LONG_DOCUMENT_MODEL", ModelType.CLAUDE_SONNET_4)
+      return long === ModelType.CLAUDE_SONNET_4 || long === ModelType.LLAMA_COMPAT
+        ? long
+        : ModelType.CLAUDE_SONNET_4
     }
     // Claude als Primary für präzise Extraktion (Enterprise-Qualität).
     // gpt-4o-mini bleibt Fallback über getFallbackChainForStage.
@@ -85,7 +87,7 @@ export function selectPrimaryModelForStage(stage: PipelineStage, ctx: RouterCont
   // RISK_AND_GUIDANCE — Klauselbegründung / Redlining: Claude bevorzugt
   if (stage === "RISK_AND_GUIDANCE") {
     if (longDoc) {
-      return envModelToType("LONG_DOCUMENT_MODEL", ModelType.GEMINI_2_5_PRO)
+      return envModelToType("LONG_DOCUMENT_MODEL", ModelType.CLAUDE_SONNET_4)
     }
     return ModelType.CLAUDE_SONNET_4
   }
@@ -93,47 +95,23 @@ export function selectPrimaryModelForStage(stage: PipelineStage, ctx: RouterCont
   return ModelType.CLAUDE_SONNET_4
 }
 
-export function getFallbackChainForStage(primary: ModelType, stage: PipelineStage): ModelType[] {
-  if (stage === "CLASSIFICATION") {
-    switch (primary) {
-      case ModelType.CLAUDE_SONNET_4:
-        return [ModelType.GPT_4O_MINI, ModelType.GEMINI_2_5_PRO, ModelType.LLAMA_COMPAT]
-      case ModelType.GPT_4O_MINI:
-        return [ModelType.CLAUDE_SONNET_4, ModelType.GEMINI_2_5_PRO, ModelType.LLAMA_COMPAT]
-      case ModelType.GEMINI_2_5_PRO:
-        return [ModelType.CLAUDE_SONNET_4, ModelType.GPT_4O_MINI, ModelType.LLAMA_COMPAT]
-      default:
-        return [ModelType.CLAUDE_SONNET_4, ModelType.GPT_4O_MINI, ModelType.GEMINI_2_5_PRO]
-    }
-  }
-
-  if (stage === "EXTRACTION") {
-    switch (primary) {
-      case ModelType.GEMINI_2_5_PRO:
-        return [ModelType.GPT_4O_MINI, ModelType.CLAUDE_SONNET_4, ModelType.LLAMA_COMPAT]
-      case ModelType.GPT_4O_MINI:
-        return [ModelType.CLAUDE_SONNET_4, ModelType.GEMINI_2_5_PRO, ModelType.LLAMA_COMPAT]
-      case ModelType.CLAUDE_SONNET_4:
-        return [ModelType.GPT_4O_MINI, ModelType.GEMINI_2_5_PRO, ModelType.LLAMA_COMPAT]
-      case ModelType.LLAMA_COMPAT:
-        return [ModelType.GPT_4O_MINI, ModelType.CLAUDE_SONNET_4, ModelType.GEMINI_2_5_PRO]
-      default:
-        return [ModelType.GPT_4O_MINI, ModelType.CLAUDE_SONNET_4, ModelType.GEMINI_2_5_PRO]
-    }
-  }
-
-  switch (primary) {
-    case ModelType.CLAUDE_SONNET_4:
-      return [ModelType.GEMINI_2_5_PRO, ModelType.GPT_4O_MINI, ModelType.LLAMA_COMPAT]
-    case ModelType.GEMINI_2_5_PRO:
-      return [ModelType.CLAUDE_SONNET_4, ModelType.GPT_4O_MINI, ModelType.LLAMA_COMPAT]
-    case ModelType.GPT_4O_MINI:
-      return [ModelType.CLAUDE_SONNET_4, ModelType.GEMINI_2_5_PRO, ModelType.LLAMA_COMPAT]
-    case ModelType.LLAMA_COMPAT:
-      return [ModelType.CLAUDE_SONNET_4, ModelType.GEMINI_2_5_PRO, ModelType.GPT_4O_MINI]
-    default:
-      return [ModelType.CLAUDE_SONNET_4, ModelType.GEMINI_2_5_PRO, ModelType.GPT_4O_MINI]
-  }
+/**
+ * Fallback-Kette nach ADR-0001.
+ *
+ * Zugelassen sind nur Claude (extern, Bedrock EU oder direkt) und der lokale
+ * OpenAI-kompatible Endpunkt der souveränen Zone. Entscheidend ist die
+ * *Richtung*:
+ *
+ * - Primär lokal → **keine** Kette. Lokal wird gewählt, weil die Daten sensibel
+ *   sind; ein Ausweichen nach extern wäre ein Sicherheits-Downgrade und
+ *   verletzt die Invariante „kein Fallback von lokal auf einen Cloud-Provider".
+ *   Fällt das lokale Modell aus, muss der Vorgang scheitern, nicht wandern.
+ * - Primär extern → lokal ist als Fallback zulässig: geringere Kapazität, aber
+ *   höheres Schutzniveau.
+ */
+export function getFallbackChainForStage(primary: ModelType): ModelType[] {
+  if (primary === ModelType.LLAMA_COMPAT) return []
+  return [ModelType.LLAMA_COMPAT]
 }
 
 /** Maps ModelType to provider name for governance checks */
@@ -187,7 +165,7 @@ function filterByTenantGovernance(chain: ModelType[], ctx: RouterContext): Model
 export function buildModelExecutionPlan(stage: PipelineStage, ctx: RouterContext): ModelType[] {
   const forced = ctx.evalPrimaryByStage?.[stage]
   const primary = forced ?? selectPrimaryModelForStage(stage, ctx)
-  const fallbacks = uniqueModels(getFallbackChainForStage(primary, stage)).filter((m) => m !== primary)
+  const fallbacks = uniqueModels(getFallbackChainForStage(primary)).filter((m) => m !== primary)
   const sortedFallbacks = sortModelsByProviderPriority(fallbacks)
   const chain = [primary, ...sortedFallbacks]
   const available = filterModelsByAvailability(chain)
@@ -241,7 +219,7 @@ export function getSelectionReasonForStage(stage: PipelineStage, model: ModelTyp
 
 export function selectOptimalModel(documentMetadata: DocumentMetadata): ModelType {
   if (!routerEnabled()) {
-    return envModelToType("DEFAULT_MODEL", ModelType.GPT_4O_MINI)
+    return envModelToType("DEFAULT_MODEL", ModelType.CLAUDE_SONNET_4)
   }
 
   const { documentLength, analysisType, hasVisualElements } = documentMetadata
@@ -255,14 +233,14 @@ export function selectOptimalModel(documentMetadata: DocumentMetadata): ModelTyp
   }
 
   if (documentLength > longDocumentThreshold() || hasVisualElements) {
-    return envModelToType("LONG_DOCUMENT_MODEL", ModelType.GEMINI_2_5_PRO)
+    return envModelToType("LONG_DOCUMENT_MODEL", ModelType.CLAUDE_SONNET_4)
   }
 
-  return envModelToType("SIMPLE_QUERY_MODEL", ModelType.GPT_4O_MINI)
+  return envModelToType("SIMPLE_QUERY_MODEL", ModelType.CLAUDE_SONNET_4)
 }
 
 export function getFallbackChain(model: ModelType): ModelType[] {
-  return getFallbackChainForStage(model, "RISK_AND_GUIDANCE")
+  return getFallbackChainForStage(model)
 }
 
 export function getSelectionReason(model: ModelType): string {
@@ -304,7 +282,10 @@ export function assertAnyProviderConfigured(): void {
   const avail = getAvailableModelTypes()
   if (avail.length === 0) {
     throw new ProviderConfigurationError(
-      "Kein KI-Anbieter konfiguriert. Mindestens einen API-Schlüssel setzen (OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY oder LLAMA_*)."
+      "Kein KI-Anbieter konfiguriert. Zugelassen sind Claude (ANTHROPIC_API_KEY " +
+        "oder AI_BEDROCK_ENABLED=true mit EU-Region) und der lokale " +
+        "OpenAI-kompatible Endpunkt der souveränen Zone (LLAMA_API_KEY + LLAMA_API_BASE). " +
+        "OPENAI_API_KEY und GEMINI_API_KEY sind nach ADR-0001 wirkungslos."
     )
   }
 }

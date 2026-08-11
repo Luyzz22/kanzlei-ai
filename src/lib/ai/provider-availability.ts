@@ -1,15 +1,31 @@
+import { claudeConfigured } from "@/lib/ai/anthropic-client"
 import { ModelType } from "@/types/ai"
 
-export function isOpenAiConfigured(): boolean {
-  return Boolean(process.env.OPENAI_API_KEY?.trim())
+/**
+ * Nach ADR-0001 stillgelegte Anbieter.
+ *
+ * Die ModelType-Werte bleiben im Enum: historische `AnalysisProviderDecision`-
+ * Datensätze, Eval-Matrizen und Kostentabellen referenzieren sie und müssen
+ * lesbar bleiben. Routbar sind sie jedoch nicht mehr — weder verfügbar
+ * (`isModelTypeAvailable`) noch instanziierbar (`createProvider`).
+ */
+const RETIRED_MODEL_TYPES: ReadonlySet<ModelType> = new Set([
+  ModelType.GPT_4O_MINI,
+  ModelType.GEMINI_2_5_PRO
+])
+
+export function isModelTypeRetired(model: ModelType): boolean {
+  return RETIRED_MODEL_TYPES.has(model)
 }
 
+/**
+ * Claude ist konfiguriert, wenn entweder ein Anthropic-Key vorliegt ODER
+ * Bedrock aktiv ist (dann übernimmt die AWS-Credential-Kette). Ein reiner
+ * `ANTHROPIC_API_KEY`-Check würde Claude im Bedrock-Betrieb fälschlich als
+ * nicht verfügbar melden und das Routing leerlaufen lassen.
+ */
 export function isAnthropicConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY?.trim())
-}
-
-export function isGeminiConfigured(): boolean {
-  return Boolean(process.env.GEMINI_API_KEY?.trim())
+  return claudeConfigured()
 }
 
 export function isLlamaCompatConfigured(): boolean {
@@ -20,21 +36,16 @@ export function isLlamaCompatConfigured(): boolean {
 
 export function getAvailableModelTypes(): ModelType[] {
   const out: ModelType[] = []
-  if (isOpenAiConfigured()) out.push(ModelType.GPT_4O_MINI)
   if (isAnthropicConfigured()) out.push(ModelType.CLAUDE_SONNET_4)
-  if (isGeminiConfigured()) out.push(ModelType.GEMINI_2_5_PRO)
   if (isLlamaCompatConfigured()) out.push(ModelType.LLAMA_COMPAT)
   return out
 }
 
 export function isModelTypeAvailable(model: ModelType): boolean {
+  if (isModelTypeRetired(model)) return false
   switch (model) {
-    case ModelType.GPT_4O_MINI:
-      return isOpenAiConfigured()
     case ModelType.CLAUDE_SONNET_4:
       return isAnthropicConfigured()
-    case ModelType.GEMINI_2_5_PRO:
-      return isGeminiConfigured()
     case ModelType.LLAMA_COMPAT:
       return isLlamaCompatConfigured()
     default:
@@ -46,10 +57,10 @@ export function filterModelsByAvailability(models: ModelType[]): ModelType[] {
   return models.filter((m) => isModelTypeAvailable(m))
 }
 
-/** Priorität aus ENV, z. B. "openai,anthropic,gemini,llama" */
+/** Priorität aus ENV, z. B. "anthropic,llama". Stillgelegte Anbieter werden ignoriert. */
 export function parseProviderPriorityOrder(): string[] {
   const raw = process.env.AI_PROVIDER_PRIORITY?.trim()
-  if (!raw) return ["openai", "anthropic", "gemini", "llama"]
+  if (!raw) return ["anthropic", "llama"]
   return raw
     .split(",")
     .map((s) => s.trim().toLowerCase())
@@ -58,12 +69,8 @@ export function parseProviderPriorityOrder(): string[] {
 
 function modelToProviderKey(model: ModelType): string {
   switch (model) {
-    case ModelType.GPT_4O_MINI:
-      return "openai"
     case ModelType.CLAUDE_SONNET_4:
       return "anthropic"
-    case ModelType.GEMINI_2_5_PRO:
-      return "gemini"
     case ModelType.LLAMA_COMPAT:
       return "llama"
     default:
