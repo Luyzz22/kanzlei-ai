@@ -31,6 +31,61 @@ export function claudeConfigured(): boolean {
   if (isBedrockEnabled()) return true
   return Boolean(process.env.ANTHROPIC_API_KEY?.trim())
 }
+/**
+ * AWS-Regionen in EU-Mitgliedstaaten.
+ *
+ * Bewusst OHNE `eu-west-2` (London) und `eu-central-2` (Zürich): beide tragen
+ * das `eu-`Präfix, liegen aber nicht in einem EU-Mitgliedstaat. Für sie wäre
+ * nach § 43e Abs. 4 BRAO ein eigener Nachweis „vergleichbaren
+ * Geheimnisschutzes" zu führen — das ist eine bewusste Einzelfallentscheidung
+ * und darf nicht durch ein Präfix-Matching hereinrutschen.
+ */
+export const EU_BEDROCK_REGIONS = [
+  "eu-central-1", // Frankfurt
+  "eu-west-1", // Irland
+  "eu-west-3", // Paris
+  "eu-north-1", // Stockholm
+  "eu-south-1", // Mailand
+  "eu-south-2" // Spanien
+] as const
+
+export class BedrockRegionPolicyError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "BedrockRegionPolicyError"
+  }
+}
+
+/**
+ * Ermittelt die Bedrock-Region und erzwingt EU-Datenresidenz.
+ *
+ * Fail closed (Compliance-Handoff, Invariante 7 „unklare Datenresidenz →
+ * blockieren"): Es gibt bewusst KEINEN Default. Eine fehlende oder nicht-EU
+ * Region wirft, statt still auf eine US-Region zurückzufallen — Bedrock ist
+ * nach ADR-0001 der externe Pfad für Mandatsdaten.
+ */
+export function resolveBedrockRegion(): string {
+  const configured =
+    process.env.AWS_BEDROCK_REGION?.trim() || process.env.AWS_REGION?.trim() || ""
+
+  if (!configured) {
+    throw new BedrockRegionPolicyError(
+      "AWS_BEDROCK_REGION ist nicht gesetzt. Bedrock ist der externe Mandatspfad und " +
+        `erfordert eine explizite EU-Region (${EU_BEDROCK_REGIONS.join(", ")}). ` +
+        "Es gibt keinen Default — unklare Datenresidenz blockiert."
+    )
+  }
+
+  if (!(EU_BEDROCK_REGIONS as readonly string[]).includes(configured)) {
+    throw new BedrockRegionPolicyError(
+      `AWS_BEDROCK_REGION="${configured}" liegt nicht in einem EU-Mitgliedstaat. ` +
+        `Zulässig: ${EU_BEDROCK_REGIONS.join(", ")}.`
+    )
+  }
+
+  return configured
+}
+
 export async function createAnthropicClient(opts?: {
   apiKey?: string
   defaultHeaders?: Record<string, string>
@@ -38,10 +93,7 @@ export async function createAnthropicClient(opts?: {
   if (isBedrockEnabled()) {
     const { AnthropicBedrock } = await import("@anthropic-ai/bedrock-sdk")
     const bedrockOptions: Record<string, string> = {
-      awsRegion:
-        process.env.AWS_BEDROCK_REGION?.trim() ||
-        process.env.AWS_REGION?.trim() ||
-        "us-east-1"
+      awsRegion: resolveBedrockRegion()
     }
     if (process.env.AWS_ACCESS_KEY_ID) bedrockOptions.awsAccessKey = process.env.AWS_ACCESS_KEY_ID
     if (process.env.AWS_SECRET_ACCESS_KEY) bedrockOptions.awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY
