@@ -78,11 +78,17 @@ test("Klasse 4 nutzt das lokale Modell, wenn vorhanden", async () => {
   )
 })
 
-test("Klasse 0 darf extern", async () => {
+test("Klasse 0 ohne Anbieterfreigabe laeuft nur beobachtet extern", async () => {
+  // Seit der Provider-Governance setzt JEDER externe Weg ein geprueftes,
+  // nicht abgelaufenes Profil voraus. In der Testumgebung existiert keines,
+  // also lautet die Entscheidung LOCAL — mangels lokalem Modell laeuft der
+  // Aufruf im Beobachtungsmodus trotzdem extern, aber sichtbar markiert.
   await withEnv({ ANTHROPIC_API_KEY: "sk-ant-x" }, async () => {
     const r = await authorizeAiRequest({ ...baseInput, classification: 0 })
     assert.equal(r.modelType, ModelType.CLAUDE_SONNET_4)
-    assert.equal(r.decision.action, "EXTERNAL")
+    assert.equal(r.decision.action, "LOCAL")
+    assert.equal(r.decision.reason, "PROVIDER_PROFILE_MISSING")
+    assert.equal(r.observedOnly, true)
   })
 })
 
@@ -137,4 +143,18 @@ test("Bedrock zählt als konfigurierter externer Anbieter", async () => {
     const r = await authorizeAiRequest({ ...baseInput, classification: 0 })
     assert.equal(r.modelType, ModelType.CLAUDE_SONNET_4)
   })
+})
+
+test("AI_POLICY_ENFORCE=true blockiert ohne Anbieterfreigabe", async () => {
+  // Der eigentliche Zweck der Provider-Governance: im Durchsetzungsmodus
+  // faellt der externe Weg weg, solange keine dokumentierte Freigabe existiert.
+  await withEnv(
+    { ANTHROPIC_API_KEY: "sk-ant-x", AI_POLICY_ENFORCE: "true" },
+    async () => {
+      await assert.rejects(
+        () => authorizeAiRequest({ ...baseInput, classification: 0 }),
+        PolicyViolationError
+      )
+    }
+  )
 })

@@ -1080,3 +1080,62 @@ model TenantTokenUsage {
   @@index([tenantId, source])
   @@index([tenantId, userId, createdAt])
 }
+
+// ── Provider-Governance (Compliance-Handoff A2) ──────────────────────────────
+// Ersetzt boolesche ENV-Annahmen durch versionierte, nachweisgebundene und
+// ABLAUFENDE Anbieterfreigaben. Der Code entscheidet damit nicht ueber die
+// rechtliche Zulaessigkeit eines Anbieters — er erzwingt, dass jemand
+// Zustaendiges sie geprueft und dokumentiert hat.
+
+enum ProviderVerificationStatus {
+  DRAFT
+  PENDING_REVIEW
+  VERIFIED
+  SUSPENDED
+  EXPIRED
+}
+
+enum ProviderTrustTier {
+  LOCAL
+  EU_SOVEREIGN
+  EU_CONTROLLED
+  THIRD_COUNTRY
+}
+
+model ProviderProfile {
+  id                 String                     @id @default(cuid())
+  provider           String                     @unique @db.VarChar(120)
+  trustTier          ProviderTrustTier
+  verificationStatus ProviderVerificationStatus @default(DRAFT)
+
+  /// Datenklassen (0-4), fuer die dieses Profil freigegeben wurde.
+  allowedDataClasses Int[]
+
+  // Technische Nachweise — ab Datenklasse 2 erforderlich.
+  euDataBoundaryVerified  Boolean @default(false)
+  noTrainingVerified      Boolean @default(false)
+  zeroRetentionVerified   Boolean @default(false)
+  noHumanAccessVerified   Boolean @default(false)
+  abuseMonitoringDisabled Boolean @default(false)
+  supportEuOnlyVerified   Boolean @default(false)
+
+  // Vertragliche Nachweise — ab Datenklasse 3 erforderlich.
+  section43eAgreementSignedAt DateTime?
+  dpaSignedAt                 DateTime?
+  tiaApprovedAt               DateTime?
+
+  /// Belegdokument und dessen Hash, damit spaetere Aenderungen auffallen.
+  evidenceUrl  String? @db.VarChar(500)
+  evidenceHash String? @db.VarChar(64)
+
+  /// Ohne Ablaufdatum gilt eine Freigabe unbefristet — bewusst optional,
+  /// aber fuer Klasse 3 in der Praxis zu setzen.
+  expiresAt DateTime?
+
+  reviewedByUserId String?
+  reviewedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([verificationStatus, expiresAt])
+}

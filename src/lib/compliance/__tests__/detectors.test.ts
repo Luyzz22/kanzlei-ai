@@ -93,6 +93,22 @@ test("mit NER-Abdeckung wird sauberer Text extern zulaessig", () => {
     const d = decideRouting({
       classification: 3,
       governance: cloudAllowed,
+      providerProfile: {
+        provider: "anthropic:bedrock",
+        trustTier: "EU_CONTROLLED",
+        verificationStatus: "VERIFIED",
+        allowedDataClasses: [0, 1, 2, 3],
+        euDataBoundaryVerified: true,
+        noTrainingVerified: true,
+        zeroRetentionVerified: true,
+        noHumanAccessVerified: true,
+        abuseMonitoringDisabled: true,
+        supportEuOnlyVerified: true,
+        section43eAgreementSignedAt: new Date("2026-01-01"),
+        dpaSignedAt: new Date("2026-01-01"),
+        tiaApprovedAt: new Date("2026-01-01"),
+        expiresAt: null
+      },
       detectors: runLocalDetectors("Die Parteien vereinbaren eine Laufzeit von 24 Monaten.")
     })
     assert.equal(d.action, "EXTERNAL")

@@ -5,6 +5,7 @@ import { isModelTypeAvailable } from "@/lib/ai/provider-availability"
 import type { DetectorResult } from "@/lib/hybrid/policy-gate"
 import { recordPolicyDecision } from "./audit"
 import { runLocalDetectors } from "./detectors"
+import { loadActiveProviderProfile } from "./provider-profile.server"
 import { log } from "@/lib/security/secure-logging"
 import { ModelType } from "@/types/ai"
 
@@ -99,10 +100,14 @@ export async function authorizeAiRequest(
   const detectors =
     input.detectors ?? (input.content !== undefined ? runLocalDetectors(input.content) : undefined)
 
+  // Anbieterfreigabe ist Datenlage, keine ENV-Annahme (Handoff A2).
+  const providerProfile = await loadActiveProviderProfile()
+
   const decision = decideRouting({
     classification: input.classification,
     governance,
-    detectors
+    detectors,
+    providerProfile
   })
 
   const auditBase = {
@@ -115,6 +120,7 @@ export async function authorizeAiRequest(
     reason: decision.reason,
     hardDeny: decision.hardDeny,
     gateDecision: decision.gateDecision,
+    missingProviderEvidence: decision.missingProviderEvidence,
     policyVersion: POLICY_VERSION
   }
 
