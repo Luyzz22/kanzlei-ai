@@ -1,6 +1,8 @@
 import { evaluateGate, type DetectorResult } from "@/lib/hybrid/policy-gate"
 import type { TenantAiGovernance } from "@/lib/ai/tenant-ai-governance"
 
+import { isProviderEligible, type ProviderProfileSnapshot } from "./provider-profile"
+
 /**
  * Policy Decision Point — die Entscheidung, ob ein Modellaufruf lokal, extern
  * oder gar nicht laufen darf.
@@ -42,11 +44,19 @@ export interface RoutingDecision {
   /** Ergebnis des Detektor-Gates, sofern es konsultiert wurde. */
   gateDecision?: "GREEN" | "AMBER" | "RED"
   gateReasons?: string[]
+  /** Fehlende Anbieter-Nachweise — fuer Admin-Workflows, nicht fuer Endnutzer. */
+  missingProviderEvidence?: string[]
 }
 
 export interface RoutingInput {
   classification: SensitivityClass
   governance: TenantAiGovernance
+  /**
+   * Freigabeprofil des externen Anbieters. `null`/fehlend bedeutet: keine
+   * dokumentierte Prüfung — dann bleibt der Weg lokal. Ein ENV-Flag ersetzt
+   * keine Vertragslage (Handoff A2).
+   */
+  providerProfile?: ProviderProfileSnapshot | null
   /**
    * Lokale Detektorergebnisse für Klasse 2–3. Leer/undefined bedeutet
    * „keine Detektoren gelaufen" — das Gate antwortet dann AMBER und der
@@ -55,6 +65,8 @@ export interface RoutingInput {
   detectors?: DetectorResult[]
   /** Geforderte Mindest-Abdeckung der Detektoren, Default 0.98. */
   minCoverage?: number
+  /** Referenzzeitpunkt fuer Ablaufpruefungen; injizierbar fuer Tests. */
+  now?: Date
 }
 
 const DEFAULT_MIN_COVERAGE = 0.98
@@ -102,7 +114,24 @@ export function decideRouting(input: RoutingInput): RoutingDecision {
     }
   }
 
+  // Jeder externe Weg — auch für harmlose Klassen — setzt ein geprüftes,
+  // nicht abgelaufenes Anbieterprofil voraus.
+  const providerCheck = isProviderEligible(
+    input.providerProfile ?? null,
+    classification,
+    input.now
+  )
+
   if (classification <= 1) {
+    if (!providerCheck.eligible) {
+      return {
+        ...base,
+        action: "LOCAL",
+        reason: providerCheck.reason,
+        classification,
+        missingProviderEvidence: providerCheck.missing
+      }
+    }
     return { ...base, action: "EXTERNAL", reason: "CLASS_0_1_NO_SECRET", classification }
   }
 
@@ -142,6 +171,21 @@ export function decideRouting(input: RoutingInput): RoutingDecision {
       classification,
       gateDecision: outcome.decision,
       gateReasons: outcome.reasons
+    }
+  }
+
+  // Detektoren sagen „unbedenklich" — das genügt nicht. Der Anbieter muss für
+  // genau diese Datenklasse freigegeben sein, mit den ab Klasse 2 technischen
+  // und ab Klasse 3 vertraglichen Nachweisen.
+  if (!providerCheck.eligible) {
+    return {
+      ...base,
+      action: "LOCAL",
+      reason: providerCheck.reason,
+      classification,
+      gateDecision: "GREEN",
+      gateReasons: outcome.reasons,
+      missingProviderEvidence: providerCheck.missing
     }
   }
 

@@ -26,6 +26,28 @@ const cleanDetector: DetectorResult = {
   confidence: 1
 }
 
+/**
+ * Vollstaendig freigegebener Anbieter. Seit der Provider-Governance ist ein
+ * geprueftes Profil Voraussetzung fuer JEDEN externen Weg — Tests, die
+ * EXTERNAL erwarten, muessen es deshalb mitliefern.
+ */
+const verifiedProvider = {
+  provider: "anthropic:bedrock",
+  trustTier: "EU_CONTROLLED" as const,
+  verificationStatus: "VERIFIED" as const,
+  allowedDataClasses: [0, 1, 2, 3],
+  euDataBoundaryVerified: true,
+  noTrainingVerified: true,
+  zeroRetentionVerified: true,
+  noHumanAccessVerified: true,
+  abuseMonitoringDisabled: true,
+  supportEuOnlyVerified: true,
+  section43eAgreementSignedAt: new Date("2026-01-01"),
+  dpaSignedAt: new Date("2026-01-01"),
+  tiaApprovedAt: new Date("2026-01-01"),
+  expiresAt: null
+}
+
 test("Klasse 4 bleibt lokal — auch bei maximal permissiver Governance", () => {
   const d = decideRouting({
     classification: 4,
@@ -51,7 +73,11 @@ test("Klasse 4 wird vor der Tenant-Prüfung entschieden (nicht freischaltbar)", 
 
 test("Klasse 0 und 1 dürfen extern", () => {
   for (const c of [0, 1] as SensitivityClass[]) {
-    const d = decideRouting({ classification: c, governance: restrictiveGovernance })
+    const d = decideRouting({
+      classification: c,
+      governance: restrictiveGovernance,
+      providerProfile: verifiedProvider
+    })
     assert.equal(d.action, "EXTERNAL", `Klasse ${c}`)
     assert.equal(d.reason, "CLASS_0_1_NO_SECRET")
   }
@@ -112,6 +138,7 @@ test("Klasse 2–3 darf extern, wenn Opt-in UND Detektoren sauber sind", () => {
   const d = decideRouting({
     classification: 3,
     governance: permissiveGovernance,
+    providerProfile: verifiedProvider,
     detectors: [cleanDetector]
   })
   assert.equal(d.action, "EXTERNAL")
