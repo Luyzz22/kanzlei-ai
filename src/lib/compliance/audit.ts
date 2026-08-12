@@ -47,12 +47,36 @@ export interface PolicyAuditInput {
 }
 
 /**
+ * Form der Audit-Metadaten.
+ *
+ * Bewusst als `type` mit konkreten Feldern statt `Record<string, unknown>`:
+ * Prismas `InputJsonValue` ist eine rekursive Union über JSON-fähige Werte,
+ * und `unknown` erfüllt sie nicht. Der präzise Typ dokumentiert zugleich, was
+ * im Trail stehen darf — jedes Feld hier ist JSON-serialisierbar und
+ * klartextfrei.
+ */
+export type PolicyAuditMetadata = {
+  useCase: string
+  classification: number
+  action: string
+  reason: string
+  hardDeny: boolean
+  gateDecision: string | null
+  gateReasons: string[]
+  policyVersion: string
+  modelType: string | null
+  observedOnly: boolean
+  blockDetail: string | null
+  detectorVersions: Record<string, string>
+}
+
+/**
  * Baut die Audit-Metadaten.
  *
  * Bewusst als eigene, **pure** Funktion: so lässt sich testen, dass hier kein
  * Klartext hineingerät, ohne eine Datenbank zu brauchen.
  */
-export function buildPolicyAuditMetadata(input: PolicyAuditInput): Record<string, unknown> {
+export function buildPolicyAuditMetadata(input: PolicyAuditInput): PolicyAuditMetadata {
   return {
     useCase: input.useCase,
     classification: input.decision.classification,
