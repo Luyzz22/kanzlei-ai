@@ -5,6 +5,18 @@ export interface AnalyzeInput {
   documentText: string
   /** Strikte JSON-Ausgabe anfordern (Anbieter-spezifisch). */
   jsonMode?: boolean
+  /**
+   * JSON-Schema für grammatikgebundene Dekodierung.
+   *
+   * Lokale Modelle hinter vLLM erzwingen damit das Schema **im Decoder**:
+   * ungültige Tokens werden gar nicht erst gesampelt. Schema-Konformität wird
+   * so zur Eigenschaft der Inferenz-Engine statt zur Hoffnung auf
+   * Modellgrösse — der Grund, warum in der souveränen Zone ein mittelgrosses
+   * Modell für unsere zod-validierte Pipeline ausreicht (ADR-0002).
+   *
+   * Anbieter, die das nicht unterstützen, ignorieren das Feld.
+   */
+  jsonSchema?: Record<string, unknown>
   /** Max Output-Tokens — Default 8192, Pipeline-Risk-Stage nutzt 16384. */
   maxTokens?: number
 }

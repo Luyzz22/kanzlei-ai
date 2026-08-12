@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto"
 
 import { z } from "zod"
+import { zodToJsonSchema } from "zod-to-json-schema"
 
 import { log } from "@/lib/security/secure-logging"
 
@@ -241,6 +242,28 @@ function apiModelLabel(model: ModelType): string {
     default:
       return String(model)
   }
+}
+
+/**
+ * zod-Schema → JSON-Schema für grammatikgebundene Dekodierung (ADR-0002).
+ *
+ * Ergebnisse werden gecacht: die Stufen-Schemata sind Modul-Konstanten, die
+ * Konvertierung liefe sonst bei jedem Analyseaufruf erneut. Schlaegt sie fehl,
+ * wird `undefined` geliefert — der Provider faellt dann auf `json_object`
+ * zurueck, statt den Aufruf scheitern zu lassen.
+ */
+const jsonSchemaCache = new WeakMap<z.ZodType<unknown>, Record<string, unknown> | undefined>()
+
+function stageJsonSchema(schema: z.ZodType<unknown>): Record<string, unknown> | undefined {
+  if (jsonSchemaCache.has(schema)) return jsonSchemaCache.get(schema)
+  let converted: Record<string, unknown> | undefined
+  try {
+    converted = zodToJsonSchema(schema, { target: "jsonSchema7" }) as Record<string, unknown>
+  } catch {
+    converted = undefined
+  }
+  jsonSchemaCache.set(schema, converted)
+  return converted
 }
 
 function toPrismaStage(stage: PipelineStage): AnalysisPipelineStageName {
@@ -501,6 +524,10 @@ async function runJsonStage<T>(
         prompt: promptInstructions,
         documentText: effectiveDocumentText,
         jsonMode: true,
+        // Das zod-Schema der Stufe wird als JSON-Schema mitgegeben. Lokale
+        // Modelle hinter vLLM erzwingen es damit im Decoder (ADR-0002);
+        // Anbieter ohne Unterstützung ignorieren das Feld.
+        jsonSchema: stageJsonSchema(schema),
         maxTokens: effectiveMaxTokens
       })
 
