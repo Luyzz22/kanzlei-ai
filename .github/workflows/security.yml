@@ -116,6 +116,12 @@ jobs:
       - name: Check for provider egress outside the gateway allowlist
         run: node scripts/check-llm-egress.mjs
 
+      # Dieselbe Deny-Liste existiert in Python (redaction_pipeline) und in
+      # TypeScript (Laufzeit). Zwei Kopien einer sicherheitskritischen Liste
+      # laufen ohne Zwang auseinander.
+      - name: Check deny-term lists stay in sync across Python and TypeScript
+        run: node scripts/check-deny-terms-sync.mjs
+
   # ── Dependency Audit ────────────────────────────────────────────────────────
   dependency-audit:
     name: Dependency Vulnerability Audit
