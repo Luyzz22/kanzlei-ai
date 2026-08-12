@@ -3,6 +3,7 @@ import "server-only"
 import { getTenantAiGovernance } from "@/lib/ai/tenant-ai-governance"
 import { isModelTypeAvailable } from "@/lib/ai/provider-availability"
 import type { DetectorResult } from "@/lib/hybrid/policy-gate"
+import { recordPolicyDecision } from "./audit"
 import { runLocalDetectors } from "./detectors"
 import { log } from "@/lib/security/secure-logging"
 import { ModelType } from "@/types/ai"
@@ -117,44 +118,79 @@ export async function authorizeAiRequest(
     policyVersion: POLICY_VERSION
   }
 
+  const detectorVersions = Object.fromEntries(
+    (detectors ?? []).map((d) => [d.name, d.version])
+  )
+
+  /** Ein Ausgang des Gateways: protokollieren, dauerhaft festhalten, liefern. */
+  async function settle(
+    modelType: ModelType | null,
+    observedOnly: boolean,
+    blockDetail?: string,
+    message?: string
+  ): Promise<AuthorizedAiRequest> {
+    if (blockDetail) log.warn("gateway.policy_blocked", { ...auditBase, detail: blockDetail })
+    else if (observedOnly) {
+      log.warn("gateway.policy_would_block", {
+        ...auditBase,
+        detail: "local_required_but_unavailable",
+        executedVia: "external",
+        hint: "AI_POLICY_ENFORCE=true blockiert diesen Fall, sobald lokale Modelle stehen"
+      })
+    } else log.info("gateway.policy_decision", auditBase)
+
+    await recordPolicyDecision({
+      decision,
+      tenantId: input.tenantId,
+      actorId: input.actorId,
+      useCase: input.useCase,
+      matterId: input.matterId,
+      modelType,
+      observedOnly,
+      blockDetail,
+      detectorVersions
+    })
+
+    if (modelType === null) throw new PolicyViolationError(decision, message)
+    return { decision, modelType, observedOnly }
+  }
+
   const localAvailable = isModelTypeAvailable(ModelType.LLAMA_COMPAT)
   const externalAvailable = isModelTypeAvailable(ModelType.CLAUDE_SONNET_4)
 
   // ── Klasse 4: unbedingt, unabhängig vom Durchsetzungsmodus ───────────────
   if (decision.hardDeny) {
     if (!localAvailable) {
-      log.warn("gateway.policy_blocked", { ...auditBase, detail: "no_local_model" })
-      throw new PolicyViolationError(
-        decision,
+      return settle(
+        null,
+        false,
+        "no_local_model",
         "Klasse-4-Inhalt erfordert ein lokales Modell. Es ist keines konfiguriert " +
           "(LLAMA_API_KEY + LLAMA_API_BASE). Der Vorgang wird nicht ersatzweise " +
           "extern ausgeführt."
       )
     }
-    log.info("gateway.policy_decision", auditBase)
-    return { decision, modelType: ModelType.LLAMA_COMPAT, observedOnly: false }
+    return settle(ModelType.LLAMA_COMPAT, false)
   }
 
   // ── Klasse 0–3 ───────────────────────────────────────────────────────────
   if (decision.action === "EXTERNAL") {
     if (!externalAvailable) {
-      log.warn("gateway.policy_blocked", { ...auditBase, detail: "no_external_model" })
-      throw new PolicyViolationError(decision, "Kein zugelassener externer Anbieter konfiguriert.")
+      return settle(null, false, "no_external_model", "Kein zugelassener externer Anbieter konfiguriert.")
     }
-    log.info("gateway.policy_decision", auditBase)
-    return { decision, modelType: ModelType.CLAUDE_SONNET_4, observedOnly: false }
+    return settle(ModelType.CLAUDE_SONNET_4, false)
   }
 
   // action === "LOCAL" (oder BLOCKED) für Klasse 0–3
   if (localAvailable) {
-    log.info("gateway.policy_decision", auditBase)
-    return { decision, modelType: ModelType.LLAMA_COMPAT, observedOnly: false }
+    return settle(ModelType.LLAMA_COMPAT, false)
   }
 
   if (enforcementEnabled()) {
-    log.warn("gateway.policy_blocked", { ...auditBase, detail: "no_local_model" })
-    throw new PolicyViolationError(
-      decision,
+    return settle(
+      null,
+      false,
+      "no_local_model",
       `Die Policy verlangt lokale Verarbeitung (${decision.reason}), es ist aber ` +
         "kein lokales Modell konfiguriert."
     )
@@ -163,15 +199,8 @@ export async function authorizeAiRequest(
   // Beobachtungsmodus: die Entscheidung wäre LOCAL, ist aber nicht ausführbar.
   // Der Aufruf läuft extern weiter — sichtbar protokolliert, nicht verschwiegen.
   if (!externalAvailable) {
-    log.warn("gateway.policy_blocked", { ...auditBase, detail: "no_provider_at_all" })
-    throw new PolicyViolationError(decision, "Kein Anbieter konfiguriert.")
+    return settle(null, false, "no_provider_at_all", "Kein Anbieter konfiguriert.")
   }
 
-  log.warn("gateway.policy_would_block", {
-    ...auditBase,
-    detail: "local_required_but_unavailable",
-    executedVia: "external",
-    hint: "AI_POLICY_ENFORCE=true blockiert diesen Fall, sobald lokale Modelle stehen"
-  })
-  return { decision, modelType: ModelType.CLAUDE_SONNET_4, observedOnly: true }
+  return settle(ModelType.CLAUDE_SONNET_4, true)
 }
