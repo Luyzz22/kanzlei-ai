@@ -38,7 +38,22 @@ export class LlamaCompatProvider extends BaseAIProvider {
         temperature: 0.2,
         messages: [{ role: "user", content: `${input.prompt}\n\n${input.documentText}` }]
       }
-      if (input.jsonMode) {
+      if (input.maxTokens) {
+        body.max_tokens = input.maxTokens
+      }
+
+      if (input.jsonSchema) {
+        // Grammatikgebundene Dekodierung (vLLM): das Schema wird im Decoder
+        // erzwungen, ungültige Tokens werden nicht gesampelt. Deutlich
+        // belastbarer als `json_object`, das nur "irgendein JSON" zusichert.
+        // vLLM akzeptiert beide Schreibweisen; `guided_json` ist die native,
+        // `response_format: json_schema` die OpenAI-kompatible.
+        body.guided_json = input.jsonSchema
+        body.response_format = {
+          type: "json_schema",
+          json_schema: { name: "stage_output", schema: input.jsonSchema, strict: true }
+        }
+      } else if (input.jsonMode) {
         body.response_format = { type: "json_object" }
       }
 
