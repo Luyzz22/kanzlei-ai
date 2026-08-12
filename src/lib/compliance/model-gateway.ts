@@ -3,6 +3,7 @@ import "server-only"
 import { getTenantAiGovernance } from "@/lib/ai/tenant-ai-governance"
 import { isModelTypeAvailable } from "@/lib/ai/provider-availability"
 import type { DetectorResult } from "@/lib/hybrid/policy-gate"
+import { runLocalDetectors } from "./detectors"
 import { log } from "@/lib/security/secure-logging"
 import { ModelType } from "@/types/ai"
 
@@ -58,7 +59,16 @@ export interface AuthorizeAiRequestInput {
   /** z. B. "copilot", "contract-analysis" — landet im Audit. */
   useCase: string
   matterId?: string
-  /** Lokale Detektorergebnisse, sofern vorhanden (Klasse 2–3). */
+  /**
+   * Der zu verarbeitende Text. Wird lokal durch die Detektoren geschickt —
+   * er verlässt die Zone dabei nicht und landet **nicht** im Audit-Log.
+   *
+   * Bewusst hier statt beim Aufrufer: liefe `runLocalDetectors()` in den
+   * Routen, könnte ein künftiger Aufrufer es vergessen und bekäme still eine
+   * Entscheidung ohne Detektoren.
+   */
+  content?: string
+  /** Bereits vorliegende Detektorergebnisse. Übersteuert `content`. */
   detectors?: DetectorResult[]
 }
 
@@ -85,10 +95,13 @@ export async function authorizeAiRequest(
   input: AuthorizeAiRequestInput
 ): Promise<AuthorizedAiRequest> {
   const governance = await getTenantAiGovernance(input.tenantId)
+  const detectors =
+    input.detectors ?? (input.content !== undefined ? runLocalDetectors(input.content) : undefined)
+
   const decision = decideRouting({
     classification: input.classification,
     governance,
-    detectors: input.detectors
+    detectors
   })
 
   const auditBase = {

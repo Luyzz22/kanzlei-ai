@@ -436,7 +436,9 @@ async function runJsonStage<T>(
       classification: 3,
       tenantId: tenantId || "unknown",
       actorId: "pipeline",
-      useCase: `contract-analysis:${pipelineStage}`
+      useCase: `contract-analysis:${pipelineStage}`,
+      // Detektoren laufen lokal ueber den (ggf. bereits pseudonymisierten) Text.
+      content: effectiveDocumentText
     })
   } catch (err) {
     if (err instanceof PolicyViolationError) {
