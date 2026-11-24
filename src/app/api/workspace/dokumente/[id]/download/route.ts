@@ -10,9 +10,9 @@ import { createStoredDocumentReadStream } from "@/lib/storage/document-storage"
 import { withTenant } from "@/lib/tenant-context.server"
 
 type DownloadRouteContext = {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 function sanitizeDownloadFilename(filename: string): string {
@@ -48,7 +48,8 @@ export async function GET(request: Request, context: DownloadRouteContext): Prom
     return NextResponse.json({ error: "Mandantenkontext nicht eindeutig" }, { status: 409 })
   }
 
-  const accessContext = await getDocumentFileAccessContext(tenantContext.tenantId, context.params.id)
+  const params = await context.params
+  const accessContext = await getDocumentFileAccessContext(tenantContext.tenantId, params.id)
 
   if (!accessContext) {
     return NextResponse.json({ error: "Dokument nicht gefunden" }, { status: 404 })

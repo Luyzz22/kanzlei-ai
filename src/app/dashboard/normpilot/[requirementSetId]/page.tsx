@@ -28,10 +28,11 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 export default async function NormPilotRequirementSetPage({
-  params
+  params: paramsPromise
 }: {
-  params: { requirementSetId: string }
+  params: Promise<{ requirementSetId: string }>
 }) {
+  const params = await paramsPromise
   const session = await auth()
   if (!session?.user?.id) redirect(`/login?next=/dashboard/normpilot/${params.requirementSetId}`)
 

@@ -125,10 +125,11 @@ function statusTone(status: FallStatus): string {
 }
 
 export default async function FaellePage({
-  searchParams
+  searchParams: searchParamsPromise
 }: {
-  searchParams?: { filter?: string }
+  searchParams?: Promise<{ filter?: string }>
 }) {
+  const searchParams = await searchParamsPromise
   const session = await auth()
 
   if (!session?.user?.id) {

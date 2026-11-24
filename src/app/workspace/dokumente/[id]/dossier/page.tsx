@@ -65,7 +65,8 @@ function severityLabel(severity: "NIEDRIG" | "MITTEL" | "HOCH"): string {
   return "Niedrig"
 }
 
-export default async function DossierPage({ params }: { params: { id: string } }) {
+export default async function DossierPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise
   const session = await auth()
 
   if (!session?.user?.id) {

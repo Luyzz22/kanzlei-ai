@@ -27,7 +27,8 @@ function scimUser(u: { id: string; email: string; name: string | null; externalI
   }
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise
   const auth = requireScimAuth(request)
   if (!auth.ok) return NextResponse.json({ detail: auth.error }, { status: auth.status })
 
@@ -40,7 +41,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
   return NextResponse.json(scimUser(user))
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise
   const auth = requireScimAuth(request)
   if (!auth.ok) return NextResponse.json({ detail: auth.error }, { status: auth.status })
 
@@ -71,7 +73,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   return NextResponse.json(scimUser(user))
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise
   const auth = requireScimAuth(request)
   if (!auth.ok) return NextResponse.json({ detail: auth.error }, { status: auth.status })
 
