@@ -18,22 +18,22 @@ export type PrivacyRetentionFormState = {
 const schema = z
   .object({
     defaultDocumentRetentionDays: z.coerce
-      .number({ invalid_type_error: "Bitte eine gültige Aufbewahrungsdauer angeben." })
+      .number({ error: "Bitte eine gültige Aufbewahrungsdauer angeben." })
       .int("Bitte eine ganze Zahl in Tagen angeben.")
       .min(30, "Die Standard-Aufbewahrung muss mindestens 30 Tage betragen.")
       .max(3650, "Die Standard-Aufbewahrung darf maximal 3650 Tage betragen."),
     auditEvidenceRetentionDays: z.coerce
-      .number({ invalid_type_error: "Bitte eine gültige Aufbewahrungsdauer angeben." })
+      .number({ error: "Bitte eine gültige Aufbewahrungsdauer angeben." })
       .int("Bitte eine ganze Zahl in Tagen angeben.")
       .min(365, "Audit-nahe Nachweise müssen mindestens 365 Tage aufbewahrt werden.")
       .max(3650, "Audit-nahe Nachweise dürfen maximal 3650 Tage aufbewahrt werden."),
     reviewDueDays: z.coerce
-      .number({ invalid_type_error: "Bitte eine gültige Review-Frist angeben." })
+      .number({ error: "Bitte eine gültige Review-Frist angeben." })
       .int("Bitte eine ganze Zahl in Tagen angeben.")
       .min(1, "Die Review-Frist muss mindestens 1 Tag betragen.")
       .max(180, "Die Review-Frist darf maximal 180 Tage betragen."),
     archiveAfterApprovalDays: z.coerce
-      .number({ invalid_type_error: "Bitte ein gültiges Archivierungsfenster angeben." })
+      .number({ error: "Bitte ein gültiges Archivierungsfenster angeben." })
       .int("Bitte eine ganze Zahl in Tagen angeben.")
       .min(0, "Das Archivierungsfenster darf nicht negativ sein.")
       .max(365, "Das Archivierungsfenster darf maximal 365 Tage betragen."),

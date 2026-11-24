@@ -23,6 +23,7 @@ import {
   NORMPILOT_PROMPT_BUNDLE_KEY,
   NORMPILOT_PROMPT_VERSION
 } from "@/lib/normpilot/constants"
+import { normPilotLocatorSchema } from "@/lib/normpilot/schemas"
 import { buildNormPilotEvidencePackExport } from "@/lib/normpilot/export-structure"
 import {
   clampNormPilotConfidence,
@@ -108,7 +109,7 @@ function buildCandidates(input: NormPilotPipelineInput, inputHash: string): Norm
       title: source.title,
       sourceHash: source.sourceHash ?? hashText(`${inputHash}:source:${id}`),
       evidenceHash: hashText(`${inputHash}:evidence:${id}:${anchorText}`),
-      locator: source.locator,
+      locator: source.locator === undefined ? undefined : normPilotLocatorSchema.parse(source.locator),
       anchorText,
       confidence: injection ? 0.42 : 0.82,
       reviewState: "UNGEPRUEFT",

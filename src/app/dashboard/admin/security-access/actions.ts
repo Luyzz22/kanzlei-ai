@@ -18,12 +18,12 @@ export type SecurityAccessFormState = {
 const schema = z
   .object({
     adminSessionTimeoutMinutes: z.coerce
-      .number({ invalid_type_error: "Bitte ein gültiges Zeitlimit in Minuten angeben." })
+      .number({ error: "Bitte ein gültiges Zeitlimit in Minuten angeben." })
       .int("Bitte eine ganze Zahl in Minuten angeben.")
       .min(5, "Das Admin-Session-Limit muss mindestens 5 Minuten betragen.")
       .max(240, "Das Admin-Session-Limit darf maximal 240 Minuten betragen."),
     standardSessionTimeoutMinutes: z.coerce
-      .number({ invalid_type_error: "Bitte ein gültiges Zeitlimit in Minuten angeben." })
+      .number({ error: "Bitte ein gültiges Zeitlimit in Minuten angeben." })
       .int("Bitte eine ganze Zahl in Minuten angeben.")
       .min(15, "Das Standard-Session-Limit muss mindestens 15 Minuten betragen.")
       .max(1440, "Das Standard-Session-Limit darf maximal 1440 Minuten betragen."),
