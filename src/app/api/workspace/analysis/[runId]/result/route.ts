@@ -7,8 +7,9 @@ export const runtime = "nodejs";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { runId: string } }
+  { params: paramsPromise }: { params: Promise<{ runId: string }> }
 ) {
+  const params = await paramsPromise
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });

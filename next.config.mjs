@@ -1,14 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   // @vercel/blob uses Node-only APIs (undici, fs, crypto) and must never
   // be pulled into client-side bundles by Webpack via server action traces.
+  serverExternalPackages: ["@vercel/blob", "unpdf"],
   experimental: {
     serverActions: {
       bodySizeLimit: "2mb"
-    },
-    serverComponentsExternalPackages: ["@vercel/blob", "unpdf"]
+    }
   },
   async headers() {
     return [

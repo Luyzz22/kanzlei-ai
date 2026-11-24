@@ -11,9 +11,10 @@ import { ExportClient } from "./export-client"
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
-type Props = { params: { id: string } }
+type Props = { params: Promise<{ id: string }> }
 
-export default async function ExportPage({ params }: Props) {
+export default async function ExportPage({ params: paramsPromise }: Props) {
+  const params = await paramsPromise
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 

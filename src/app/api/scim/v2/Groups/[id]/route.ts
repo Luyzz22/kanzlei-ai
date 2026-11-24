@@ -48,7 +48,8 @@ async function resolveUserId(value: string): Promise<string | null> {
   return u?.id ?? null
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise
   const auth = requireScimAuth(request)
   if (!auth.ok) return NextResponse.json({ detail: auth.error }, { status: auth.status })
 
@@ -58,7 +59,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
   return NextResponse.json(scimGroup(cfg.id, cfg.displayName))
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise
   const auth = requireScimAuth(request)
   if (!auth.ok) return NextResponse.json({ detail: auth.error }, { status: auth.status })
 

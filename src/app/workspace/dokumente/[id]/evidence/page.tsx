@@ -40,7 +40,8 @@ function categoryTone(category: DocumentActivityCategory): {
   return { bg: "bg-gold-50", text: "text-gold-900", border: "border-gold-200" }
 }
 
-export default async function EvidencePage({ params }: { params: { id: string } }) {
+export default async function EvidencePage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise
   const session = await auth()
 
   if (!session?.user?.id) {

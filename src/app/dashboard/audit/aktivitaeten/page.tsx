@@ -31,7 +31,8 @@ function isValidCategory(v: string | undefined): v is AuditCategory | "alle" {
   return AUDIT_CATEGORIES.some((c) => c.key === v)
 }
 
-export default async function AuditDetailPage({ searchParams }: { searchParams?: SearchParams }) {
+export default async function AuditDetailPage({ searchParams: searchParamsPromise }: { searchParams?: Promise<SearchParams> }) {
+  const searchParams = await searchParamsPromise
   const session = await auth()
   if (!session?.user?.id) {
     redirect("/login?next=/dashboard/audit/aktivitaeten")

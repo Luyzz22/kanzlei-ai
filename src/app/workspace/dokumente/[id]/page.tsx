@@ -49,7 +49,8 @@ function formatBytes(bytes: number | null): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
 }
 
-export default async function DokumentDetailPage({ params }: { params: { id: string } }) {
+export default async function DokumentDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise
   const session = await auth()
 
   if (!session?.user?.id) {
