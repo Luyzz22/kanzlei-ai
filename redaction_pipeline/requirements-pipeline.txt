@@ -1,7 +1,7 @@
 # Lokale Redaction-Pipeline (Hetzner) — Python-Abhängigkeiten.
 # Installation in venv:  python -m venv .venv && .venv/bin/pip install -r requirements-pipeline.txt
 # Systembinaries zusätzlich nötig:  tesseract-ocr tesseract-ocr-deu  +  libzbar0
-PyMuPDF>=1.26,<2          # fitz: Sanitization, Layout, echte Redaction, Rendering, OCR-Bridge
+PyMuPDF>=1.26.7,<2          # fitz: Sanitization, Layout, echte Redaction, Rendering, OCR-Bridge
 pikepdf>=8                # XXE-sichere PDF-Inventur (aktive Inhalte)
 pdfplumber>=0.11          # Fallback-Layout (nativer Textlayer)
 pytesseract>=0.3.13       # OCR-Bridge zu Tesseract (deu)
