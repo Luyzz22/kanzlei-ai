@@ -15,13 +15,13 @@ export type GovernanceSettingsFormState = {
 
 const schema = z.object({
   sessionTimeoutMinutes: z.coerce
-    .number({ invalid_type_error: "Bitte eine gültige Sitzungsdauer angeben." })
+    .number({ error: "Bitte eine gültige Sitzungsdauer angeben." })
     .int("Bitte eine ganze Zahl in Minuten angeben.")
     .min(5, "Die Sitzungsdauer muss mindestens 5 Minuten betragen.")
     .max(1440, "Die Sitzungsdauer darf maximal 1440 Minuten betragen."),
   requireMfaForPrivilegedRoles: z.enum(["true", "false"]),
   documentRetentionDays: z.coerce
-    .number({ invalid_type_error: "Bitte eine gültige Aufbewahrungsdauer angeben." })
+    .number({ error: "Bitte eine gültige Aufbewahrungsdauer angeben." })
     .int("Bitte eine ganze Zahl in Tagen angeben.")
     .min(30, "Die Aufbewahrung muss mindestens 30 Tage betragen.")
     .max(3650, "Die Aufbewahrung darf maximal 3650 Tage betragen."),
